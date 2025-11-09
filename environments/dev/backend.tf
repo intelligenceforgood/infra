@@ -9,10 +9,8 @@ terraform {
   }
 
   backend "gcs" {
-    # TODO: replace with the bucket created by bootstrap/create_state_bucket.sh
-    bucket = "tfstate-i4g-dev"
-    prefix = "env/dev"
-    # TODO: update to the automation service account email for this project
+    bucket                      = "tfstate-i4g-dev"
+    prefix                      = "env/dev"
     impersonate_service_account = "sa-infra@i4g-dev.iam.gserviceaccount.com"
   }
 }

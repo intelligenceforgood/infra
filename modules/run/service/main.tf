@@ -1,0 +1,90 @@
+terraform {
+  required_version = ">= 1.9.0, < 2.0.0"
+
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 6.0"
+    }
+  }
+}
+
+locals {
+  autoscaling_annotations = merge(
+    var.min_instances == null ? {} : { "autoscaling.knative.dev/minScale" = tostring(var.min_instances) },
+    var.max_instances == null ? {} : { "autoscaling.knative.dev/maxScale" = tostring(var.max_instances) }
+  )
+
+  ingress_annotation = var.ingress == "" ? {} : { "run.googleapis.com/ingress" = var.ingress }
+
+  vpc_annotations = var.vpc_connector == "" ? {} : {
+    "run.googleapis.com/vpc-access-connector" = var.vpc_connector,
+    "run.googleapis.com/vpc-egress"            = var.vpc_connector_egress_settings
+  }
+
+  template_annotations = merge(var.annotations, local.autoscaling_annotations, local.ingress_annotation, local.vpc_annotations)
+}
+
+resource "google_cloud_run_service" "this" {
+  name     = var.name
+  project  = var.project_id
+  location = var.location
+
+  autogenerate_revision_name = var.autogenerate_revision_name
+
+  template {
+    metadata {
+      annotations = local.template_annotations
+      labels      = var.labels
+    }
+
+    spec {
+      service_account_name = var.service_account
+
+      containers {
+        image   = var.image
+        args    = var.args
+        command = var.command
+
+        dynamic "env" {
+          for_each = var.env_vars
+          content {
+            name  = env.key
+            value = env.value
+          }
+        }
+
+        dynamic "ports" {
+          for_each = var.container_ports
+          content {
+            name           = try(ports.value.name, null)
+            container_port = try(ports.value.container_port, 8080)
+          }
+        }
+
+        resources {
+          limits = var.resource_limits
+        }
+      }
+
+      container_concurrency = var.container_concurrency
+      timeout_seconds       = var.timeout_seconds
+    }
+  }
+
+  traffic {
+    percent         = 100
+    latest_revision = true
+  }
+
+}
+
+resource "google_cloud_run_service_iam_member" "invoker" {
+  count = var.invoker_member == "" ? 0 : 1
+
+  project  = var.project_id
+  location = var.location
+  service  = google_cloud_run_service.this.name
+  role     = var.invoker_role
+  member   = var.invoker_member
+}

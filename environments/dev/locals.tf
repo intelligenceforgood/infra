@@ -31,4 +31,9 @@ locals {
       description  = "Applies infrastructure as code changes"
     }
   }
+
+  github_wif = {
+    pool_id     = "github-actions"
+    provider_id = "proto"
+  }
 }

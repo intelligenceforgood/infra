@@ -26,9 +26,9 @@ terraform {
 	backend "gcs" {
 		bucket                      = "tfstate-i4g-dev"
 		prefix                      = "env/dev"
-		impersonate_service_account = "sa-infra@${var.project_id}"
+		impersonate_service_account = "sa-infra@i4g-dev.iam.gserviceaccount.com"
 	}
-	required_version = "~> 1.9.0"
+	required_version = ">= 1.9.0, < 2.0.0"
 }
 ```
 
@@ -46,6 +46,7 @@ No SaaS state management is involved; everything relies on GCS + IAM.
 To align with the security matrix in `planning/future_architecture.md`, we will introduce modules under `modules/` as follows:
 
 - `iam/service_accounts`: create core service accounts (`sa-fastapi`, `sa-streamlit`, `sa-ingest`, `sa-report`, `sa-vault`, `sa-infra`) with labels and Workload Identity annotations.
+- `iam/workload_identity_github`: workload identity pool/provider for GitHub Actions tokens (implemented for dev).
 - `iam/roles`: manage custom IAM roles (e.g., narrowed Vertex AI Search access, read-only Firestore roles, signed URL issuers).
 - `iam/bindings`: attach roles to service accounts per environment, including conditional bindings for signed URL creation and Secret Manager access.
 - `network/vpc`: provision VPC, subnets, and Serverless VPC connectors for Cloud Run → AlloyDB/Cloud SQL connectivity.
@@ -60,7 +61,7 @@ Environment roots (`environments/dev/main.tf`, etc.) compose these modules and p
 
 ## Identity & Access Strategy (Terraform View)
 - Service accounts mirror the role-to-capability matrix. Each binding is declared in Terraform, making drift visible during plan.
-- Workload Identity Federation resources live in `modules/iam/workload_identity`, defining pools/providers for GitHub Actions and any temporary Azure integration accounts.
+- Workload Identity Federation resources live in `modules/iam/workload_identity_github`, defining pools/providers for GitHub Actions (extend with additional modules for other issuers if needed).
 - OAuth clients for Google Identity Platform can be managed via Terraform’s `google_identity_platform_oauth_idp_config` resources; local development uses mock tokens outside Terraform scope.
 - Secrets rotation schedules are represented via Cloud Scheduler jobs + Cloud Run jobs modules, wired to call rotation workflows.
 
@@ -69,7 +70,18 @@ Environment roots (`environments/dev/main.tf`, etc.) compose these modules and p
 2. Authenticate with `gcloud`: `gcloud auth login && gcloud auth application-default login`.
 3. Create the state bucket and automation service account: `./bootstrap/create_state_bucket.sh dev` (script will output bucket name and service account email).
 4. Navigate to `environments/dev/` and run `terraform init`.
-5. Run `terraform plan` to verify backend connectivity.
+5. Run `terraform plan` to verify backend connectivity (override `-var "github_repository=owner/repo"` if using a fork).
+
+## GitHub Actions Workflow (Dev Terraform)
+
+Workflow file: `.github/workflows/terraform-dev.yml`.
+
+1. **Create repository variables** (`Settings → Variables → Actions`):
+	- `TF_GCP_PROJECT_ID` → `i4g-dev`
+	- `TF_GCP_WORKLOAD_IDENTITY_PROVIDER` → workload identity provider resource path (e.g., `projects/123456789/locations/global/workloadIdentityPools/github-actions/providers/proto`)
+	- `TF_GCP_SERVICE_ACCOUNT` → automation service account email (`sa-infra@i4g-dev.iam.gserviceaccount.com`)
+2. The workflow uses `google-github-actions/auth@v2` to exchange GitHub OIDC tokens for short-lived credentials and runs `terraform fmt/plan` on pull requests touching `infra/**`.
+3. On merges to `main`, the workflow re-runs plan and `apply -auto-approve` so state stays in sync with the repo. Override `github_repository` via repository variable or by editing the workflow if you run from a fork.
 
 ### Later: Move Projects Under the Official Org/Billing
 Once the nonprofit has a Google Cloud Organization and billing account:
@@ -103,11 +115,6 @@ Once the nonprofit has a Google Cloud Organization and billing account:
 - Prefer least-privilege IAM roles; document every custom role in module README files.
 - Use pull requests for all infrastructure changes; plans must be reviewed before apply.
 - Avoid committing credentials—rely on WIF or short-lived impersonation tokens.
-
-## Related Repositories
-- `intelligenceforgood/i4g` — application services.
-- `intelligenceforgood/docs` — public documentation site.
-- `intelligenceforgood/proto` — experimental prototypes.
 
 ## Related Repositories
 - `intelligenceforgood/i4g` — application services.
