@@ -1,6 +1,6 @@
 # Intelligence for Good — Infrastructure
 
-This repository manages Terraform modules, environment configuration, and automation for deploying the i4g platform on Google Cloud Platform. The workflow is intentionally Terraform-CLI only—no Terraform Cloud/SaaS dependency—so everything runs from laptops or GitHub Actions with the same source of truth.
+This repository manages Terraform modules, environment configuration, and automation for deploying the i4g platform on Google Cloud Platform. The workflow is intentionally Terraform-CLI only—no Terraform Cloud/SaaS dependency—so everything runs from laptops or GitHub Actions with the same source of truth. For application setup and local development details, refer to `proto/docs/dev_guide.md`.
 
 ## Structure (proposed)
 - `bootstrap/` — one-time helpers for creating the state bucket, service accounts, and enabling required APIs.
@@ -68,9 +68,16 @@ Environment roots (`environments/dev/main.tf`, etc.) compose these modules and p
 ## Getting Started
 1. Clone the repo and run `scripts/check_tools.sh` (to be added) to verify `terraform`, `tflint`, and `gcloud` availability.
 2. Authenticate with `gcloud`: `gcloud auth login && gcloud auth application-default login`.
-3. Create the state bucket and automation service account: `./bootstrap/create_state_bucket.sh dev` (script will output bucket name and service account email).
-4. Navigate to `environments/dev/` and run `terraform init`.
-5. Run `terraform plan` to verify backend connectivity (override `-var "github_repository=owner/repo"` if using a fork).
+3. If you plan to manage Vertex/Discovery Engine resources from your workstation, attach the dev project as the quota project for Application Default Credentials:
+
+	```bash
+	gcloud auth application-default set-quota-project i4g-dev
+	```
+
+	Replace `i4g-dev` when targeting another environment. Without this, Discovery Engine API calls fail with `SERVICE_DISABLED` even when the API is enabled.
+4. Create the state bucket and automation service account: `./bootstrap/create_state_bucket.sh dev` (script will output bucket name and service account email).
+5. Navigate to `environments/dev/` and run `terraform init`.
+6. Run `terraform plan` to verify backend connectivity (override `-var "github_repository=owner/repo"` if using a fork).
 
 ## GitHub Actions Workflow (Dev Terraform)
 

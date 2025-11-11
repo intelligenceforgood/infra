@@ -23,3 +23,10 @@ output "streamlit_service" {
     url  = module.run_streamlit.uri
   }
 }
+
+output "vertex_search" {
+  description = "Discovery Engine resources backing Vertex AI Search retrieval."
+  value = {
+    data_store_name = module.vertex_search.data_store_name
+  }
+}

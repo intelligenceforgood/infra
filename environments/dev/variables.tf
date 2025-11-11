@@ -48,3 +48,21 @@ variable "streamlit_invoker_member" {
   description = "Principal granted Cloud Run invoker on the Streamlit service (leave blank to skip)."
   default     = ""
 }
+
+variable "vertex_search_location" {
+  type        = string
+  description = "Discovery Engine location for Vertex AI Search resources."
+  default     = "global"
+}
+
+variable "vertex_search_data_store_id" {
+  type        = string
+  description = "Identifier for the Vertex AI Search data store."
+  default     = "retrieval-poc"
+}
+
+variable "vertex_search_display_name" {
+  type        = string
+  description = "Display name for the Vertex AI Search data store."
+  default     = "Retrieval PoC Data Store"
+}

@@ -1,3 +1,15 @@
+resource "google_project_service" "gemini_cloud_assist" {
+  project            = var.project_id
+  service            = "cloudaicompanion.googleapis.com"
+  disable_on_destroy = false
+}
+
+resource "google_project_service" "vertex_ai_search" {
+  project            = var.project_id
+  service            = "discoveryengine.googleapis.com"
+  disable_on_destroy = false
+}
+
 module "iam_service_accounts" {
   source     = "../../modules/iam/service_accounts"
   project_id = var.project_id
@@ -83,6 +95,21 @@ module "iam_service_account_bindings" {
   }
 }
 
+module "vertex_search" {
+  source = "../../modules/vertex_search"
+
+  providers = {
+    google-beta = google-beta
+  }
+
+  project_id    = var.project_id
+  location      = var.vertex_search_location
+  data_store_id = var.vertex_search_data_store_id
+  display_name  = var.vertex_search_display_name
+
+  depends_on = [google_project_service.vertex_ai_search]
+}
+
 module "run_fastapi" {
   source     = "../../modules/run/service"
   project_id = var.project_id
@@ -99,7 +126,7 @@ module "run_fastapi" {
 
   invoker_member = var.fastapi_invoker_member
 
-  depends_on = [module.iam_service_account_bindings]
+  depends_on = [module.iam_service_account_bindings, google_project_service.gemini_cloud_assist]
 }
 
 module "run_streamlit" {
@@ -124,5 +151,5 @@ module "run_streamlit" {
 
   invoker_member = var.streamlit_invoker_member
 
-  depends_on = [module.iam_service_account_bindings, module.run_fastapi]
+  depends_on = [module.iam_service_account_bindings, module.run_fastapi, google_project_service.gemini_cloud_assist]
 }
