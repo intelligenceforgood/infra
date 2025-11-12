@@ -4,7 +4,7 @@ This repository manages Terraform modules, environment configuration, and automa
 
 ## Structure (proposed)
 - `bootstrap/` — one-time helpers for creating the state bucket, service accounts, and enabling required APIs.
-- `environments/` — environment-specific configuration (e.g., `dev`, `staging`, `prod`). Each folder contains a root module that stitches reusable modules together.
+- `environments/` — environment-specific configuration (`dev`, `prod`). Each folder contains a root module that stitches reusable modules together.
 - `modules/` — reusable Terraform modules (Cloud Run services, Cloud Storage buckets, IAM roles, log sinks, Secret Manager entries, etc.).
 - `policy/` — optional OPA/Conftest policies for static checks before apply.
 - `scripts/` — helper scripts for linting (`terraform fmt`, `tflint`), drift detection, or CI wrappers.
@@ -42,18 +42,34 @@ terraform {
 
 No SaaS state management is involved; everything relies on GCS + IAM.
 
+## Dev → Prod Promotion Flow
+
+1. **Build & publish images:**
+	- Dev merges build and push `:dev` tags to Artifact Registry (`applications/fastapi:dev`, `streamlit:dev`).
+	- After validation, retag the approved image digests to `:prod` (for example `gcloud artifacts docker tags add ...`).
+2. **Deploy to dev:**
+	- Terraform applies run automatically via `.github/workflows/terraform-dev.yml` on merges to `main`, keeping the `i4g-dev` Cloud Run services current.
+3. **Promote infrastructure:**
+	- Run `terraform plan/apply` from `environments/prod/` once prod configuration changes are ready. Applies may be manual (`terraform apply -var-file=terraform.tfvars`) or executed via a prod workflow (future automation).
+4. **Promote application services:**
+	- Update the prod tfvars with the new `:prod` tags if necessary and apply.
+	- Cloud Run revisions roll out automatically; use `gcloud run services update` only for emergency hotfixes.
+5. **Post-deploy checks:**
+	- Verify FastAPI/Streamlit health endpoints, run smoke tests, and confirm Vertex AI Search connectivity.
+	- Document outcomes in `planning/change_log.md` when material architecture shifts occur.
+
 ## Module Roadmap
 To align with the security matrix in `planning/future_architecture.md`, we will introduce modules under `modules/` as follows:
 
-- `iam/service_accounts`: create core service accounts (`sa-fastapi`, `sa-streamlit`, `sa-ingest`, `sa-report`, `sa-vault`, `sa-infra`) with labels and Workload Identity annotations.
-- `iam/workload_identity_github`: workload identity pool/provider for GitHub Actions tokens (implemented for dev).
+- ✅ `iam/service_accounts`: create core service accounts (`sa-fastapi`, `sa-streamlit`, `sa-ingest`, `sa-report`, `sa-vault`, `sa-infra`) with labels and Workload Identity annotations.
+- ✅ `iam/workload_identity_github`: workload identity pool/provider for GitHub Actions tokens (implemented for dev).
 - `iam/roles`: manage custom IAM roles (e.g., narrowed Vertex AI Search access, read-only Firestore roles, signed URL issuers).
-- `iam/bindings`: attach roles to service accounts per environment, including conditional bindings for signed URL creation and Secret Manager access.
+- ✅ `iam/service_account_bindings`: attach roles to service accounts per environment, including conditional bindings for signed URL creation and Secret Manager access.
 - `network/vpc`: provision VPC, subnets, and Serverless VPC connectors for Cloud Run → AlloyDB/Cloud SQL connectivity.
-- `storage/buckets`: configure evidence/report buckets with lifecycle rules, uniform access, CMEK if required.
-- `run/service`: parameterized Cloud Run service module (image, service account, env vars, ingress). Variants for FastAPI, Streamlit, tokenization microservice.
-- `run/job`: Cloud Run job module for ingestion/report workers.
-- `scheduler/job`: Cloud Scheduler jobs triggering Cloud Run jobs with OIDC tokens.
+- ✅ `storage/buckets`: configure evidence/report buckets with lifecycle rules, uniform access, CMEK if required.
+- ✅ `run/service`: parameterized Cloud Run service module (image, service account, env vars, ingress). Variants for FastAPI, Streamlit, tokenization microservice.
+- ✅ `run/job`: Cloud Run job module for ingestion/report workers.
+- ✅ `scheduler/job`: Cloud Scheduler jobs triggering Cloud Run jobs with OIDC tokens.
 - `secrets/manager`: define Secret Manager entries, rotation windows, and IAM bindings.
 - `observability/logging`: sinks to BigQuery/Storage, uptime checks, alerting policies.
 

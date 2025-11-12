@@ -18,6 +18,46 @@ streamlit_env_vars = {
 
 streamlit_invoker_member = "allUsers"
 
+storage_bucket_default_location = "US"
+storage_buckets = {
+  evidence = {
+    name          = "i4g-evidence-dev"
+    force_destroy = true
+    labels = {
+      env     = "dev"
+      service = "evidence"
+    }
+  }
+  reports = {
+    name          = "i4g-reports-dev"
+    force_destroy = true
+    labels = {
+      env     = "dev"
+      service = "reports"
+    }
+  }
+}
+
+run_jobs = {
+  ingest = {
+    enabled            = false
+    name                = "ingest-azure-snapshot"
+  image               = "us-central1-docker.pkg.dev/i4g-dev/applications/ingest-job:dev"
+    service_account_key = "ingest"
+    env_vars = {
+      I4G_ENV = "dev"
+    }
+  }
+  report = {
+    name                = "generate-reports"
+  image               = "us-central1-docker.pkg.dev/i4g-dev/applications/report-job:dev"
+    service_account_key = "report"
+    env_vars = {
+      I4G_ENV = "dev"
+    }
+  }
+}
+
 vertex_search_data_store_id = "retrieval-poc"
 vertex_search_display_name  = "Retrieval PoC Data Store"
 

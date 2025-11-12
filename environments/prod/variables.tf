@@ -1,6 +1,6 @@
 variable "project_id" {
   type        = string
-  description = "GCP project ID for the dev environment."
+  description = "GCP project ID for the prod environment."
 }
 
 variable "region" {
@@ -28,7 +28,7 @@ variable "fastapi_env_vars" {
 
 variable "fastapi_invoker_member" {
   type        = string
-  description = "Principal granted Cloud Run invoker on the FastAPI service (leave blank to skip)."
+  description = "Principal granted Cloud Run invoker on the FastAPI service (leave blank to use defaults)."
   default     = ""
 }
 
@@ -45,8 +45,14 @@ variable "streamlit_env_vars" {
 
 variable "streamlit_invoker_member" {
   type        = string
-  description = "Principal granted Cloud Run invoker on the Streamlit service (leave blank to skip)."
+  description = "Principal granted Cloud Run invoker on the Streamlit service (leave blank to use defaults)."
   default     = ""
+}
+
+variable "vertex_search_location" {
+  type        = string
+  description = "Discovery Engine location for Vertex AI Search resources."
+  default     = "global"
 }
 
 variable "storage_bucket_default_location" {
@@ -111,7 +117,7 @@ variable "run_jobs" {
     schedule                        = optional(string)
     time_zone                       = optional(string)
     description                     = optional(string)
-  scheduler_name                  = optional(string)
+    scheduler_name                  = optional(string)
     scheduler_service_account_key   = optional(string)
     scheduler_attempt_deadline_seconds = optional(number)
     scheduler_body                  = optional(string)
@@ -121,20 +127,14 @@ variable "run_jobs" {
   default = {}
 }
 
-variable "vertex_search_location" {
-  type        = string
-  description = "Discovery Engine location for Vertex AI Search resources."
-  default     = "global"
-}
-
 variable "vertex_search_data_store_id" {
   type        = string
   description = "Identifier for the Vertex AI Search data store."
-  default     = "retrieval-poc"
+  default     = "retrieval-prod"
 }
 
 variable "vertex_search_display_name" {
   type        = string
   description = "Display name for the Vertex AI Search data store."
-  default     = "Retrieval PoC Data Store"
+  default     = "Retrieval Production Data Store"
 }

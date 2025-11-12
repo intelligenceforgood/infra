@@ -167,13 +167,19 @@ module "run_fastapi" {
   name            = "fastapi-gateway"
   service_account = module.iam_service_accounts.emails["fastapi"]
   image           = var.fastapi_image
-  env_vars        = var.fastapi_env_vars
+  env_vars = merge(
+    var.fastapi_env_vars,
+    {
+      I4G_STORAGE__EVIDENCE_BUCKET = lookup(module.storage_buckets.bucket_names, "evidence", "")
+      I4G_STORAGE__REPORT_BUCKET   = lookup(module.storage_buckets.bucket_names, "reports", "")
+    }
+  )
   labels = {
     service = "fastapi"
-    env     = "dev"
+    env     = "prod"
   }
 
-  invoker_member = var.fastapi_invoker_member
+  invoker_member = var.fastapi_invoker_member != "" ? var.fastapi_invoker_member : format("serviceAccount:%s", module.iam_service_accounts.emails["streamlit"])
 
   depends_on = [module.iam_service_account_bindings, google_project_service.gemini_cloud_assist]
 }
@@ -195,7 +201,7 @@ module "run_streamlit" {
   )
   labels = {
     service = "streamlit"
-    env     = "dev"
+    env     = "prod"
   }
 
   invoker_member = var.streamlit_invoker_member
@@ -213,13 +219,20 @@ module "run_jobs" {
   name            = each.value.name
   service_account = each.value.runtime_service_account_email
   image           = each.value.image
-  env_vars        = coalesce(try(each.value.env_vars, null), {})
+  env_vars = merge(
+    coalesce(try(each.value.env_vars, null), {}),
+    {
+      I4G_ENV                = "prod"
+      I4G_STORAGE__EVIDENCE_BUCKET = lookup(module.storage_buckets.bucket_names, "evidence", "")
+      I4G_STORAGE__REPORT_BUCKET   = lookup(module.storage_buckets.bucket_names, "reports", "")
+    }
+  )
   command         = coalesce(try(each.value.command, null), [])
   args            = coalesce(try(each.value.args, null), [])
   labels = merge({
-    env = "dev"
+    env = "prod"
     job = each.key
-  }, try(each.value.labels, {}))
+  }, coalesce(try(each.value.labels, null), {}))
   annotations                   = coalesce(try(each.value.annotations, null), {})
   parallelism                   = coalesce(try(each.value.parallelism, null), 1)
   task_count                    = coalesce(try(each.value.task_count, null), 1)

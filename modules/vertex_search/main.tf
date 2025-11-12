@@ -10,4 +10,8 @@ resource "google_discovery_engine_data_store" "this" {
   solution_types              = var.solution_types
   content_config              = var.content_config
   create_advanced_site_search = false
+
+  lifecycle {
+    ignore_changes = [document_processing_config]
+  }
 }
