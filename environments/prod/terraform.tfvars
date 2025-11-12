@@ -60,17 +60,13 @@ storage_buckets = {
 
 run_jobs = {
   ingest = {
+    enabled            = false
     name                = "ingest-azure-snapshot"
   image               = "us-central1-docker.pkg.dev/i4g-prod/applications/ingest-job:prod"
     service_account_key = "ingest"
     env_vars = {
       I4G_ENV = "prod"
     }
-    schedule                        = "0 * * * *"
-    time_zone                       = "UTC"
-    description                     = "Hourly ingestion of Azure exports"
-    scheduler_service_account_key   = "ingest"
-    scheduler_attempt_deadline_seconds = 300
   }
   report = {
     name                = "generate-reports"
@@ -79,9 +75,5 @@ run_jobs = {
     env_vars = {
       I4G_ENV = "prod"
     }
-    schedule                      = "0 2 * * *"
-    time_zone                     = "UTC"
-    description                   = "Daily report generation"
-    scheduler_service_account_key = "report"
   }
 }

@@ -16,8 +16,38 @@ resource "google_project_service" "cloud_scheduler" {
   disable_on_destroy = false
 }
 
+resource "google_project_service" "artifact_registry" {
+  project            = var.project_id
+  service            = "artifactregistry.googleapis.com"
+  disable_on_destroy = false
+}
+
 data "google_project" "current" {
   project_id = var.project_id
+}
+
+resource "google_artifact_registry_repository" "applications" {
+  project       = var.project_id
+  location      = var.region
+  repository_id = "applications"
+  description   = "Container images for application workloads"
+  format        = "DOCKER"
+  labels = {
+    env        = "dev"
+    managed_by = "terraform"
+  }
+
+  depends_on = [google_project_service.artifact_registry]
+}
+
+resource "google_artifact_registry_repository_iam_member" "serverless_runtime" {
+  project    = var.project_id
+  location   = google_artifact_registry_repository.applications.location
+  repository = google_artifact_registry_repository.applications.repository_id
+  role       = "roles/artifactregistry.reader"
+  member     = "serviceAccount:service-${data.google_project.current.number}@serverless-robot-prod.iam.gserviceaccount.com"
+
+  depends_on = [google_artifact_registry_repository.applications]
 }
 
 module "iam_service_accounts" {
@@ -54,6 +84,7 @@ module "iam_service_account_bindings" {
       roles = [
         "roles/datastore.user",
         "roles/storage.objectViewer",
+        "roles/artifactregistry.reader",
         "roles/secretmanager.secretAccessor",
         "roles/logging.logWriter",
         "roles/monitoring.metricWriter"
@@ -65,6 +96,7 @@ module "iam_service_account_bindings" {
       roles = [
         "roles/datastore.viewer",
         "roles/storage.objectViewer",
+        "roles/artifactregistry.reader",
         "roles/secretmanager.secretAccessor",
         "roles/logging.logWriter",
         "roles/monitoring.metricWriter"
@@ -77,6 +109,7 @@ module "iam_service_account_bindings" {
         "roles/datastore.user",
         "roles/storage.objectAdmin",
         "roles/run.invoker",
+        "roles/artifactregistry.reader",
         "roles/secretmanager.secretAccessor",
         "roles/pubsub.publisher",
         "roles/logging.logWriter",
@@ -89,6 +122,7 @@ module "iam_service_account_bindings" {
       roles = [
         "roles/datastore.user",
         "roles/storage.objectAdmin",
+        "roles/artifactregistry.reader",
         "roles/secretmanager.secretAccessor",
         "roles/logging.logWriter",
         "roles/monitoring.metricWriter"
@@ -100,6 +134,13 @@ module "iam_service_account_bindings" {
       roles = [
         "roles/datastore.user",
         "roles/cloudkms.cryptoKeyEncrypterDecrypter"
+      ]
+    }
+
+    infra = {
+      member = "serviceAccount:${module.iam_service_accounts.emails["infra"]}"
+      roles = [
+        "roles/artifactregistry.writer"
       ]
     }
   }
@@ -151,7 +192,7 @@ locals {
   scheduled_run_jobs = {
     for job_key, job in local.run_job_configs :
     job_key => job
-    if contains(keys(job), "schedule") && job.schedule != null && trim(job.schedule) != ""
+    if contains(keys(job), "schedule") && job.schedule != null && trimspace(job.schedule) != ""
   }
 
   scheduler_service_account_emails = toset([

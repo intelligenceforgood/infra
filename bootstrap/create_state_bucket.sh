@@ -37,6 +37,7 @@ APIS=(
   cloudresourcemanager.googleapis.com
   compute.googleapis.com
   run.googleapis.com
+  artifactregistry.googleapis.com
   iam.googleapis.com
   iamcredentials.googleapis.com
   serviceusage.googleapis.com

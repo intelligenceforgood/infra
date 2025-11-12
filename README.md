@@ -1,145 +1,151 @@
 # Intelligence for Good — Infrastructure
 
-This repository manages Terraform modules, environment configuration, and automation for deploying the i4g platform on Google Cloud Platform. The workflow is intentionally Terraform-CLI only—no Terraform Cloud/SaaS dependency—so everything runs from laptops or GitHub Actions with the same source of truth. For application setup and local development details, refer to `proto/docs/dev_guide.md`.
+This Terraform package defines all shared infrastructure for the i4g platform on Google Cloud. It is designed for the Terraform CLI (local laptops and GitHub Actions) with state stored in Google Cloud Storage. Application-specific runbooks live in `proto/docs/dev_guide.md`.
 
-## Structure (proposed)
-- `bootstrap/` — one-time helpers for creating the state bucket, service accounts, and enabling required APIs.
-- `environments/` — environment-specific configuration (`dev`, `prod`). Each folder contains a root module that stitches reusable modules together.
-- `modules/` — reusable Terraform modules (Cloud Run services, Cloud Storage buckets, IAM roles, log sinks, Secret Manager entries, etc.).
-- `policy/` — optional OPA/Conftest policies for static checks before apply.
-- `scripts/` — helper scripts for linting (`terraform fmt`, `tflint`), drift detection, or CI wrappers.
-- `.github/workflows/` — automation for plan/apply, lint, and policy checks using GitHub Actions + Workload Identity Federation.
+---
 
-## Remote State & Locking (No Terraform Cloud)
-- **Backend**: Terraform CLI with the native `gcs` backend.
-	- Bucket name pattern: `tfstate-i4g-{env}` (per project). Create with uniform bucket-level access, versioning enabled, and `prevent_destroy` in Terraform once bootstrapped.
-	- Locking: `gcs` backend already uses object generations for optimistic locking; no separate datastore required.
-- **Bootstrap**: run `bootstrap/create_state_bucket.sh` (to be added) once with the `gcloud` CLI. It provisions the bucket, enables required services (`cloudresourcemanager`, `run`, `iam`, `secretmanager`, etc.), and creates the automation service account `sa-infra@{project}` with least-privilege roles (`roles/storage.admin` on the state bucket, `roles/resourcemanager.projectIamAdmin`, `roles/run.admin`, `roles/iam.securityReviewer`, etc.).
-- **Authentication**:
-	- Locally: `gcloud auth application-default login` or `gcloud auth login` + `gcloud config set project {project}`. Terraform can impersonate `sa-infra@{project}` using `google_client_config` + `impersonate_service_account` in the backend block.
-	- CI/CD: GitHub Actions workflow uses Workload Identity Federation (WIF). We create a provider mapped to the repository and grant `sa-infra@{project}` `roles/iam.workloadIdentityUser` for that provider so no JSON keys are stored in GitHub.
+## Repository Layout
+- `bootstrap/` – one-time helpers (state bucket creation, API enablement).
+- `environments/` – root modules for each deployment target (`dev`, `prod`).
+- `modules/` – reusable building blocks (Cloud Run services/jobs, IAM, buckets, scheduler, etc.).
+- `.github/workflows/` – Terraform plan/apply automation that authenticates via Workload Identity Federation.
 
-Example backend configuration (placed in each environment root module):
+---
 
-```hcl
-terraform {
-	backend "gcs" {
-		bucket                      = "tfstate-i4g-dev"
-		prefix                      = "env/dev"
-		impersonate_service_account = "sa-infra@i4g-dev.iam.gserviceaccount.com"
-	}
-	required_version = ">= 1.9.0, < 2.0.0"
-}
+## Prerequisites
+- Terraform `>= 1.9.0 < 2.0.0`.
+- Google Cloud SDK (`gcloud`) with the alpha storage component.
+- Access to the target project with permissions to enable services, create storage buckets, and manage IAM.
+
+Authenticate before touching Terraform:
+
+```bash
+gcloud auth login
+gcloud auth application-default login
 ```
 
-## Workflow Overview
-1. **Author changes** in a feature branch under `modules/` or `environments/{env}`.
-2. **terraform fmt && tflint** locally; run `terraform plan` from the relevant environment folder. The plan uses the shared GCS backend through impersonation.
-3. **Open a PR**; GitHub Actions executes lint + plan jobs (dry-run only) using WIF.
-4. **Review the plan output** attached to the PR. Once approved, merge to `main`.
-5. **Apply stage**: a separate workflow (manual dispatch or triggered on `main`) runs `terraform apply` with the same backend and service account.
-6. **Drift detection**: nightly workflow runs `terraform plan -detailed-exitcode` and alerts if drift is detected.
+If you manage Vertex/Discovery Engine resources locally, scope Application Default Credentials to the project to avoid `SERVICE_DISABLED` errors:
 
-No SaaS state management is involved; everything relies on GCS + IAM.
+```bash
+gcloud auth application-default set-quota-project i4g-dev
+```
 
-## Dev → Prod Promotion Flow
+Replace `i4g-dev` with the project you are targeting.
 
-1. **Build & publish images:**
-	- Dev merges build and push `:dev` tags to Artifact Registry (`applications/fastapi:dev`, `streamlit:dev`).
-	- After validation, retag the approved image digests to `:prod` (for example `gcloud artifacts docker tags add ...`).
-2. **Deploy to dev:**
-	- Terraform applies run automatically via `.github/workflows/terraform-dev.yml` on merges to `main`, keeping the `i4g-dev` Cloud Run services current.
-3. **Promote infrastructure:**
-	- Run `terraform plan/apply` from `environments/prod/` once prod configuration changes are ready. Applies may be manual (`terraform apply -var-file=terraform.tfvars`) or executed via a prod workflow (future automation).
-4. **Promote application services:**
-	- Update the prod tfvars with the new `:prod` tags if necessary and apply.
-	- Cloud Run revisions roll out automatically; use `gcloud run services update` only for emergency hotfixes.
-5. **Post-deploy checks:**
-	- Verify FastAPI/Streamlit health endpoints, run smoke tests, and confirm Vertex AI Search connectivity.
-	- Document outcomes in `planning/change_log.md` when material architecture shifts occur.
+---
 
-## Module Roadmap
-To align with the security matrix in `planning/future_architecture.md`, we will introduce modules under `modules/` as follows:
+## Bootstrapping a New Environment
+Run these steps once per GCP project before Terraform `init`.
 
-- ✅ `iam/service_accounts`: create core service accounts (`sa-fastapi`, `sa-streamlit`, `sa-ingest`, `sa-report`, `sa-vault`, `sa-infra`) with labels and Workload Identity annotations.
-- ✅ `iam/workload_identity_github`: workload identity pool/provider for GitHub Actions tokens (implemented for dev).
-- `iam/roles`: manage custom IAM roles (e.g., narrowed Vertex AI Search access, read-only Firestore roles, signed URL issuers).
-- ✅ `iam/service_account_bindings`: attach roles to service accounts per environment, including conditional bindings for signed URL creation and Secret Manager access.
-- `network/vpc`: provision VPC, subnets, and Serverless VPC connectors for Cloud Run → AlloyDB/Cloud SQL connectivity.
-- ✅ `storage/buckets`: configure evidence/report buckets with lifecycle rules, uniform access, CMEK if required.
-- ✅ `run/service`: parameterized Cloud Run service module (image, service account, env vars, ingress). Variants for FastAPI, Streamlit, tokenization microservice.
-- ✅ `run/job`: Cloud Run job module for ingestion/report workers.
-- ✅ `scheduler/job`: Cloud Scheduler jobs triggering Cloud Run jobs with OIDC tokens.
-- `secrets/manager`: define Secret Manager entries, rotation windows, and IAM bindings.
-- `observability/logging`: sinks to BigQuery/Storage, uptime checks, alerting policies.
+1. **Create state bucket and automation service account.**
 
-Environment roots (`environments/dev/main.tf`, etc.) compose these modules and pass project-specific values.
+	 ```bash
+	 ./bootstrap/create_state_bucket.sh dev i4g-dev
+	 ```
 
-## Identity & Access Strategy (Terraform View)
-- Service accounts mirror the role-to-capability matrix. Each binding is declared in Terraform, making drift visible during plan.
-- Workload Identity Federation resources live in `modules/iam/workload_identity_github`, defining pools/providers for GitHub Actions (extend with additional modules for other issuers if needed).
-- OAuth clients for Google Identity Platform can be managed via Terraform’s `google_identity_platform_oauth_idp_config` resources; local development uses mock tokens outside Terraform scope.
-- Secrets rotation schedules are represented via Cloud Scheduler jobs + Cloud Run jobs modules, wired to call rotation workflows.
+	 The script enables the core APIs (including Artifact Registry), creates `tfstate-i4g-dev`, and provisions `sa-infra@i4g-dev.iam.gserviceaccount.com` with required roles.
 
-## Getting Started
-1. Clone the repo and run `scripts/check_tools.sh` (to be added) to verify `terraform`, `tflint`, and `gcloud` availability.
-2. Authenticate with `gcloud`: `gcloud auth login && gcloud auth application-default login`.
-3. If you plan to manage Vertex/Discovery Engine resources from your workstation, attach the dev project as the quota project for Application Default Credentials:
+2. **Configure Terraform backend.** Add the emitted snippet to `environments/<env>/backend.tf` if it differs from the checked-in example:
 
-	```bash
-	gcloud auth application-default set-quota-project i4g-dev
-	```
+	 ```hcl
+	 terraform {
+		 backend "gcs" {
+			 bucket                      = "tfstate-i4g-dev"
+			 prefix                      = "env/dev"
+			 impersonate_service_account = "sa-infra@i4g-dev.iam.gserviceaccount.com"
+		 }
+	 }
+	 ```
 
-	Replace `i4g-dev` when targeting another environment. Without this, Discovery Engine API calls fail with `SERVICE_DISABLED` even when the API is enabled.
-4. Create the state bucket and automation service account: `./bootstrap/create_state_bucket.sh dev` (script will output bucket name and service account email).
-5. Navigate to `environments/dev/` and run `terraform init`.
-6. Run `terraform plan` to verify backend connectivity (override `-var "github_repository=owner/repo"` if using a fork).
+3. **Initialize Terraform.** From `environments/dev/` (or `prod/`):
 
-## GitHub Actions Workflow (Dev Terraform)
+	 ```bash
+	 terraform init
+	 ```
 
-Workflow file: `.github/workflows/terraform-dev.yml`.
+	 Initialization uses your local ADC credentials but impersonates `sa-infra` for all state operations and plans.
 
-1. **Create repository variables** (`Settings → Variables → Actions`):
-	- `TF_GCP_PROJECT_ID` → `i4g-dev`
-	- `TF_GCP_WORKLOAD_IDENTITY_PROVIDER` → workload identity provider resource path (e.g., `projects/123456789/locations/global/workloadIdentityPools/github-actions/providers/proto`)
-	- `TF_GCP_SERVICE_ACCOUNT` → automation service account email (`sa-infra@i4g-dev.iam.gserviceaccount.com`)
-2. The workflow uses `google-github-actions/auth@v2` to exchange GitHub OIDC tokens for short-lived credentials and runs `terraform fmt/plan` on pull requests touching `infra/**`.
-3. On merges to `main`, the workflow re-runs plan and `apply -auto-approve` so state stays in sync with the repo. Override `github_repository` via repository variable or by editing the workflow if you run from a fork.
+---
 
-### Later: Move Projects Under the Official Org/Billing
-Once the nonprofit has a Google Cloud Organization and billing account:
+## Day-to-Day Workflow
+1. Work from a feature branch and edit files under `modules/` or `environments/<env>/`.
+2. Format and lint locally: `terraform fmt -recursive` (tflint optional but recommended).
+3. Run `terraform plan` inside the relevant environment directory. Provide overrides such as `-var "github_repository=owner/repo"` if you are testing from a fork.
+4. Open a pull request. GitHub Actions (`.github/workflows/terraform-dev.yml`) re-runs `fmt` and `plan` using Workload Identity Federation.
+5. After review merge into `main`. Dev applies run automatically; prod applies remain manual for now.
 
-1. **Link billing:**
+---
 
-		```bash
-		gcloud beta billing projects link <project_id> \
-			--billing-account=<BILLING_ACCOUNT_ID>
-		```
+## Promoting to Production
+1. Build and publish container images to Artifact Registry (`applications/<service>:dev`).
+2. When ready to promote, retag the tested digests to `:prod` or update the prod `terraform.tfvars` image references explicitly.
+3. Import any pre-existing service accounts into Terraform state (see Troubleshooting) to avoid recreation conflicts.
+4. From `environments/prod/` run:
 
-2. **Create org folder (optional):** organize projects under a folder (e.g., `i4g-environments`).
+	 ```bash
+	 terraform plan
+	 terraform apply
+	 ```
 
-3. **Grant admin roles:** add org administrators as `projectOwner` or custom roles on each project.
+5. Smoke test FastAPI and Streamlit endpoints, confirm Cloud Run jobs, and update `planning/change_log.md` with noteworthy outcomes.
 
-4. **Move projects into the org:**
+---
+
+## Container Images & Artifact Registry
+- Terraform now manages the regional `applications` repository in Artifact Registry and grants runtime read access plus writer access to `sa-infra`.
+- Docker build/push commands should target `us-central1-docker.pkg.dev/<project>/applications/<name>:<tag>`.
+- For local pushes make sure `gcloud auth configure-docker us-central1-docker.pkg.dev` has been run once; CI uses Workload Identity Federation automatically.
+
+---
+
+## Troubleshooting
+- **`failed to fetch oauth token: Repository "applications" not found`**
+	- Ensure the Artifact Registry API is enabled. `./bootstrap/create_state_bucket.sh` covers this; if you skipped it run `gcloud services enable artifactregistry.googleapis.com --project <project>`.
+	- Apply Terraform in `environments/<env>/` to create the `applications` repository before pushing images.
+
+- **`alreadyExists: Service account ...` during apply**
+	- Import the resource instead of recreating it:
 
 		```bash
-		gcloud beta projects move <project_id> \
-			--organization=<ORG_ID>
+		terraform import \
+			'module.iam_service_accounts.google_service_account.this["infra"]' \
+			projects/<project>/serviceAccounts/sa-infra@<project>.iam.gserviceaccount.com
 		```
 
-	 (Use `--folder=<FOLDER_ID>` if moving into a specific folder.)
+	- Repeat for any other pre-existing accounts (`fastapi`, `streamlit`, etc.).
 
-5. **Update Terraform backend impersonation:** ensure `sa-infra@{project}` has `roles/iam.serviceAccountTokenCreator` and `roles/iam.workloadIdentityUser` as needed in the new org.
+- **`permission denied for impersonating sa-infra`**
+	- Grant the operator account (or GitHub Actions WIF principal) `roles/iam.serviceAccountTokenCreator` on `sa-infra`.
+	- Verify your backend block includes `impersonate_service_account` and you re-ran `terraform init` after edits.
 
-6. **Audit IAM:** run `terraform plan` to confirm bindings align with the new org context.
+- **Cloud Scheduler failures calling jobs**
+	- Schedulers are only created when a job definition includes a non-empty `schedule`. Keep `schedule` omitted while iterating to avoid premature triggers.
+	- Confirm the Cloud Scheduler service account (`service-<project-number>@gcp-sa-cloudscheduler.iam.gserviceaccount.com`) has `roles/iam.serviceAccountTokenCreator`. Terraform now manages this binding automatically; re-apply if missing.
+
+- **Discovery Engine (Vertex AI Search) requests fail with `SERVICE_DISABLED`**
+	- Run `gcloud auth application-default set-quota-project <project>` so ADC requests bill against the project with the API enabled.
+
+---
+
+## GitHub Actions Configuration
+The dev workflow lives at `.github/workflows/terraform-dev.yml`.
+
+Set the following repository variables under `Settings → Variables → Actions`:
+- `TF_GCP_PROJECT_ID` – e.g., `i4g-dev`.
+- `TF_GCP_WORKLOAD_IDENTITY_PROVIDER` – resource path like `projects/123456789/locations/global/workloadIdentityPools/github-actions/providers/proto`.
+- `TF_GCP_SERVICE_ACCOUNT` – `sa-infra@i4g-dev.iam.gserviceaccount.com`.
+
+The workflow uses `google-github-actions/auth@v2` to exchange the GitHub OIDC token for Google credentials, then runs `terraform fmt` and `terraform plan`. Apply automation for prod can be added later following the same pattern.
+
+---
 
 ## Guidelines
-- Keep Terraform versions pinned via `required_version` and modules pinned via `required_providers`.
-- Prefer least-privilege IAM roles; document every custom role in module README files.
-- Use pull requests for all infrastructure changes; plans must be reviewed before apply.
-- Avoid committing credentials—rely on WIF or short-lived impersonation tokens.
+- Keep Terraform version pins in sync across modules and environments.
+- Prefer least-privilege IAM policies and document exceptions inline.
+- Use pull requests for every change; never apply directly from a local `main`.
+- Store no long-lived credentials—use impersonation or Workload Identity Federation.
 
-## Related Repositories
-- `intelligenceforgood/i4g` — application services.
-- `intelligenceforgood/docs` — public documentation site.
-- `intelligenceforgood/proto` — experimental prototypes.
+Related repositories:
+- `intelligenceforgood/proto` – prototype and shared utilities.
+- `intelligenceforgood/i4g` – production application services.
+- `intelligenceforgood/docs` – public documentation site.
