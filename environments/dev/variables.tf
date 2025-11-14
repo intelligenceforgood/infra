@@ -55,6 +55,12 @@ variable "storage_bucket_default_location" {
   default     = "US"
 }
 
+variable "firestore_location" {
+  type        = string
+  description = "Location/region for the default Firestore database."
+  default     = "us-central1"
+}
+
 variable "storage_buckets" {
   description = "Map of storage bucket configurations keyed by logical name."
   type = map(object({

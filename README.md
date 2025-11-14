@@ -118,7 +118,7 @@ Run these steps once per GCP project before Terraform `init`.
 	- Grant the operator account (or GitHub Actions WIF principal) `roles/iam.serviceAccountTokenCreator` on `sa-infra`.
 	- Verify your backend block includes `impersonate_service_account` and you re-ran `terraform init` after edits.
 
-- **Cloud Scheduler failures calling jobs**
+- **Cloud Scheduler failures ~~calling~~ jobs**
 	- Schedulers are only created when a job definition includes a non-empty `schedule`. Keep `schedule` omitted while iterating to avoid premature triggers.
 	- Confirm the Cloud Scheduler service account (`service-<project-number>@gcp-sa-cloudscheduler.iam.gserviceaccount.com`) has `roles/iam.serviceAccountTokenCreator`. Terraform now manages this binding automatically; re-apply if missing.
 
