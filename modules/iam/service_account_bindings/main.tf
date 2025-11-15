@@ -13,16 +13,20 @@ locals {
   binding_entries = flatten([
     for binding_key, binding in var.bindings : [
       for role in binding.roles : {
-        key    = "${binding_key}-${role}"
         role   = role
         member = binding.member
       }
     ]
   ])
+
+  binding_entries_map = zipmap(
+    range(length(local.binding_entries)),
+    local.binding_entries,
+  )
 }
 
 resource "google_project_iam_member" "this" {
-  for_each = { for entry in local.binding_entries : entry.key => entry }
+  for_each = local.binding_entries_map
 
   project = var.project_id
   role    = each.value.role

@@ -12,6 +12,10 @@ streamlit_image = "us-central1-docker.pkg.dev/i4g-prod/applications/streamlit:pr
 streamlit_env_vars = {
   I4G_ENV                = "prod"
   STREAMLIT_SERVER_TITLE = "i4g Analyst Dashboard"
+  I4G_VERTEX_SEARCH_PROJECT        = "i4g-prod"
+  I4G_VERTEX_SEARCH_LOCATION       = "global"
+  I4G_VERTEX_SEARCH_DATA_STORE     = "retrieval-prod"
+  I4G_VERTEX_SEARCH_SERVING_CONFIG = "default_search"
 }
 
 vertex_search_data_store_id = "retrieval-prod"

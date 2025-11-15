@@ -90,6 +90,16 @@ resource "google_service_account_iam_binding" "infra_wif" {
   ]
 }
 
+resource "google_project_iam_custom_role" "streamlit_discovery_search" {
+  project     = var.project_id
+  role_id     = "streamlitDiscoverySearch"
+  title       = "Streamlit Discovery Engine Search"
+  description = "Allows the Streamlit service to call Discovery Engine search APIs"
+  permissions = [
+    "discoveryengine.servingConfigs.search"
+  ]
+}
+
 module "iam_service_account_bindings" {
   source     = "../../modules/iam/service_account_bindings"
   project_id = var.project_id
@@ -114,6 +124,7 @@ module "iam_service_account_bindings" {
         "roles/storage.objectViewer",
         "roles/artifactregistry.reader",
         "roles/secretmanager.secretAccessor",
+        google_project_iam_custom_role.streamlit_discovery_search.name,
         "roles/logging.logWriter",
         "roles/monitoring.metricWriter"
       ]
