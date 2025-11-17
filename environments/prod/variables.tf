@@ -3,6 +3,14 @@ variable "project_id" {
   description = "GCP project ID for the prod environment."
 }
 
+variable "project_owner_members" {
+  type        = list(string)
+  description = "Principals granted Owner on the project."
+  default = [
+    # "user:smabry@getdarktower.com"
+  ]
+}
+
 variable "region" {
   type        = string
   description = "Primary region for regional resources."
@@ -43,6 +51,12 @@ variable "streamlit_env_vars" {
   default     = {}
 }
 
+variable "streamlit_invoker_members" {
+  type        = list(string)
+  description = "Principals granted Cloud Run invoker on the Streamlit service."
+  default     = []
+}
+
 variable "streamlit_invoker_member" {
   type        = string
   description = "Principal granted Cloud Run invoker on the Streamlit service (leave blank to use defaults)."
@@ -70,14 +84,14 @@ variable "firestore_location" {
 variable "storage_buckets" {
   description = "Map of storage bucket configurations keyed by logical name."
   type = map(object({
-    name                       = string
-    location                   = optional(string)
-    storage_class              = optional(string)
-    labels                     = optional(map(string))
-    force_destroy              = optional(bool)
+    name                        = string
+    location                    = optional(string)
+    storage_class               = optional(string)
+    labels                      = optional(map(string))
+    force_destroy               = optional(bool)
     uniform_bucket_level_access = optional(bool)
     public_access_prevention    = optional(string)
-    versioning                 = optional(bool)
+    versioning                  = optional(bool)
     lifecycle_rules = optional(list(object({
       action = object({
         type          = string
@@ -103,32 +117,37 @@ variable "storage_buckets" {
 variable "run_jobs" {
   description = "Definitions for Cloud Run jobs to deploy in the environment."
   type = map(object({
-    enabled                         = optional(bool)
-    name                            = string
-    image                           = string
-    service_account_key             = string
-    location                        = optional(string)
-    env_vars                        = optional(map(string))
-    command                         = optional(list(string))
-    args                            = optional(list(string))
-    labels                          = optional(map(string))
-    annotations                     = optional(map(string))
-    parallelism                     = optional(number)
-    task_count                      = optional(number)
-    max_retries                     = optional(number)
-    timeout_seconds                 = optional(number)
-    resource_limits                 = optional(map(string))
-    vpc_connector                   = optional(string)
-    vpc_connector_egress_settings   = optional(string)
-    schedule                        = optional(string)
-    time_zone                       = optional(string)
-    description                     = optional(string)
-    scheduler_name                  = optional(string)
-    scheduler_service_account_key   = optional(string)
+    enabled             = optional(bool)
+    name                = string
+    image               = string
+    service_account_key = string
+    location            = optional(string)
+    env_vars            = optional(map(string))
+    secret_env_vars = optional(map(object({
+      secret  = string
+      version = optional(string)
+    })))
+    command                            = optional(list(string))
+    args                               = optional(list(string))
+    labels                             = optional(map(string))
+    annotations                        = optional(map(string))
+    parallelism                        = optional(number)
+    task_count                         = optional(number)
+    max_retries                        = optional(number)
+    timeout_seconds                    = optional(number)
+    resource_limits                    = optional(map(string))
+    vpc_connector                      = optional(string)
+    vpc_connector_egress_settings      = optional(string)
+    schedule                           = optional(string)
+    time_zone                          = optional(string)
+    description                        = optional(string)
+    scheduler_name                     = optional(string)
+    scheduler_service_account_key      = optional(string)
     scheduler_attempt_deadline_seconds = optional(number)
-    scheduler_body                  = optional(string)
-    scheduler_headers               = optional(map(string))
-    scheduler_audience              = optional(string)
+    scheduler_body                     = optional(string)
+    scheduler_headers                  = optional(map(string))
+    scheduler_audience                 = optional(string)
+    scheduler_oauth_scopes             = optional(list(string))
   }))
   default = {}
 }

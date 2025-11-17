@@ -16,9 +16,27 @@ resource "google_project_service" "cloud_scheduler" {
   disable_on_destroy = false
 }
 
+resource "google_project_service" "compute" {
+  project            = var.project_id
+  service            = "compute.googleapis.com"
+  disable_on_destroy = false
+}
+
+resource "google_project_service" "vpc_access" {
+  project            = var.project_id
+  service            = "vpcaccess.googleapis.com"
+  disable_on_destroy = false
+}
+
 resource "google_project_service" "artifact_registry" {
   project            = var.project_id
   service            = "artifactregistry.googleapis.com"
+  disable_on_destroy = false
+}
+
+resource "google_project_service" "secret_manager" {
+  project            = var.project_id
+  service            = "secretmanager.googleapis.com"
   disable_on_destroy = false
 }
 
@@ -29,17 +47,122 @@ resource "google_project_service" "firestore" {
 }
 
 resource "google_firestore_database" "default" {
-  project         = var.project_id
-  name            = "(default)"
-  location_id     = var.firestore_location
-  type            = "FIRESTORE_NATIVE"
+  project          = var.project_id
+  name             = "(default)"
+  location_id      = var.firestore_location
+  type             = "FIRESTORE_NATIVE"
   concurrency_mode = "OPTIMISTIC"
 
   depends_on = [google_project_service.firestore]
 }
 
+resource "google_secret_manager_secret" "azure_sql_connection_string" {
+  project   = var.project_id
+  secret_id = "azure-sql-connection-string"
+
+  replication {
+    user_managed {
+      replicas {
+        location = var.region
+      }
+    }
+  }
+
+  depends_on = [google_project_service.secret_manager]
+}
+
+resource "google_secret_manager_secret" "azure_storage_connection_string" {
+  project   = var.project_id
+  secret_id = "azure-storage-connection-string"
+
+  replication {
+    user_managed {
+      replicas {
+        location = var.region
+      }
+    }
+  }
+
+  depends_on = [google_project_service.secret_manager]
+}
+
+resource "google_secret_manager_secret" "azure_search_admin_key" {
+  project   = var.project_id
+  secret_id = "azure-search-admin-key"
+
+  replication {
+    user_managed {
+      replicas {
+        location = var.region
+      }
+    }
+  }
+
+  depends_on = [google_project_service.secret_manager]
+}
+
 data "google_project" "current" {
   project_id = var.project_id
+}
+
+resource "google_compute_address" "serverless_egress" {
+  project      = var.project_id
+  name         = "serverless-egress-ip"
+  region       = var.region
+  address_type = "EXTERNAL"
+
+  depends_on = [google_project_service.compute]
+}
+
+resource "google_compute_router" "serverless" {
+  project = var.project_id
+  name    = "serverless-egress-router"
+  region  = var.region
+  network = "default"
+
+  depends_on = [google_project_service.compute]
+}
+
+resource "google_compute_router_nat" "serverless" {
+  project                            = var.project_id
+  name                               = "serverless-egress-nat"
+  region                             = var.region
+  router                             = google_compute_router.serverless.name
+  nat_ip_allocate_option             = "MANUAL_ONLY"
+  nat_ips                            = [google_compute_address.serverless_egress.self_link]
+  endpoint_types                     = ["ENDPOINT_TYPE_SERVERLESS"]
+  source_subnetwork_ip_ranges_to_nat = "ALL_SUBNETWORKS_ALL_IP_RANGES"
+  enable_dynamic_port_allocation     = true
+
+  log_config {
+    enable = true
+    filter = "ALL"
+  }
+
+  depends_on = [google_project_service.compute]
+}
+
+resource "google_vpc_access_connector" "serverless" {
+  provider = google-beta
+
+  project = var.project_id
+  name    = "serverless-egress"
+  region  = var.region
+  network = "default"
+
+  ip_cidr_range  = "10.8.0.0/28"
+  min_throughput = 200
+  max_throughput = 300
+
+  depends_on = [google_project_service.vpc_access]
+}
+
+resource "google_project_iam_member" "project_owners" {
+  for_each = toset(var.project_owner_members)
+
+  project = var.project_id
+  role    = "roles/owner"
+  member  = each.value
 }
 
 resource "google_artifact_registry_repository" "applications" {
@@ -170,7 +293,20 @@ module "iam_service_account_bindings" {
         "roles/artifactregistry.writer"
       ]
     }
+
+    scheduler = {
+      member = "serviceAccount:${module.iam_service_accounts.emails["scheduler"]}"
+      roles = [
+        "roles/run.developer"
+      ]
+    }
   }
+}
+
+resource "google_project_iam_member" "ingest_discoveryengine_editor" {
+  project = var.project_id
+  role    = "roles/discoveryengine.editor"
+  member  = "serviceAccount:${module.iam_service_accounts.emails["ingest"]}"
 }
 
 module "vertex_search" {
@@ -196,6 +332,12 @@ module "storage_buckets" {
 }
 
 locals {
+  run_job_vpc_connector_overrides = {
+    weekly_refresh = google_vpc_access_connector.serverless.id
+  }
+}
+
+locals {
   enabled_run_jobs = {
     for job_key, job in var.run_jobs :
     job_key => job
@@ -205,14 +347,19 @@ locals {
   run_job_configs = {
     for job_key, job in local.enabled_run_jobs :
     job_key => merge(job, {
-      runtime_service_account_email   = module.iam_service_accounts.emails[job.service_account_key]
+      runtime_service_account_email = module.iam_service_accounts.emails[job.service_account_key]
       scheduler_service_account_email = module.iam_service_accounts.emails[
         coalesce(
           try(job.scheduler_service_account_key, null),
           job.service_account_key
         )
       ]
-  location                        = coalesce(try(job.location, null), var.region)
+      location = coalesce(try(job.location, null), var.region)
+      vpc_connector = (
+        can(trimspace(job.vpc_connector)) && trimspace(job.vpc_connector) != ""
+        ? job.vpc_connector
+        : lookup(local.run_job_vpc_connector_overrides, job_key, null)
+      )
     })
   }
 
@@ -266,7 +413,8 @@ module "run_streamlit" {
     env     = "dev"
   }
 
-  invoker_member = var.streamlit_invoker_member
+  invoker_member  = var.streamlit_invoker_member
+  invoker_members = var.streamlit_invoker_members
 
   depends_on = [module.iam_service_account_bindings, module.run_fastapi, google_project_service.gemini_cloud_assist]
 }
@@ -282,6 +430,7 @@ module "run_jobs" {
   service_account = each.value.runtime_service_account_email
   image           = each.value.image
   env_vars        = coalesce(try(each.value.env_vars, null), {})
+  secret_env_vars = coalesce(try(each.value.secret_env_vars, null), {})
   command         = coalesce(try(each.value.command, null), [])
   args            = coalesce(try(each.value.args, null), [])
   labels = merge({
@@ -307,17 +456,18 @@ module "run_job_schedulers" {
   project_id = var.project_id
   region     = var.region
 
-  name                      = coalesce(try(each.value.scheduler_name, null), "${each.value.name}-schedule")
-  schedule                  = each.value.schedule
-  time_zone                 = coalesce(try(each.value.time_zone, null), "UTC")
-  description               = try(each.value.description, null)
-  attempt_deadline_seconds  = coalesce(try(each.value.scheduler_attempt_deadline_seconds, null), 300)
-  run_job_name              = module.run_jobs[each.key].name
-  run_job_location          = module.run_jobs[each.key].location
-  service_account_email     = each.value.scheduler_service_account_email
-  audience                  = try(each.value.scheduler_audience, null)
-  headers                   = coalesce(try(each.value.scheduler_headers, null), {})
-  body                      = coalesce(try(each.value.scheduler_body, null), "{}")
+  name                     = coalesce(try(each.value.scheduler_name, null), "${each.value.name}-schedule")
+  schedule                 = each.value.schedule
+  time_zone                = coalesce(try(each.value.time_zone, null), "UTC")
+  description              = try(each.value.description, null)
+  attempt_deadline_seconds = coalesce(try(each.value.scheduler_attempt_deadline_seconds, null), 300)
+  run_job_name             = module.run_jobs[each.key].name
+  run_job_location         = module.run_jobs[each.key].location
+  service_account_email    = each.value.scheduler_service_account_email
+  audience                 = each.value.scheduler_audience != null ? each.value.scheduler_audience : ""
+  headers                  = coalesce(try(each.value.scheduler_headers, null), {})
+  oauth_scopes             = try(each.value.scheduler_oauth_scopes, [])
+  body                     = coalesce(try(each.value.scheduler_body, null), "{}")
 
   depends_on = [module.run_jobs]
 }
@@ -330,4 +480,16 @@ resource "google_service_account_iam_member" "cloud_scheduler_token_creator" {
   member             = "serviceAccount:service-${data.google_project.current.number}@gcp-sa-cloudscheduler.iam.gserviceaccount.com"
 
   depends_on = [google_project_service.cloud_scheduler]
+}
+
+resource "google_cloud_run_v2_job_iam_member" "scheduled_invokers" {
+  for_each = local.scheduled_run_jobs
+
+  project  = var.project_id
+  location = module.run_jobs[each.key].location
+  name     = module.run_jobs[each.key].name
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${each.value.scheduler_service_account_email}"
+
+  depends_on = [module.run_jobs]
 }

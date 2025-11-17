@@ -44,7 +44,7 @@ variable "env_vars" {
 
 variable "container_ports" {
   description = "List of container ports to expose."
-  type        = list(object({
+  type = list(object({
     name           = optional(string)
     container_port = optional(number)
   }))
@@ -111,6 +111,12 @@ variable "invoker_member" {
   type        = string
   description = "Principal granted the invoker role (leave blank to skip binding)."
   default     = ""
+}
+
+variable "invoker_members" {
+  type        = list(string)
+  description = "Additional principals granted the invoker role."
+  default     = []
 }
 
 variable "invoker_role" {

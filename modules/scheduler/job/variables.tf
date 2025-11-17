@@ -48,13 +48,19 @@ variable "run_job_location" {
 
 variable "service_account_email" {
   type        = string
-  description = "Service account email used for OIDC authentication."
+  description = "Service account email used for authenticated requests."
 }
 
 variable "audience" {
   type        = string
-  description = "Optional audience claim for the OIDC token."
+  description = "Optional audience claim for the OIDC token. Ignored when oauth_scopes is provided."
   default     = ""
+}
+
+variable "oauth_scopes" {
+  type        = list(string)
+  description = "Optional list of OAuth scopes. When provided, Cloud Scheduler will mint an OAuth access token instead of an OIDC token."
+  default     = []
 }
 
 variable "headers" {

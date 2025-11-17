@@ -19,10 +19,17 @@ locals {
 
   vpc_annotations = var.vpc_connector == "" ? {} : {
     "run.googleapis.com/vpc-access-connector" = var.vpc_connector,
-    "run.googleapis.com/vpc-egress"            = var.vpc_connector_egress_settings
+    "run.googleapis.com/vpc-egress"           = var.vpc_connector_egress_settings
   }
 
   template_annotations = merge(var.annotations, local.autoscaling_annotations, local.ingress_annotation, local.vpc_annotations)
+  effective_invokers = distinct([
+    for member in concat(
+      var.invoker_member == "" ? [] : [var.invoker_member],
+      var.invoker_members
+    ) : trimspace(member)
+    if trimspace(member) != ""
+  ])
 }
 
 resource "google_cloud_run_service" "this" {
@@ -80,11 +87,11 @@ resource "google_cloud_run_service" "this" {
 }
 
 resource "google_cloud_run_service_iam_member" "invoker" {
-  count = var.invoker_member == "" ? 0 : 1
+  for_each = toset(local.effective_invokers)
 
   project  = var.project_id
   location = var.location
   service  = google_cloud_run_service.this.name
   role     = var.invoker_role
-  member   = var.invoker_member
+  member   = each.value
 }

@@ -46,3 +46,8 @@ output "run_jobs" {
     }
   }
 }
+
+output "serverless_egress_ip" {
+  description = "Static egress IP address used by serverless workloads."
+  value       = google_compute_address.serverless_egress.address
+}

@@ -10,9 +10,9 @@ terraform {
 }
 
 resource "google_cloud_run_v2_job" "this" {
-  name     = var.name
-  location = var.location
-  project  = var.project_id
+  name                = var.name
+  location            = var.location
+  project             = var.project_id
   deletion_protection = var.deletion_protection
 
   template {
@@ -22,9 +22,9 @@ resource "google_cloud_run_v2_job" "this" {
     task_count  = coalesce(var.task_count, 1)
 
     template {
-  service_account = var.service_account
-  timeout         = format("%ss", coalesce(var.timeout_seconds, 600))
-  max_retries     = coalesce(var.max_retries, 3)
+      service_account = var.service_account
+      timeout         = format("%ss", coalesce(var.timeout_seconds, 600))
+      max_retries     = coalesce(var.max_retries, 3)
 
       dynamic "vpc_access" {
         for_each = var.vpc_connector == null || var.vpc_connector == "" ? [] : [var.vpc_connector]
@@ -44,6 +44,19 @@ resource "google_cloud_run_v2_job" "this" {
           content {
             name  = env.key
             value = env.value
+          }
+        }
+
+        dynamic "env" {
+          for_each = var.secret_env_vars
+          content {
+            name = env.key
+            value_source {
+              secret_key_ref {
+                secret  = env.value.secret
+                version = coalesce(lookup(env.value, "version", null), "latest")
+              }
+            }
           }
         }
 

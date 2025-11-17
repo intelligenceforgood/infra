@@ -95,6 +95,8 @@ Run these steps once per GCP project before Terraform `init`.
 - Terraform now manages the regional `applications` repository in Artifact Registry and grants runtime read access plus writer access to `sa-infra`.
 - Docker build/push commands should target `us-central1-docker.pkg.dev/<project>/applications/<name>:<tag>`.
 - For local pushes make sure `gcloud auth configure-docker us-central1-docker.pkg.dev` has been run once; CI uses Workload Identity Federation automatically.
+- `docker/weekly-refresh-job.Dockerfile` builds the Cloud Run job image that executes the Azure -> GCP weekly refresh orchestrator.
+- `scripts/infra/add_azure_secrets.py` adds Secret Manager versions for the Azure connection strings and admin key.
 
 ---
 
@@ -124,6 +126,13 @@ Run these steps once per GCP project before Terraform `init`.
 
 - **Discovery Engine (Vertex AI Search) requests fail with `SERVICE_DISABLED`**
 	- Run `gcloud auth application-default set-quota-project <project>` so ADC requests bill against the project with the API enabled.
+- **Weekly refresh job fails with `Secret version not found`**
+	- Terraform only creates the Secret Manager placeholders; add versions with the helper:
+		```bash
+		python scripts/infra/add_azure_secrets.py --project <project>
+		```
+	- Add `--use-env` to read `AZURE_SQL_CONNECTION_STRING`, `AZURE_STORAGE_CONNECTION_STRING`, and `AZURE_SEARCH_ADMIN_KEY` from the environment if you are automating rotations.
+	- Re-run the Cloud Run job or wait for the next scheduled trigger once versions exist.
 
 ---
 

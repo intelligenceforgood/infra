@@ -29,6 +29,15 @@ variable "env_vars" {
   default     = {}
 }
 
+variable "secret_env_vars" {
+  description = "Secret-backed environment variables injected into the job container."
+  type = map(object({
+    secret  = string
+    version = optional(string)
+  }))
+  default = {}
+}
+
 variable "command" {
   type        = list(string)
   description = "Optional command override for the container."

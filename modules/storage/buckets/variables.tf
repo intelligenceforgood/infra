@@ -6,14 +6,14 @@ variable "project_id" {
 variable "buckets" {
   description = "Map of bucket configurations keyed by logical name."
   type = map(object({
-    name                       = string
-    location                   = optional(string)
-    storage_class              = optional(string)
-    labels                     = optional(map(string))
-    force_destroy              = optional(bool)
+    name                        = string
+    location                    = optional(string)
+    storage_class               = optional(string)
+    labels                      = optional(map(string))
+    force_destroy               = optional(bool)
     uniform_bucket_level_access = optional(bool)
     public_access_prevention    = optional(string)
-    versioning                 = optional(bool)
+    versioning                  = optional(bool)
     lifecycle_rules = optional(list(object({
       action = object({
         type          = string

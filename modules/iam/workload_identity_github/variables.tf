@@ -50,7 +50,7 @@ variable "attribute_condition" {
 
 variable "attribute_mapping" {
   description = "Mapping of OIDC token attributes to Google attributes."
-  type = map(string)
+  type        = map(string)
   default = {
     "google.subject"       = "assertion.sub"
     "attribute.repository" = "assertion.repository"
