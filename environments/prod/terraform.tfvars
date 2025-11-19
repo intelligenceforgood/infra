@@ -72,6 +72,14 @@ run_jobs = {
       I4G_ENV = "prod"
     }
   }
+  intake = {
+    name                = "process-intakes"
+    image               = "us-central1-docker.pkg.dev/i4g-prod/applications/intake-job:prod"
+    service_account_key = "intake"
+    env_vars = {
+      I4G_ENV = "prod"
+    }
+  }
   weekly_refresh = {
     enabled             = false
     name                = "weekly-azure-refresh"

@@ -203,6 +203,18 @@ module "iam_service_account_bindings" {
       ]
     }
 
+    intake = {
+      member = "serviceAccount:${module.iam_service_accounts.emails["intake"]}"
+      roles = [
+        "roles/datastore.user",
+        "roles/storage.objectAdmin",
+        "roles/artifactregistry.reader",
+        "roles/secretmanager.secretAccessor",
+        "roles/logging.logWriter",
+        "roles/monitoring.metricWriter"
+      ]
+    }
+
     report = {
       member = "serviceAccount:${module.iam_service_accounts.emails["report"]}"
       roles = [

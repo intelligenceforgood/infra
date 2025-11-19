@@ -15,6 +15,11 @@ locals {
       display_name = "Ingestion Jobs"
       description  = "Executes scheduled ingestion Cloud Run jobs"
     }
+    intake = {
+      account_id   = "sa-intake"
+      display_name = "Intake Processor"
+      description  = "Processes intake submissions via Cloud Run jobs"
+    }
     scheduler = {
       account_id   = "sa-scheduler"
       display_name = "Scheduler Job Runner"
