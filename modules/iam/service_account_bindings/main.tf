@@ -19,10 +19,10 @@ locals {
     ]
   ])
 
-  binding_entries_map = zipmap(
-    range(length(local.binding_entries)),
-    local.binding_entries,
-  )
+  binding_entries_map = {
+    for binding in local.binding_entries :
+    format("%s|%s", binding.member, binding.role) => binding
+  }
 }
 
 resource "google_project_iam_member" "this" {

@@ -3,12 +3,10 @@ variable "project_id" {
   description = "GCP project ID for the prod environment."
 }
 
-variable "project_owner_members" {
+variable "i4g_analyst_members" {
   type        = list(string)
-  description = "Principals granted Owner on the project."
-  default = [
-    # "user:smabry@getdarktower.com"
-  ]
+  description = "Principals (users, service accounts, or Google Groups) that need Cloud Run access to analyst surfaces."
+  default     = []
 }
 
 variable "region" {
@@ -40,6 +38,12 @@ variable "fastapi_invoker_member" {
   default     = ""
 }
 
+variable "fastapi_invoker_members" {
+  type        = list(string)
+  description = "Additional principals granted Cloud Run invoker on the FastAPI service."
+  default     = []
+}
+
 variable "streamlit_image" {
   type        = string
   description = "Container image URI for the Streamlit Cloud Run service."
@@ -61,6 +65,29 @@ variable "streamlit_invoker_member" {
   type        = string
   description = "Principal granted Cloud Run invoker on the Streamlit service (leave blank to use defaults)."
   default     = ""
+}
+
+variable "console_image" {
+  type        = string
+  description = "Container image URI for the Next.js console Cloud Run service."
+}
+
+variable "console_env_vars" {
+  type        = map(string)
+  description = "Environment variables injected into the console service container."
+  default     = {}
+}
+
+variable "console_invoker_member" {
+  type        = string
+  description = "Principal granted Cloud Run invoker on the console service (leave blank to use IAM policies)."
+  default     = ""
+}
+
+variable "console_invoker_members" {
+  type        = list(string)
+  description = "Additional principals granted Cloud Run invoker on the console service."
+  default     = []
 }
 
 variable "vertex_search_location" {

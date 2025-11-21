@@ -3,12 +3,10 @@ variable "project_id" {
   description = "GCP project ID for the dev environment."
 }
 
-variable "project_owner_members" {
+variable "i4g_analyst_members" {
   type        = list(string)
-  description = "Principals granted Owner on the project."
-  default = [
-    # "user:smabry@getdarktower.com"
-  ]
+  description = "Principals (users, service accounts, or Google Groups) that need Cloud Run access to analyst surfaces."
+  default     = []
 }
 
 variable "region" {
@@ -38,6 +36,12 @@ variable "fastapi_invoker_member" {
   type        = string
   description = "Principal granted Cloud Run invoker on the FastAPI service (leave blank to skip)."
   default     = ""
+}
+
+variable "fastapi_invoker_members" {
+  type        = list(string)
+  description = "Additional principals granted Cloud Run invoker on the FastAPI service."
+  default     = []
 }
 
 variable "streamlit_image" {
@@ -75,6 +79,28 @@ variable "firestore_location" {
   default     = "us-central1"
 }
 
+variable "console_image" {
+  type        = string
+  description = "Container image URI for the Next.js console Cloud Run service."
+}
+
+variable "console_env_vars" {
+  type        = map(string)
+  description = "Environment variables injected into the console service container."
+  default     = {}
+}
+
+variable "console_invoker_member" {
+  type        = string
+  description = "Principal granted Cloud Run invoker on the console service (leave blank to rely on IAM policies)."
+  default     = ""
+}
+
+variable "console_invoker_members" {
+  type        = list(string)
+  description = "Additional principals granted Cloud Run invoker on the console service."
+  default     = []
+}
 variable "storage_buckets" {
   description = "Map of storage bucket configurations keyed by logical name."
   type = map(object({

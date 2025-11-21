@@ -1,3 +1,9 @@
+i4g_analyst_members = [
+  # "group:i4g-analysts@intelligenceforgood.org",
+  "user:jerry@intelligenceforgood.org",
+  "user:jerry.soung@gmail.com",
+]
+
 project_id    = "i4g-dev"
 fastapi_image = "us-central1-docker.pkg.dev/i4g-dev/applications/fastapi:dev"
 
@@ -5,8 +11,6 @@ fastapi_env_vars = {
   I4G_ENV                  = "dev"
   I4G_STORAGE__SQLITE_PATH = "/tmp/i4g_store.db"
 }
-
-fastapi_invoker_member = "allUsers"
 
 streamlit_image = "us-central1-docker.pkg.dev/i4g-dev/applications/streamlit:dev"
 
@@ -20,10 +24,19 @@ streamlit_env_vars = {
   I4G_VERTEX_SEARCH_SERVING_CONFIG = "default_search"
 }
 
-streamlit_invoker_member = ""
-streamlit_invoker_members = [
-  "allUsers",
-]
+streamlit_invoker_member  = ""
+streamlit_invoker_members = []
+
+console_image = "us-central1-docker.pkg.dev/i4g-dev/applications/analyst-console:dev"
+
+console_env_vars = {
+  NEXT_PUBLIC_USE_MOCK_DATA = "false"
+  I4G_API_KIND              = "proto"
+  I4G_API_KEY               = "dev-analyst-token"
+}
+
+console_invoker_member  = ""
+console_invoker_members = []
 
 storage_bucket_default_location = "US"
 storage_buckets = {
@@ -60,7 +73,11 @@ run_jobs = {
     image               = "us-central1-docker.pkg.dev/i4g-dev/applications/intake-job:dev"
     service_account_key = "intake"
     env_vars = {
-      I4G_ENV = "dev"
+      I4G_ENV                   = "dev"
+      I4G_API__KEY              = "dev-analyst-token"
+      I4G_INGEST__ENABLE_VECTOR = "false"
+      I4G_RUNTIME__FALLBACK_DIR = "/tmp/i4g"
+      I4G_STORAGE__SQLITE_PATH  = "/tmp/i4g/sqlite/intake.db"
     }
   }
   weekly_refresh = {

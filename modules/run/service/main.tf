@@ -86,12 +86,12 @@ resource "google_cloud_run_service" "this" {
 
 }
 
-resource "google_cloud_run_service_iam_member" "invoker" {
-  for_each = toset(local.effective_invokers)
+resource "google_cloud_run_service_iam_binding" "invoker" {
+  count = length(local.effective_invokers) > 0 ? 1 : 0
 
   project  = var.project_id
   location = var.location
   service  = google_cloud_run_service.this.name
   role     = var.invoker_role
-  member   = each.value
+  members  = local.effective_invokers
 }

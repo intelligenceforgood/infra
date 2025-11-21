@@ -1,3 +1,10 @@
+i4g_analyst_members = [
+  "user:jerry@intelligenceforgood.org",
+  "user:jerry.soung@gmail.com",
+  # "group:i4g-analysts@intelligenceforgood.org",
+  # "user:jerry@example.com",
+]
+
 project_id    = "i4g-prod"
 fastapi_image = "us-central1-docker.pkg.dev/i4g-prod/applications/fastapi:prod"
 
@@ -17,6 +24,20 @@ streamlit_env_vars = {
   I4G_VERTEX_SEARCH_DATA_STORE     = "retrieval-prod"
   I4G_VERTEX_SEARCH_SERVING_CONFIG = "default_search"
 }
+
+streamlit_invoker_member  = ""
+streamlit_invoker_members = []
+
+console_image = "us-central1-docker.pkg.dev/i4g-prod/applications/analyst-console:prod"
+
+console_env_vars = {
+  NEXT_PUBLIC_USE_MOCK_DATA = "false"
+  I4G_API_KIND              = "proto"
+  I4G_API_KEY               = "prod-analyst-token"
+}
+
+console_invoker_member  = ""
+console_invoker_members = []
 
 vertex_search_data_store_id = "retrieval-prod"
 vertex_search_display_name  = "Retrieval Production Data Store"

@@ -1,14 +1,9 @@
 locals {
   service_accounts = {
-    fastapi = {
-      account_id   = "sa-fastapi"
-      display_name = "FastAPI Cloud Run"
-      description  = "Runs the FastAPI API gateway"
-    }
-    streamlit = {
-      account_id   = "sa-streamlit"
-      display_name = "Streamlit Analyst Portal"
-      description  = "Serves the analyst-facing UI"
+    app = {
+      account_id   = "sa-app"
+      display_name = "Application Runtime"
+      description  = "Runs FastAPI, Streamlit, and console services"
     }
     ingest = {
       account_id   = "sa-ingest"

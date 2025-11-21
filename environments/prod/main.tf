@@ -93,14 +93,6 @@ data "google_project" "current" {
   project_id = var.project_id
 }
 
-resource "google_project_iam_member" "project_owners" {
-  for_each = toset(var.project_owner_members)
-
-  project = var.project_id
-  role    = "roles/owner"
-  member  = each.value
-}
-
 resource "google_artifact_registry_repository" "applications" {
   project       = var.project_id
   location      = var.region
@@ -164,21 +156,10 @@ module "iam_service_account_bindings" {
   project_id = var.project_id
 
   bindings = {
-    fastapi = {
-      member = "serviceAccount:${module.iam_service_accounts.emails["fastapi"]}"
+    app = {
+      member = "serviceAccount:${module.iam_service_accounts.emails["app"]}"
       roles = [
         "roles/datastore.user",
-        "roles/storage.objectViewer",
-        "roles/artifactregistry.reader",
-        "roles/secretmanager.secretAccessor",
-        "roles/logging.logWriter",
-        "roles/monitoring.metricWriter"
-      ]
-    }
-
-    streamlit = {
-      member = "serviceAccount:${module.iam_service_accounts.emails["streamlit"]}"
-      roles = [
         "roles/datastore.viewer",
         "roles/storage.objectViewer",
         "roles/artifactregistry.reader",
@@ -280,6 +261,55 @@ module "storage_buckets" {
 }
 
 locals {
+  i4g_analyst_invokers = [
+    for member in var.i4g_analyst_members : trimspace(member)
+    if trimspace(member) != ""
+  ]
+
+  fastapi_requested_invokers = [
+    for member in concat(
+      var.fastapi_invoker_member == "" ? [] : [var.fastapi_invoker_member],
+      var.fastapi_invoker_members
+    ) : trimspace(member)
+    if trimspace(member) != ""
+  ]
+
+  streamlit_requested_invokers = [
+    for member in concat(
+      var.streamlit_invoker_member == "" ? [] : [var.streamlit_invoker_member],
+      var.streamlit_invoker_members
+    ) : trimspace(member)
+    if trimspace(member) != ""
+  ]
+
+  console_requested_invokers = [
+    for member in concat(
+      var.console_invoker_member == "" ? [] : [var.console_invoker_member],
+      var.console_invoker_members
+    ) : trimspace(member)
+    if trimspace(member) != ""
+  ]
+
+  fastapi_invoker_members = distinct(concat(
+    [format("serviceAccount:%s", module.iam_service_accounts.emails["app"])],
+    local.i4g_analyst_invokers,
+    local.fastapi_requested_invokers
+  ))
+
+  streamlit_invoker_members = distinct(concat(
+    [format("serviceAccount:%s", module.iam_service_accounts.emails["app"])],
+    local.i4g_analyst_invokers,
+    local.streamlit_requested_invokers
+  ))
+
+  console_invoker_members = distinct(concat(
+    [format("serviceAccount:%s", module.iam_service_accounts.emails["app"])],
+    local.i4g_analyst_invokers,
+    local.console_requested_invokers
+  ))
+}
+
+locals {
   enabled_run_jobs = {
     for job_key, job in var.run_jobs :
     job_key => job
@@ -317,7 +347,7 @@ module "run_fastapi" {
   location   = var.region
 
   name            = "fastapi-gateway"
-  service_account = module.iam_service_accounts.emails["fastapi"]
+  service_account = module.iam_service_accounts.emails["app"]
   image           = var.fastapi_image
   env_vars = merge(
     var.fastapi_env_vars,
@@ -331,7 +361,8 @@ module "run_fastapi" {
     env     = "prod"
   }
 
-  invoker_member = var.fastapi_invoker_member != "" ? var.fastapi_invoker_member : format("serviceAccount:%s", module.iam_service_accounts.emails["streamlit"])
+  invoker_member  = ""
+  invoker_members = local.fastapi_invoker_members
 
   depends_on = [module.iam_service_account_bindings, google_project_service.gemini_cloud_assist]
 }
@@ -342,7 +373,7 @@ module "run_streamlit" {
   location   = var.region
 
   name            = "streamlit-analyst-ui"
-  service_account = module.iam_service_accounts.emails["streamlit"]
+  service_account = module.iam_service_accounts.emails["app"]
   image           = var.streamlit_image
   env_vars = merge(
     var.streamlit_env_vars,
@@ -356,10 +387,36 @@ module "run_streamlit" {
     env     = "prod"
   }
 
-  invoker_member  = var.streamlit_invoker_member
-  invoker_members = var.streamlit_invoker_members
+  invoker_member  = ""
+  invoker_members = local.streamlit_invoker_members
 
   depends_on = [module.iam_service_account_bindings, module.run_fastapi, google_project_service.gemini_cloud_assist]
+}
+
+module "run_console" {
+  source     = "../../modules/run/service"
+  project_id = var.project_id
+  location   = var.region
+
+  name            = "i4g-console"
+  service_account = module.iam_service_accounts.emails["app"]
+  image           = var.console_image
+  env_vars = merge(
+    {
+      NEXT_PUBLIC_API_BASE_URL = module.run_fastapi.uri
+      I4G_API_URL              = module.run_fastapi.uri
+    },
+    var.console_env_vars
+  )
+  labels = {
+    service = "console"
+    env     = "prod"
+  }
+
+  invoker_member  = ""
+  invoker_members = local.console_invoker_members
+
+  depends_on = [module.iam_service_account_bindings, module.run_fastapi]
 }
 
 module "run_jobs" {

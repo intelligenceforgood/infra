@@ -4,7 +4,7 @@ This directory provisions the production (`i4g-prod`) stack using the shared Ter
 
 ## Components
 
-- Core service accounts (`sa-fastapi`, `sa-streamlit`, `sa-ingest`, `sa-report`, `sa-vault`, `sa-infra`) plus least-privilege IAM bindings.
+- Core service accounts (`sa-app` shared by FastAPI/Streamlit/console, `sa-ingest`, `sa-report`, `sa-vault`, `sa-infra`) plus least-privilege IAM bindings.
 - GitHub Actions Workload Identity Federation mapped to `sa-infra` so CI can plan/apply without JSON keys.
 - Cloud Run services for FastAPI and Streamlit; no public invokers are granted by default. Streamlit receives the FastAPI URL automatically.
 - Vertex AI Search data store (`retrieval-prod`) for production retrieval workflows.
@@ -13,12 +13,15 @@ This directory provisions the production (`i4g-prod`) stack using the shared Ter
 
 Populate these inputs before planning/applying:
 
+- `i4g_analyst_members` — principals (users or Google Groups such as
+	`group:analysts@example.com`) that should access the analyst-facing Cloud Run services. Terraform grants only the
+	invoker role—add Google Groups here to avoid editing Terraform when team membership changes.
 - `project_id` — GCP project ID (e.g., `i4g-prod`).
 - `fastapi_image` — Artifact Registry image tag for the FastAPI service (`us-central1-docker.pkg.dev/i4g-prod/applications/fastapi:prod`).
 - `fastapi_env_vars` *(optional)* — override or extend the default map (Firestone/Cloud Storage buckets, log level, etc.).
 - `streamlit_image` — Artifact Registry image tag for the Streamlit UI (`us-central1-docker.pkg.dev/i4g-prod/applications/streamlit:prod`).
 - `streamlit_env_vars` *(optional)* — add branding or feature flags; FastAPI URL is injected automatically.
-- `fastapi_invoker_member` / `streamlit_invoker_member` *(optional)* — set explicit principals if needed (for example, IAP service accounts). Leave blank to rely on IAP policies and the automatic Streamlit→FastAPI binding.
+- `fastapi_invoker_member`, `fastapi_invoker_members`, and `streamlit_invoker_member` *(optional)* — set explicit principals if needed (for example, IAP service accounts). Leave blank to rely on existing IAM policies and the automatic Streamlit→FastAPI binding.
 
 ## Usage
 

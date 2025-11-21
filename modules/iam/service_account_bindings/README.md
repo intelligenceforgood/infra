@@ -8,7 +8,7 @@ roles into individual `google_project_iam_member` resources.
 
 - `project_id` – target project ID.
 - `bindings` – map where each entry contains:
-  - `member` – fully qualified principal string (e.g., `serviceAccount:sa-fastapi@project.iam.gserviceaccount.com`).
+  - `member` – fully qualified principal string (e.g., `serviceAccount:sa-app@project.iam.gserviceaccount.com`).
   - `roles` – list of IAM roles to grant at the project scope.
 
 ## Example
@@ -19,8 +19,8 @@ module "iam_service_account_bindings" {
   project_id = var.project_id
 
   bindings = {
-    fastapi = {
-      member = "serviceAccount:${module.iam_service_accounts.emails["fastapi"]}"
+    app = {
+      member = "serviceAccount:${module.iam_service_accounts.emails["app"]}"
       roles  = [
         "roles/datastore.user",
         "roles/storage.objectViewer",

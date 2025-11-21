@@ -19,14 +19,15 @@ module "iam_service_accounts" {
   project_id = var.project_id
 
   service_accounts = {
-    fastapi = {
-      account_id   = "sa-fastapi"
-      display_name = "FastAPI Cloud Run"
-      description  = "Runs the FastAPI API gateway"
+    app = {
+      account_id   = "sa-app"
+      display_name = "Application Runtime"
+      description  = "Runs Streamlit, FastAPI, and console services"
     }
-    streamlit = {
-      account_id   = "sa-streamlit"
-      display_name = "Streamlit Analyst Portal"
+    ingest = {
+      account_id   = "sa-ingest"
+      display_name = "Ingestion Jobs"
+      description  = "Executes scheduled ingestion Cloud Run jobs"
     }
   }
 }
