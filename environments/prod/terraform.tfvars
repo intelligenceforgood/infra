@@ -14,6 +14,10 @@ fastapi_env_vars = {
   I4G_ENV                         = "prod"
   I4G_RUNTIME__LOG_LEVEL          = "WARNING"
   I4G_STORAGE__STRUCTURED_BACKEND = "firestore"
+  I4G_VERTEX_SEARCH_PROJECT        = "i4g-prod"
+  I4G_VERTEX_SEARCH_LOCATION       = "global"
+  I4G_VERTEX_SEARCH_DATA_STORE     = "retrieval-prod"
+  I4G_VERTEX_SEARCH_SERVING_CONFIG = "default_search"
 }
 
 streamlit_image = "us-central1-docker.pkg.dev/i4g-prod/applications/streamlit:prod"
@@ -36,6 +40,10 @@ console_env_vars = {
   NEXT_PUBLIC_USE_MOCK_DATA = "false"
   I4G_API_KIND              = "proto"
   I4G_API_KEY               = "prod-analyst-token"
+  I4G_VERTEX_SEARCH_PROJECT        = "i4g-prod"
+  I4G_VERTEX_SEARCH_LOCATION       = "global"
+  I4G_VERTEX_SEARCH_DATA_STORE     = "retrieval-prod"
+  I4G_VERTEX_SEARCH_SERVING_CONFIG = "default_search"
 }
 
 console_invoker_member  = ""
