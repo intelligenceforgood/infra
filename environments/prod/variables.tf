@@ -15,6 +15,59 @@ variable "region" {
   default     = "us-central1"
 }
 
+variable "iap_support_email" {
+  type        = string
+  description = "Verified Google account email used for the production IAP consent screen."
+}
+
+variable "iap_application_title" {
+  type        = string
+  description = "Display title shown on the production OAuth consent screen."
+  default     = "i4g Analyst Surfaces"
+}
+
+variable "iap_manage_brand" {
+  type        = bool
+  description = "Set to true only if Terraform should create the IAP brand (requires an organization-owned project)."
+  default     = false
+}
+
+variable "iap_existing_brand_name" {
+  type        = string
+  description = "Optional brand resource name when reusing a manually created brand."
+  default     = ""
+}
+
+variable "iap_manage_clients" {
+  type        = bool
+  description = "Set to true to create per-service OAuth clients and store their secrets."
+  default     = false
+}
+
+variable "iap_enable_allowed_domains" {
+  type        = bool
+  description = "Enable allowed domains enforcement for the production IAP project settings."
+  default     = false
+}
+
+variable "iap_allowed_domains" {
+  type        = list(string)
+  description = "Trusted domains used when allowed domains is enabled."
+  default     = []
+}
+
+variable "iap_allow_http_options" {
+  type        = bool
+  description = "Allow unauthenticated HTTP OPTIONS (CORS preflight) requests through IAP."
+  default     = true
+}
+
+variable "iap_secret_replication_locations" {
+  type        = list(string)
+  description = "Secret Manager replica regions storing production OAuth client secrets."
+  default     = []
+}
+
 variable "github_repository" {
   type        = string
   description = "GitHub repository (owner/name) allowed to impersonate automation accounts."

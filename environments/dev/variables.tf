@@ -15,6 +15,65 @@ variable "region" {
   default     = "us-central1"
 }
 
+variable "iap_support_email" {
+  type        = string
+  description = "Verified Google account email used for the IAP OAuth consent screen."
+}
+
+variable "iap_application_title" {
+  type        = string
+  description = "Display title shown on the IAP OAuth consent screen."
+  default     = "i4g Analyst Surfaces"
+}
+
+variable "iap_manage_brand" {
+  type        = bool
+  description = "Set to true only if the project belongs to an organization and Terraform should manage the IAP brand."
+  default     = false
+}
+
+variable "iap_existing_brand_name" {
+  type        = string
+  description = "Optional brand resource name to reuse when Terraform is not creating one."
+  default     = ""
+}
+
+variable "iap_manage_clients" {
+  type        = bool
+  description = "Set to true to create per-service OAuth clients and secrets."
+  default     = false
+}
+
+variable "iap_project_level_bindings" {
+  type        = bool
+  description = "When true, create project-level IAP accessor bindings for `i4g_analyst_members`. Set to false to keep IAP bindings out of project-level IAM (use per-service bindings)."
+  default     = true
+}
+
+variable "iap_enable_allowed_domains" {
+  type        = bool
+  description = "Enable allowed-domains enforcement for IAP project settings."
+  default     = false
+}
+
+variable "iap_allowed_domains" {
+  type        = list(string)
+  description = "Set of trusted domains applied when allowed-domains is enabled."
+  default     = []
+}
+
+variable "iap_allow_http_options" {
+  type        = bool
+  description = "Allow unauthenticated HTTP OPTIONS (CORS preflight) to bypass IAP checks."
+  default     = true
+}
+
+variable "iap_secret_replication_locations" {
+  type        = list(string)
+  description = "Secret Manager replica locations for storing IAP OAuth client secrets."
+  default     = []
+}
+
 variable "github_repository" {
   type        = string
   description = "GitHub repository (owner/name) allowed to impersonate automation accounts."

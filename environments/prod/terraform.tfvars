@@ -5,8 +5,10 @@ i4g_analyst_members = [
   # "user:jerry@example.com",
 ]
 
-project_id    = "i4g-prod"
-fastapi_image = "us-central1-docker.pkg.dev/i4g-prod/applications/fastapi:prod"
+project_id            = "i4g-prod"
+iap_support_email     = "jerry@intelligenceforgood.org"
+iap_application_title = "i4g Analyst Surfaces (Prod)"
+fastapi_image         = "us-central1-docker.pkg.dev/i4g-prod/applications/fastapi:prod"
 
 fastapi_env_vars = {
   I4G_ENV                         = "prod"

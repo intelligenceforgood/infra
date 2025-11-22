@@ -46,3 +46,25 @@ output "run_jobs" {
     }
   }
 }
+
+output "iap" {
+  description = "IAP brand and OAuth client metadata for Cloud Run services."
+  value = {
+    brand_name = module.iap_project.brand_name
+    fastapi = {
+      client_id       = module.iap_fastapi.client_id
+      secret_id       = module.iap_fastapi.secret_id
+      secret_resource = module.iap_fastapi.secret_resource
+    }
+    streamlit = {
+      client_id       = module.iap_streamlit.client_id
+      secret_id       = module.iap_streamlit.secret_id
+      secret_resource = module.iap_streamlit.secret_resource
+    }
+    console = {
+      client_id       = module.iap_console.client_id
+      secret_id       = module.iap_console.secret_id
+      secret_resource = module.iap_console.secret_resource
+    }
+  }
+}

@@ -46,6 +46,21 @@ resource "google_project_service" "firestore" {
   disable_on_destroy = false
 }
 
+resource "google_project_service" "iap" {
+  project            = var.project_id
+  service            = "iap.googleapis.com"
+  disable_on_destroy = false
+}
+
+resource "google_project_service_identity" "iap" {
+  provider = google-beta
+
+  project = var.project_id
+  service = "iap.googleapis.com"
+
+  depends_on = [google_project_service.iap]
+}
+
 resource "google_firestore_database" "default" {
   project          = var.project_id
   name             = "(default)"
@@ -197,12 +212,38 @@ module "github_wif" {
   attribute_condition = "attribute.repository == \"${var.github_repository}\""
 }
 
+module "iap_project" {
+  source = "../../modules/iap/project"
+
+  project_id             = var.project_id
+  support_email          = var.iap_support_email
+  application_title      = var.iap_application_title
+  manage_brand           = var.iap_manage_brand
+  existing_brand_name    = var.iap_existing_brand_name
+  enable_allowed_domains = var.iap_enable_allowed_domains
+  allowed_domains        = var.iap_allowed_domains
+  allow_http_options     = var.iap_allow_http_options
+
+  depends_on = [google_project_service.iap]
+}
+
 resource "google_service_account_iam_binding" "infra_wif" {
   service_account_id = "projects/${var.project_id}/serviceAccounts/${module.iam_service_accounts.emails["infra"]}"
   role               = "roles/iam.workloadIdentityUser"
   members = [
     "principalSet://iam.googleapis.com/${module.github_wif.pool_name}/attribute.repository/${var.github_repository}"
   ]
+}
+
+resource "google_project_iam_member" "iap_analyst" {
+  project = var.project_id
+  role    = "roles/iap.httpsResourceAccessor"
+
+  # Guard the project-level bindings with a toggle so this can be disabled
+  # when moving the project into an Organization (prefer per-service bindings).
+  for_each = var.iap_project_level_bindings ? toset(var.i4g_analyst_members) : toset([])
+
+  member = each.value
 }
 
 resource "google_project_iam_custom_role" "streamlit_discovery_search" {
@@ -360,21 +401,28 @@ locals {
     if trimspace(member) != ""
   ]
 
+  iap_service_agent_member = format(
+    "serviceAccount:service-%s@gcp-sa-iap.iam.gserviceaccount.com",
+    data.google_project.current.number
+  )
+
+  default_runtime_invokers = [
+    format("serviceAccount:%s", module.iam_service_accounts.emails["app"]),
+    local.iap_service_agent_member
+  ]
+
   fastapi_invoker_members = distinct(concat(
-    [format("serviceAccount:%s", module.iam_service_accounts.emails["app"])],
-    local.i4g_analyst_invokers,
+    local.default_runtime_invokers,
     local.fastapi_requested_invokers
   ))
 
   streamlit_invoker_members = distinct(concat(
-    [format("serviceAccount:%s", module.iam_service_accounts.emails["app"])],
-    local.i4g_analyst_invokers,
+    local.default_runtime_invokers,
     local.streamlit_requested_invokers
   ))
 
   console_invoker_members = distinct(concat(
-    [format("serviceAccount:%s", module.iam_service_accounts.emails["app"])],
-    local.i4g_analyst_invokers,
+    local.default_runtime_invokers,
     local.console_requested_invokers
   ))
 }
@@ -439,10 +487,28 @@ module "run_fastapi" {
     env     = "dev"
   }
 
+  ingress = "all"
+
   invoker_member  = ""
   invoker_members = local.fastapi_invoker_members
 
-  depends_on = [module.iam_service_account_bindings, google_project_service.gemini_cloud_assist]
+  depends_on = [module.iam_service_account_bindings, google_project_service.gemini_cloud_assist, google_project_service_identity.iap]
+}
+
+module "iap_fastapi" {
+  source = "../../modules/iap/cloud_run_service"
+
+  project_id                   = var.project_id
+  region                       = var.region
+  service_name                 = module.run_fastapi.name
+  manage_client                = var.iap_manage_clients
+  brand_name                   = module.iap_project.brand_name
+  display_name                 = "FastAPI Gateway"
+  access_members               = local.i4g_analyst_invokers
+  secret_replication_locations = var.iap_secret_replication_locations
+  secret_id                    = "iap-client-fastapi"
+
+  depends_on = [module.run_fastapi]
 }
 
 locals {
@@ -473,10 +539,28 @@ module "run_streamlit" {
     env     = "dev"
   }
 
+  ingress = "all"
+
   invoker_member  = ""
   invoker_members = local.streamlit_invoker_members
 
-  depends_on = [module.iam_service_account_bindings, module.run_fastapi, google_project_service.gemini_cloud_assist]
+  depends_on = [module.iam_service_account_bindings, module.run_fastapi, google_project_service.gemini_cloud_assist, google_project_service_identity.iap]
+}
+
+module "iap_streamlit" {
+  source = "../../modules/iap/cloud_run_service"
+
+  project_id                   = var.project_id
+  region                       = var.region
+  service_name                 = module.run_streamlit.name
+  manage_client                = var.iap_manage_clients
+  brand_name                   = module.iap_project.brand_name
+  display_name                 = "Streamlit Analyst UI"
+  access_members               = local.i4g_analyst_invokers
+  secret_replication_locations = var.iap_secret_replication_locations
+  secret_id                    = "iap-client-streamlit"
+
+  depends_on = [module.run_streamlit]
 }
 
 module "run_console" {
@@ -499,10 +583,28 @@ module "run_console" {
     env     = "dev"
   }
 
+  ingress = "all"
+
   invoker_member  = ""
   invoker_members = local.console_invoker_members
 
-  depends_on = [module.iam_service_account_bindings, module.run_fastapi]
+  depends_on = [module.iam_service_account_bindings, module.run_fastapi, google_project_service_identity.iap]
+}
+
+module "iap_console" {
+  source = "../../modules/iap/cloud_run_service"
+
+  project_id                   = var.project_id
+  region                       = var.region
+  service_name                 = module.run_console.name
+  manage_client                = var.iap_manage_clients
+  brand_name                   = module.iap_project.brand_name
+  display_name                 = "Analyst Console"
+  access_members               = local.i4g_analyst_invokers
+  secret_replication_locations = var.iap_secret_replication_locations
+  secret_id                    = "iap-client-console"
+
+  depends_on = [module.run_console]
 }
 
 module "run_jobs" {

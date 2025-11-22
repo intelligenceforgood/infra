@@ -4,8 +4,10 @@ i4g_analyst_members = [
   "user:jerry.soung@gmail.com",
 ]
 
-project_id    = "i4g-dev"
-fastapi_image = "us-central1-docker.pkg.dev/i4g-dev/applications/fastapi:dev"
+project_id            = "i4g-dev"
+iap_support_email     = "jerry@intelligenceforgood.org"
+iap_application_title = "i4g Analyst Surfaces (Dev)"
+fastapi_image         = "us-central1-docker.pkg.dev/i4g-dev/applications/fastapi:dev"
 
 fastapi_env_vars = {
   I4G_ENV                  = "dev"
@@ -16,7 +18,7 @@ streamlit_image = "us-central1-docker.pkg.dev/i4g-dev/applications/streamlit:dev
 
 streamlit_env_vars = {
   I4G_ENV                          = "dev"
-  I4G_API__KEY                     = "dev-analyst-token"
+  I4G_API__KEY                     = ""  # real token lives in local-overrides.tfvars (see infra/docs/README.md)
   STREAMLIT_SERVER_TITLE           = "i4g Analyst Dashboard"
   I4G_VERTEX_SEARCH_PROJECT        = "i4g-dev"
   I4G_VERTEX_SEARCH_LOCATION       = "global"
@@ -32,7 +34,7 @@ console_image = "us-central1-docker.pkg.dev/i4g-dev/applications/analyst-console
 console_env_vars = {
   NEXT_PUBLIC_USE_MOCK_DATA = "false"
   I4G_API_KIND              = "proto"
-  I4G_API_KEY               = "dev-analyst-token"
+  I4G_API_KEY               = ""  # see infra/docs/README.md for local overrides
 }
 
 console_invoker_member  = ""
