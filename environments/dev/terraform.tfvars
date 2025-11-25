@@ -1,7 +1,9 @@
 i4g_analyst_members = [
-  # "group:i4g-analysts@intelligenceforgood.org",
-  "user:jerry@intelligenceforgood.org",
-  "user:jerry.soung@gmail.com",
+  "group:gcp-i4g-analyst@intelligenceforgood.org",
+]
+
+i4g_admin_members = [
+  "group:gcp-i4g-admin@intelligenceforgood.org",
 ]
 
 project_id            = "i4g-dev"
@@ -10,8 +12,8 @@ iap_application_title = "i4g Analyst Surfaces (Dev)"
 fastapi_image         = "us-central1-docker.pkg.dev/i4g-dev/applications/fastapi:dev"
 
 fastapi_env_vars = {
-  I4G_ENV                  = "dev"
-  I4G_STORAGE__SQLITE_PATH = "/tmp/i4g_store.db"
+  I4G_ENV                          = "dev"
+  I4G_STORAGE__SQLITE_PATH         = "/tmp/i4g_store.db"
   I4G_VERTEX_SEARCH_PROJECT        = "i4g-dev"
   I4G_VERTEX_SEARCH_LOCATION       = "global"
   I4G_VERTEX_SEARCH_DATA_STORE     = "retrieval-poc"
@@ -22,7 +24,7 @@ streamlit_image = "us-central1-docker.pkg.dev/i4g-dev/applications/streamlit:dev
 
 streamlit_env_vars = {
   I4G_ENV                          = "dev"
-  I4G_API__KEY                     = ""  # real token lives in local-overrides.tfvars (see infra/docs/README.md)
+  I4G_API__KEY                     = "" # real token lives in local-overrides.tfvars (see infra/docs/README.md)
   STREAMLIT_SERVER_TITLE           = "i4g Analyst Dashboard"
   I4G_VERTEX_SEARCH_PROJECT        = "i4g-dev"
   I4G_VERTEX_SEARCH_LOCATION       = "global"
@@ -36,9 +38,9 @@ streamlit_invoker_members = []
 console_image = "us-central1-docker.pkg.dev/i4g-dev/applications/analyst-console:dev"
 
 console_env_vars = {
-  NEXT_PUBLIC_USE_MOCK_DATA = "false"
-  I4G_API_KIND              = "proto"
-  I4G_API_KEY               = "dev-analyst-token"
+  NEXT_PUBLIC_USE_MOCK_DATA        = "false"
+  I4G_API_KIND                     = "proto"
+  I4G_API_KEY                      = "dev-analyst-token"
   I4G_VERTEX_SEARCH_PROJECT        = "i4g-dev"
   I4G_VERTEX_SEARCH_LOCATION       = "global"
   I4G_VERTEX_SEARCH_DATA_STORE     = "retrieval-poc"

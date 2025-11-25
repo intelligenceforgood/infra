@@ -25,6 +25,7 @@ Set the following before running `terraform plan`/`apply`:
 
 - `i4g_analyst_members` — principals (`group:analysts@example.com`, `user:analyst@example.com`, etc.) granted
   `roles/iap.httpsResourceAccessor` to reach the analyst-facing Cloud Run services via IAP.
+- `i4g_admin_members` — Workspace groups or users that should hold `roles/owner` for the project (e.g., `group:gcp-i4g-admin@intelligenceforgood.org`). Keep this scoped to the break-glass admin group.
 - `project_id` — GCP project ID (e.g., `i4g-dev`).
 - `iap_support_email` — verified Google account email that owns the OAuth consent screen (IAP brand requirement).
 - `iap_application_title` *(optional)* — overrides the consent screen title (defaults to `i4g Analyst Surfaces`).
@@ -67,6 +68,10 @@ Example `terraform.tfvars` fragment:
 ```hcl
 i4g_analyst_members = [
   "group:analysts@example.com"
+]
+
+i4g_admin_members = [
+  "group:admins@example.com"
 ]
 
 project_id             = "i4g-dev"

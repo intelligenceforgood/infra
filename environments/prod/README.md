@@ -17,6 +17,7 @@ Populate these inputs before planning/applying:
 - `i4g_analyst_members` — principals (users or Google Groups such as
 	`group:analysts@example.com`) that should access the analyst-facing Cloud Run services via IAP. Add Google Groups
 	here to avoid editing Terraform when team membership changes.
+- `i4g_admin_members` — Workspace groups or users that should be granted `roles/owner` on the project (e.g., `group:gcp-i4g-admin@intelligenceforgood.org`) for break-glass administration.
 - `project_id` — GCP project ID (e.g., `i4g-prod`).
 - `iap_support_email` — verified Google account email that owns the production OAuth consent screen.
 - `iap_application_title` *(optional)* — display title on the consent screen (defaults to `i4g Analyst Surfaces`).

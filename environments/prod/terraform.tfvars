@@ -1,8 +1,9 @@
 i4g_analyst_members = [
-  "user:jerry@intelligenceforgood.org",
-  "user:jerry.soung@gmail.com",
-  # "group:i4g-analysts@intelligenceforgood.org",
-  # "user:jerry@example.com",
+  "group:gcp-i4g-analyst@intelligenceforgood.org",
+]
+
+i4g_admin_members = [
+  "group:gcp-i4g-admin@intelligenceforgood.org",
 ]
 
 project_id            = "i4g-prod"
@@ -11,9 +12,9 @@ iap_application_title = "i4g Analyst Surfaces (Prod)"
 fastapi_image         = "us-central1-docker.pkg.dev/i4g-prod/applications/fastapi:prod"
 
 fastapi_env_vars = {
-  I4G_ENV                         = "prod"
-  I4G_RUNTIME__LOG_LEVEL          = "WARNING"
-  I4G_STORAGE__STRUCTURED_BACKEND = "firestore"
+  I4G_ENV                          = "prod"
+  I4G_RUNTIME__LOG_LEVEL           = "WARNING"
+  I4G_STORAGE__STRUCTURED_BACKEND  = "firestore"
   I4G_VERTEX_SEARCH_PROJECT        = "i4g-prod"
   I4G_VERTEX_SEARCH_LOCATION       = "global"
   I4G_VERTEX_SEARCH_DATA_STORE     = "retrieval-prod"
@@ -37,9 +38,9 @@ streamlit_invoker_members = []
 console_image = "us-central1-docker.pkg.dev/i4g-prod/applications/analyst-console:prod"
 
 console_env_vars = {
-  NEXT_PUBLIC_USE_MOCK_DATA = "false"
-  I4G_API_KIND              = "proto"
-  I4G_API_KEY               = "prod-analyst-token"
+  NEXT_PUBLIC_USE_MOCK_DATA        = "false"
+  I4G_API_KIND                     = "proto"
+  I4G_API_KEY                      = "prod-analyst-token"
   I4G_VERTEX_SEARCH_PROJECT        = "i4g-prod"
   I4G_VERTEX_SEARCH_LOCATION       = "global"
   I4G_VERTEX_SEARCH_DATA_STORE     = "retrieval-prod"

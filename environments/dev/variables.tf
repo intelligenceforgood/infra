@@ -9,6 +9,12 @@ variable "i4g_analyst_members" {
   default     = []
 }
 
+variable "i4g_admin_members" {
+  type        = list(string)
+  description = "Principals (Google Workspace groups or users) that should receive project Owner for break-glass admin access."
+  default     = []
+}
+
 variable "region" {
   type        = string
   description = "Primary region for regional resources."

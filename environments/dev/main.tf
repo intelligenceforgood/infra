@@ -246,6 +246,15 @@ resource "google_project_iam_member" "iap_analyst" {
   member = each.value
 }
 
+resource "google_project_iam_member" "project_admins" {
+  project = var.project_id
+  role    = "roles/owner"
+
+  for_each = toset(var.i4g_admin_members)
+
+  member = each.value
+}
+
 resource "google_project_iam_custom_role" "streamlit_discovery_search" {
   project     = var.project_id
   role_id     = "streamlitDiscoverySearch"
