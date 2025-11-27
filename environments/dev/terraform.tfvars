@@ -25,7 +25,7 @@ streamlit_image = "us-central1-docker.pkg.dev/i4g-dev/applications/streamlit:dev
 streamlit_env_vars = {
   I4G_ENV                          = "dev"
   I4G_API__KEY                     = "" # real token lives in local-overrides.tfvars (see infra/docs/README.md)
-  STREAMLIT_SERVER_TITLE           = "i4g Analyst Dashboard"
+  STREAMLIT_SERVER_TITLE           = "I4G Analyst Dashboard"
   I4G_VERTEX_SEARCH_PROJECT        = "i4g-dev"
   I4G_VERTEX_SEARCH_LOCATION       = "global"
   I4G_VERTEX_SEARCH_DATA_STORE     = "retrieval-poc"
@@ -35,7 +35,7 @@ streamlit_env_vars = {
 streamlit_invoker_member  = ""
 streamlit_invoker_members = []
 
-console_image = "us-central1-docker.pkg.dev/i4g-dev/applications/analyst-console:dev"
+console_image = "us-central1-docker.pkg.dev/i4g-dev/applications/i4g-console:dev"
 
 console_env_vars = {
   NEXT_PUBLIC_USE_MOCK_DATA        = "false"
@@ -134,6 +134,19 @@ run_jobs = {
     service_account_key = "report"
     env_vars = {
       I4G_ENV = "dev"
+    }
+  }
+  account_list = {
+    name                = "account-list"
+    image               = "us-central1-docker.pkg.dev/i4g-dev/applications/account-job:dev"
+    service_account_key = "report"
+    env_vars = {
+      I4G_ENV                              = "dev"
+      I4G_ACCOUNT_JOB__WINDOW_DAYS         = "15"
+      I4G_ACCOUNT_JOB__CATEGORIES          = "bank,crypto,payments"
+      I4G_ACCOUNT_JOB__OUTPUT_FORMATS      = "pdf,xlsx"
+      I4G_ACCOUNT_JOB__INCLUDE_SOURCES     = "true"
+      I4G_RUNTIME__LOG_LEVEL               = "INFO"
     }
   }
 }
