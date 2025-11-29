@@ -5,12 +5,12 @@ variable "project_id" {
 
 variable "location" {
   type        = string
-  description = "Location for Discovery Engine resources (use 'global' for search)."
+  description = "Location for Discovery resources (use 'global' for search)."
 }
 
 variable "data_store_id" {
   type        = string
-  description = "Identifier for the Discovery Engine data store."
+  description = "Identifier for the Discovery data store."
 }
 
 variable "display_name" {

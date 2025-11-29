@@ -24,7 +24,7 @@ gcloud auth login
 gcloud auth application-default login
 ```
 
-If you manage Vertex/Discovery Engine resources locally, scope Application Default Credentials to the project to avoid `SERVICE_DISABLED` errors:
+If you manage Vertex/Discovery resources locally, scope Application Default Credentials to the project to avoid `SERVICE_DISABLED` errors:
 
 ```bash
 gcloud auth application-default set-quota-project i4g-dev
@@ -124,7 +124,7 @@ Run these steps once per GCP project before Terraform `init`.
 	- Schedulers are only created when a job definition includes a non-empty `schedule`. Keep `schedule` omitted while iterating to avoid premature triggers.
 	- Confirm the Cloud Scheduler service account (`service-<project-number>@gcp-sa-cloudscheduler.iam.gserviceaccount.com`) has `roles/iam.serviceAccountTokenCreator`. Terraform now manages this binding automatically; re-apply if missing.
 
-- **Discovery Engine (Vertex AI Search) requests fail with `SERVICE_DISABLED`**
+- **Discovery (Vertex AI Search) requests fail with `SERVICE_DISABLED`**
 	- Run `gcloud auth application-default set-quota-project <project>` so ADC requests bill against the project with the API enabled.
 - **Weekly refresh job fails with `Secret version not found`**
 	- Terraform only creates the Secret Manager placeholders; add versions with the helper:

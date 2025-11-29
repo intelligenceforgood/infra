@@ -151,7 +151,7 @@ variable "console_invoker_members" {
 
 variable "vertex_search_location" {
   type        = string
-  description = "Discovery Engine location for Vertex AI Search resources."
+  description = "Discovery location for Vertex AI Search resources."
   default     = "global"
 }
 

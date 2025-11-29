@@ -25,7 +25,7 @@ output "streamlit_service" {
 }
 
 output "vertex_search" {
-  description = "Discovery Engine resources backing Vertex AI Search retrieval."
+  description = "Discovery resources backing Vertex AI Search retrieval."
   value = {
     data_store_name = module.vertex_search.data_store_name
   }

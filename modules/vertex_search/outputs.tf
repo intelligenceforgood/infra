@@ -1,5 +1,5 @@
 output "data_store_name" {
-  description = "Full resource name of the Discovery Engine data store."
+  description = "Full resource name of the Discovery data store."
   value       = google_discovery_engine_data_store.this.name
 }
 

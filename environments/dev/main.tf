@@ -258,8 +258,8 @@ resource "google_project_iam_member" "project_admins" {
 resource "google_project_iam_custom_role" "streamlit_discovery_search" {
   project     = var.project_id
   role_id     = "streamlitDiscoverySearch"
-  title       = "Streamlit Discovery Engine Search"
-  description = "Allows the Streamlit service to call Discovery Engine search APIs"
+  title       = "Streamlit Discovery Search"
+  description = "Allows the Streamlit service to call Discovery search APIs"
   permissions = [
     "discoveryengine.servingConfigs.search"
   ]
