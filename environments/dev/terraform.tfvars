@@ -147,6 +147,17 @@ run_jobs = {
       I4G_ACCOUNT_JOB__OUTPUT_FORMATS      = "pdf,xlsx"
       I4G_ACCOUNT_JOB__INCLUDE_SOURCES     = "true"
       I4G_RUNTIME__LOG_LEVEL               = "INFO"
+      I4G_ACCOUNT_LIST__ENABLE_VECTOR      = "false"
+      I4G_LLM__PROVIDER                    = "mock"
+      I4G_STORAGE__FIRESTORE__PROJECT      = "i4g-dev"
+    }
+  }
+  dossier_queue = {
+    name                = "dossier-queue"
+    image               = "us-central1-docker.pkg.dev/i4g-dev/applications/dossier-job:dev"
+    service_account_key = "report"
+    env_vars = {
+      I4G_ENV = "dev"
     }
   }
 }

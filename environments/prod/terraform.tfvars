@@ -151,4 +151,13 @@ run_jobs = {
       I4G_ENV = "prod"
     }
   }
+  dossier_queue = {
+    enabled             = false
+    name                = "dossier-queue"
+    image               = "us-central1-docker.pkg.dev/i4g-prod/applications/dossier-job:prod"
+    service_account_key = "report"
+    env_vars = {
+      I4G_ENV = "prod"
+    }
+  }
 }
