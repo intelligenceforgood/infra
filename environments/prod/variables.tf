@@ -50,6 +50,12 @@ variable "iap_manage_clients" {
   default     = false
 }
 
+variable "iap_project_level_bindings" {
+  type        = bool
+  description = "When true, create project-level IAP accessor bindings for `i4g_analyst_members`."
+  default     = true
+}
+
 variable "iap_enable_allowed_domains" {
   type        = bool
   description = "Enable allowed domains enforcement for the production IAP project settings."

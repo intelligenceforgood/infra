@@ -189,6 +189,21 @@ resource "google_project_iam_member" "project_admins" {
   member = each.value
 }
 
+resource "google_service_account_iam_member" "report_token_creators" {
+  for_each = toset(var.i4g_admin_members)
+
+  service_account_id = "projects/${var.project_id}/serviceAccounts/${module.iam_service_accounts.emails["report"]}"
+  role               = "roles/iam.serviceAccountTokenCreator"
+  member             = each.value
+}
+
+resource "google_project_iam_member" "iap_report_service_account" {
+  count   = var.iap_project_level_bindings ? 1 : 0
+  project = var.project_id
+  role    = "roles/iap.httpsResourceAccessor"
+  member  = format("serviceAccount:%s", module.iam_service_accounts.emails["report"])
+}
+
 resource "google_project_iam_custom_role" "streamlit_discovery_search" {
   project     = var.project_id
   role_id     = "streamlitDiscoverySearch"
@@ -314,6 +329,13 @@ locals {
     if trimspace(member) != ""
   ]
 
+  report_service_account_member = format("serviceAccount:%s", module.iam_service_accounts.emails["report"])
+
+  fastapi_iap_access_members = distinct(concat(
+    local.i4g_analyst_invokers,
+    [local.report_service_account_member]
+  ))
+
   fastapi_requested_invokers = [
     for member in concat(
       var.fastapi_invoker_member == "" ? [] : [var.fastapi_invoker_member],
@@ -433,7 +455,7 @@ module "iap_fastapi" {
   manage_client                = var.iap_manage_clients
   brand_name                   = module.iap_project.brand_name
   display_name                 = "FastAPI Gateway"
-  access_members               = local.i4g_analyst_invokers
+  access_members               = local.fastapi_iap_access_members
   secret_replication_locations = var.iap_secret_replication_locations
   secret_id                    = "iap-client-fastapi"
 
