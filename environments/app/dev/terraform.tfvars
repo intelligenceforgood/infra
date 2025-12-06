@@ -141,15 +141,15 @@ run_jobs = {
     image               = "us-central1-docker.pkg.dev/i4g-dev/applications/account-job:dev"
     service_account_key = "report"
     env_vars = {
-      I4G_ENV                              = "dev"
-      I4G_ACCOUNT_JOB__WINDOW_DAYS         = "15"
-      I4G_ACCOUNT_JOB__CATEGORIES          = "bank,crypto,payments"
-      I4G_ACCOUNT_JOB__OUTPUT_FORMATS      = "pdf,xlsx"
-      I4G_ACCOUNT_JOB__INCLUDE_SOURCES     = "true"
-      I4G_RUNTIME__LOG_LEVEL               = "INFO"
-      I4G_ACCOUNT_LIST__ENABLE_VECTOR      = "false"
-      I4G_LLM__PROVIDER                    = "mock"
-      I4G_STORAGE__FIRESTORE__PROJECT      = "i4g-dev"
+      I4G_ENV                          = "dev"
+      I4G_ACCOUNT_JOB__WINDOW_DAYS     = "15"
+      I4G_ACCOUNT_JOB__CATEGORIES      = "bank,crypto,payments"
+      I4G_ACCOUNT_JOB__OUTPUT_FORMATS  = "pdf,xlsx"
+      I4G_ACCOUNT_JOB__INCLUDE_SOURCES = "true"
+      I4G_RUNTIME__LOG_LEVEL           = "INFO"
+      I4G_ACCOUNT_LIST__ENABLE_VECTOR  = "false"
+      I4G_LLM__PROVIDER                = "mock"
+      I4G_STORAGE__FIRESTORE__PROJECT  = "i4g-dev"
     }
   }
   dossier_queue = {
@@ -164,4 +164,13 @@ run_jobs = {
 
 vertex_search_data_store_id = "retrieval-poc"
 vertex_search_display_name  = "Retrieval PoC Data Store"
+
+# Custom domains (leave blank if DNS is managed externally and not present in this project)
+fastapi_custom_domain    = "api.intelligenceforgood.org"
+ui_custom_domain         = "app.intelligenceforgood.org"
+dns_managed_zone         = ""
+dns_managed_zone_project = ""
+
+# IAP allowed domains
+iap_allowed_domains = ["intelligenceforgood.org"]
 

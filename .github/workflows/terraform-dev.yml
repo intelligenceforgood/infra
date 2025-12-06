@@ -11,8 +11,9 @@ on:
       - 'infra/**'
 
 env:
-  TF_WORKING_DIR: infra/environments/dev
+  TF_WORKING_DIR: infra/environments/app/dev
   TF_GCP_PROJECT_ID: ${{ vars.TF_GCP_PROJECT_ID }}
+  TF_GCP_PII_VAULT_PROJECT_ID: ${{ vars.TF_GCP_PII_VAULT_PROJECT_ID }}
   TF_GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ vars.TF_GCP_WORKLOAD_IDENTITY_PROVIDER }}
   TF_GCP_SERVICE_ACCOUNT: ${{ vars.TF_GCP_SERVICE_ACCOUNT }}
   TF_GITHUB_REPOSITORY: ${{ github.repository }}
@@ -49,6 +50,8 @@ jobs:
 
       - name: Terraform Plan
         run: terraform -chdir="${TF_WORKING_DIR}" plan -input=false -var "project_id=${TF_GCP_PROJECT_ID}" -var "github_repository=${TF_GITHUB_REPOSITORY}"
+      - name: Terraform Plan (pii-vault)
+        run: terraform -chdir="infra/environments/pii-vault/dev" plan -input=false -var "project_id=${TF_GCP_PII_VAULT_PROJECT_ID}" -var "github_repository=${TF_GITHUB_REPOSITORY}"
 
   apply:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -74,5 +77,11 @@ jobs:
       - name: Terraform Plan
         run: terraform -chdir="${TF_WORKING_DIR}" plan -input=false -var "project_id=${TF_GCP_PROJECT_ID}" -var "github_repository=${TF_GITHUB_REPOSITORY}"
 
+      - name: Terraform Plan (pii-vault)
+        run: terraform -chdir="infra/environments/pii-vault/dev" plan -input=false -var "project_id=${TF_GCP_PII_VAULT_PROJECT_ID}" -var "github_repository=${TF_GITHUB_REPOSITORY}"
+
       - name: Terraform Apply
         run: terraform -chdir="${TF_WORKING_DIR}" apply -input=false -auto-approve -var "project_id=${TF_GCP_PROJECT_ID}" -var "github_repository=${TF_GITHUB_REPOSITORY}"
+
+      - name: Terraform Apply (pii-vault)
+        run: terraform -chdir="infra/environments/pii-vault/dev" apply -input=false -auto-approve -var "project_id=${TF_GCP_PII_VAULT_PROJECT_ID}" -var "github_repository=${TF_GITHUB_REPOSITORY}"

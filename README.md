@@ -6,7 +6,26 @@ This Terraform package defines all shared infrastructure for the i4g platform on
 
 ## Repository Layout
 - `bootstrap/` – one-time helpers (state bucket creation, API enablement).
-- `environments/` – root modules for each deployment target (`dev`, `prod`).
+- `environments/app/` – root modules for the application stack (`dev`, `prod`).
+	Additional stacks (e.g., `pii-vault`) can live alongside `app/` using the same layout.
+
+## Additional stacks
+
+- To add a new stack (for example, a PII vault), create `environments/<stack>/<env>` entries such as:
+	- `environments/pii-vault/dev`
+	- `environments/pii-vault/prod`
+
+	Each folder should include a `backend.tf`, `providers.tf`, `variables.tf`, and `main.tf` or module
+	references that compose the required platform resources. The `bootstrap/create_state_bucket.sh`
+	helper accepts arbitrary environment strings (e.g., `pii-vault-dev`) so state buckets like `tfstate-i4g-pii-vault-dev`
+	are automatically created when bootstrapping a new stack.
+
+### Naming conventions
+
+- Stack/project naming example: `i4g-app-dev`, `i4g-app-prod`, `i4g-pii-vault-dev`, `i4g-pii-vault-prod`.
+- The bootstrap helper uses the `ENVIRONMENT` parameter to generate a state bucket name: `tfstate-i4g-<ENVIRONMENT>`.
+- Keep the `i4g` prefix to group state buckets under a single project umbrella while separating stacks by the rest of the suffix.
+	If you prefer a different naming pattern, update the bootstrap script and backend prefixes accordingly.
 - `modules/` – reusable building blocks (Cloud Run services/jobs, IAM, buckets, scheduler, etc.).
 - `.github/workflows/` – Terraform plan/apply automation that authenticates via Workload Identity Federation.
 
@@ -45,7 +64,7 @@ Run these steps once per GCP project before Terraform `init`.
 
 	 The script enables the core APIs (including Artifact Registry), creates `tfstate-i4g-dev`, and provisions `sa-infra@i4g-dev.iam.gserviceaccount.com` with required roles.
 
-2. **Configure Terraform backend.** Add the emitted snippet to `environments/<env>/backend.tf` if it differs from the checked-in example:
+2. **Configure Terraform backend.** Add the emitted snippet to `environments/app/<env>/backend.tf` if it differs from the checked-in example:
 
 	 ```hcl
 	 terraform {
@@ -57,7 +76,7 @@ Run these steps once per GCP project before Terraform `init`.
 	 }
 	 ```
 
-3. **Initialize Terraform.** From `environments/dev/` (or `prod/`):
+3. **Initialize Terraform.** From `environments/app/dev/` (or `prod/`):
 
 	 ```bash
 	 terraform init
@@ -68,7 +87,7 @@ Run these steps once per GCP project before Terraform `init`.
 ---
 
 ## Day-to-Day Workflow
-1. Work from a feature branch and edit files under `modules/` or `environments/<env>/`.
+1. Work from a feature branch and edit files under `modules/` or `environments/app/<env>/`.
 2. Format and lint locally: `terraform fmt -recursive` (tflint optional but recommended).
 3. Run `terraform plan` inside the relevant environment directory. Provide overrides such as `-var "github_repository=owner/repo"` if you are testing from a fork.
 4. Open a pull request. GitHub Actions (`.github/workflows/terraform-dev.yml`) re-runs `fmt` and `plan` using Workload Identity Federation.
@@ -80,7 +99,7 @@ Run these steps once per GCP project before Terraform `init`.
 1. Build and publish container images to Artifact Registry (`applications/<service>:dev`).
 2. When ready to promote, retag the tested digests to `:prod` or update the prod `terraform.tfvars` image references explicitly.
 3. Import any pre-existing service accounts into Terraform state (see Troubleshooting) to avoid recreation conflicts.
-4. From `environments/prod/` run:
+4. From `environments/app/prod/` run:
 
 	 ```bash
 	 terraform plan
@@ -103,7 +122,7 @@ Run these steps once per GCP project before Terraform `init`.
 ## Troubleshooting
 - **`failed to fetch oauth token: Repository "applications" not found`**
 	- Ensure the Artifact Registry API is enabled. `./bootstrap/create_state_bucket.sh` covers this; if you skipped it run `gcloud services enable artifactregistry.googleapis.com --project <project>`.
-	- Apply Terraform in `environments/<env>/` to create the `applications` repository before pushing images.
+	- Apply Terraform in `environments/app/<env>/` to create the `applications` repository before pushing images.
 
 - **`alreadyExists: Service account ...` during apply**
 	- Import the resource instead of recreating it:

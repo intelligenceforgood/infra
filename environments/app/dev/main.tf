@@ -16,6 +16,18 @@ resource "google_project_service" "cloud_scheduler" {
   disable_on_destroy = false
 }
 
+resource "google_project_service" "compute" {
+  project            = var.project_id
+  service            = "compute.googleapis.com"
+  disable_on_destroy = false
+}
+
+resource "google_project_service" "vpc_access" {
+  project            = var.project_id
+  service            = "vpcaccess.googleapis.com"
+  disable_on_destroy = false
+}
+
 resource "google_project_service" "artifact_registry" {
   project            = var.project_id
   service            = "artifactregistry.googleapis.com"
@@ -108,6 +120,58 @@ data "google_project" "current" {
   project_id = var.project_id
 }
 
+resource "google_compute_address" "serverless_egress" {
+  project      = var.project_id
+  name         = "serverless-egress-ip"
+  region       = var.region
+  address_type = "EXTERNAL"
+
+  depends_on = [google_project_service.compute]
+}
+
+resource "google_compute_router" "serverless" {
+  project = var.project_id
+  name    = "serverless-egress-router"
+  region  = var.region
+  network = "default"
+
+  depends_on = [google_project_service.compute]
+}
+
+resource "google_compute_router_nat" "serverless" {
+  project                            = var.project_id
+  name                               = "serverless-egress-nat"
+  region                             = var.region
+  router                             = google_compute_router.serverless.name
+  nat_ip_allocate_option             = "MANUAL_ONLY"
+  nat_ips                            = [google_compute_address.serverless_egress.self_link]
+  endpoint_types                     = ["ENDPOINT_TYPE_SERVERLESS"]
+  source_subnetwork_ip_ranges_to_nat = "ALL_SUBNETWORKS_ALL_IP_RANGES"
+  enable_dynamic_port_allocation     = true
+
+  log_config {
+    enable = true
+    filter = "ALL"
+  }
+
+  depends_on = [google_project_service.compute]
+}
+
+resource "google_vpc_access_connector" "serverless" {
+  provider = google-beta
+
+  project = var.project_id
+  name    = "serverless-egress"
+  region  = var.region
+  network = "default"
+
+  ip_cidr_range  = "10.8.0.0/28"
+  min_throughput = 200
+  max_throughput = 300
+
+  depends_on = [google_project_service.vpc_access]
+}
+
 resource "google_artifact_registry_repository" "applications" {
   project       = var.project_id
   location      = var.region
@@ -115,7 +179,7 @@ resource "google_artifact_registry_repository" "applications" {
   description   = "Container images for application workloads"
   format        = "DOCKER"
   labels = {
-    env        = "prod"
+    env        = "dev"
     managed_by = "terraform"
   }
 
@@ -175,9 +239,18 @@ resource "google_project_iam_member" "iap_analyst" {
   project = var.project_id
   role    = "roles/iap.httpsResourceAccessor"
 
-  for_each = toset(var.i4g_analyst_members)
+  # Guard the project-level bindings with a toggle so this can be disabled
+  # when moving the project into an Organization (prefer per-service bindings).
+  for_each = var.iap_project_level_bindings ? toset(var.i4g_analyst_members) : toset([])
 
   member = each.value
+}
+
+resource "google_project_iam_member" "iap_report_service_account" {
+  count   = var.iap_project_level_bindings ? 1 : 0
+  project = var.project_id
+  role    = "roles/iap.httpsResourceAccessor"
+  member  = format("serviceAccount:%s", module.iam_service_accounts.emails["report"])
 }
 
 resource "google_project_iam_member" "project_admins" {
@@ -195,13 +268,6 @@ resource "google_service_account_iam_member" "report_token_creators" {
   service_account_id = "projects/${var.project_id}/serviceAccounts/${module.iam_service_accounts.emails["report"]}"
   role               = "roles/iam.serviceAccountTokenCreator"
   member             = each.value
-}
-
-resource "google_project_iam_member" "iap_report_service_account" {
-  count   = var.iap_project_level_bindings ? 1 : 0
-  project = var.project_id
-  role    = "roles/iap.httpsResourceAccessor"
-  member  = format("serviceAccount:%s", module.iam_service_accounts.emails["report"])
 }
 
 resource "google_project_iam_custom_role" "streamlit_discovery_search" {
@@ -324,6 +390,12 @@ module "storage_buckets" {
 }
 
 locals {
+  run_job_vpc_connector_overrides = {
+    weekly_refresh = google_vpc_access_connector.serverless.id
+  }
+}
+
+locals {
   i4g_analyst_invokers = [
     for member in var.i4g_analyst_members : trimspace(member)
     if trimspace(member) != ""
@@ -404,6 +476,11 @@ locals {
         )
       ]
       location = coalesce(try(job.location, null), var.region)
+      vpc_connector = (
+        can(trimspace(job.vpc_connector)) && trimspace(job.vpc_connector) != ""
+        ? job.vpc_connector
+        : lookup(local.run_job_vpc_connector_overrides, job_key, null)
+      )
     })
   }
 
@@ -427,6 +504,9 @@ module "run_fastapi" {
   service_account = module.iam_service_accounts.emails["app"]
   image           = var.fastapi_image
   env_vars = merge(
+    {
+      I4G_STORAGE__EVIDENCE__LOCAL_DIR = "/tmp/evidence"
+    },
     var.fastapi_env_vars,
     {
       I4G_STORAGE__EVIDENCE_BUCKET = lookup(module.storage_buckets.bucket_names, "evidence", "")
@@ -435,7 +515,7 @@ module "run_fastapi" {
   )
   labels = {
     service = "fastapi"
-    env     = "prod"
+    env     = "dev"
   }
 
   ingress = "all"
@@ -444,6 +524,20 @@ module "run_fastapi" {
   invoker_members = local.fastapi_invoker_members
 
   depends_on = [module.iam_service_account_bindings, google_project_service.gemini_cloud_assist, google_project_service_identity.iap]
+}
+
+# Domain mapping for FastAPI (dev)
+module "domain_mapping_fastapi" {
+  source           = "../../modules/run/domain_mapping"
+  project_id       = var.project_id
+  region           = var.region
+  service_name     = module.run_fastapi.name
+  domain           = var.fastapi_custom_domain
+  dns_managed_zone = var.dns_managed_zone
+  dns_project      = var.dns_managed_zone_project
+
+  # Only create mapping when a domain is supplied
+  count = trimspace(var.fastapi_custom_domain) == "" ? 0 : 1
 }
 
 module "iap_fastapi" {
@@ -462,6 +556,17 @@ module "iap_fastapi" {
   depends_on = [module.run_fastapi]
 }
 
+locals {
+  run_job_dynamic_env_vars = {
+    intake = {
+      I4G_INTAKE__API_BASE = format("%s/intakes", trimsuffix(module.run_fastapi.uri, "/"))
+    }
+    account_list = {
+      I4G_STORAGE__REPORTS_BUCKET = lookup(module.storage_buckets.bucket_names, "reports", "")
+    }
+  }
+}
+
 module "run_streamlit" {
   source     = "../../modules/run/service"
   project_id = var.project_id
@@ -473,13 +578,13 @@ module "run_streamlit" {
   env_vars = merge(
     var.streamlit_env_vars,
     {
-      I4G_API__BASE_URL = module.run_fastapi.uri
-      I4G_API_URL       = module.run_fastapi.uri
-    }
+      I4G_API__BASE_URL = trimspace(var.fastapi_custom_domain) != "" ? format("https://%s", var.fastapi_custom_domain) : module.run_fastapi.uri
+      I4G_API_URL       = trimspace(var.fastapi_custom_domain) != "" ? format("https://%s", var.fastapi_custom_domain) : module.run_fastapi.uri
+    },
   )
   labels = {
     service = "streamlit"
-    env     = "prod"
+    env     = "dev"
   }
 
   ingress = "all"
@@ -488,6 +593,18 @@ module "run_streamlit" {
   invoker_members = local.streamlit_invoker_members
 
   depends_on = [module.iam_service_account_bindings, module.run_fastapi, google_project_service.gemini_cloud_assist, google_project_service_identity.iap]
+}
+
+module "domain_mapping_ui" {
+  source           = "../../modules/run/domain_mapping"
+  project_id       = var.project_id
+  region           = var.region
+  service_name     = module.run_streamlit.name
+  domain           = var.ui_custom_domain
+  dns_managed_zone = var.dns_managed_zone
+  dns_project      = var.dns_managed_zone_project
+
+  count = trimspace(var.ui_custom_domain) == "" ? 0 : 1
 }
 
 module "iap_streamlit" {
@@ -516,14 +633,14 @@ module "run_console" {
   image           = var.console_image
   env_vars = merge(
     {
-      NEXT_PUBLIC_API_BASE_URL = module.run_fastapi.uri
-      I4G_API_URL              = module.run_fastapi.uri
+      NEXT_PUBLIC_API_BASE_URL = trimspace(var.fastapi_custom_domain) != "" ? format("https://%s", var.fastapi_custom_domain) : module.run_fastapi.uri
+      I4G_API_URL              = trimspace(var.fastapi_custom_domain) != "" ? format("https://%s", var.fastapi_custom_domain) : module.run_fastapi.uri
     },
     var.console_env_vars
   )
   labels = {
     service = "console"
-    env     = "prod"
+    env     = "dev"
   }
 
   ingress = "all"
@@ -561,20 +678,16 @@ module "run_jobs" {
   service_account = each.value.runtime_service_account_email
   image           = each.value.image
   env_vars = merge(
-    coalesce(try(each.value.env_vars, null), {}),
-    {
-      I4G_ENV                      = "prod"
-      I4G_STORAGE__EVIDENCE_BUCKET = lookup(module.storage_buckets.bucket_names, "evidence", "")
-      I4G_STORAGE__REPORT_BUCKET   = lookup(module.storage_buckets.bucket_names, "reports", "")
-    }
+    lookup(local.run_job_dynamic_env_vars, each.key, {}),
+    coalesce(try(each.value.env_vars, null), {})
   )
   secret_env_vars = coalesce(try(each.value.secret_env_vars, null), {})
   command         = coalesce(try(each.value.command, null), [])
   args            = coalesce(try(each.value.args, null), [])
   labels = merge({
-    env = "prod"
+    env = "dev"
     job = each.key
-  }, coalesce(try(each.value.labels, null), {}))
+  }, try(each.value.labels, {}))
   annotations                   = coalesce(try(each.value.annotations, null), {})
   parallelism                   = coalesce(try(each.value.parallelism, null), 1)
   task_count                    = coalesce(try(each.value.task_count, null), 1)
@@ -604,6 +717,7 @@ module "run_job_schedulers" {
   service_account_email    = each.value.scheduler_service_account_email
   audience                 = each.value.scheduler_audience != null ? each.value.scheduler_audience : ""
   headers                  = coalesce(try(each.value.scheduler_headers, null), {})
+  oauth_scopes             = try(each.value.scheduler_oauth_scopes, [])
   body                     = coalesce(try(each.value.scheduler_body, null), "{}")
 
   depends_on = [module.run_jobs]
@@ -629,4 +743,15 @@ resource "google_cloud_run_v2_job_iam_member" "scheduled_invokers" {
   member   = "serviceAccount:${each.value.scheduler_service_account_email}"
 
   depends_on = [module.run_jobs]
+}
+
+resource "google_project_organization_policy" "allow_public_invokers" {
+  project    = var.project_id
+  constraint = "constraints/iam.allowedPolicyMemberDomains"
+
+  list_policy {
+    allow {
+      all = true
+    }
+  }
 }

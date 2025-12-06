@@ -73,3 +73,11 @@ output "iap" {
     }
   }
 }
+
+output "fastapi_domain_mapping" {
+  value = length(module.domain_mapping_fastapi) > 0 ? module.domain_mapping_fastapi[0].domain_mapping_name : null
+}
+
+output "ui_domain_mapping" {
+  value = length(module.domain_mapping_ui) > 0 ? module.domain_mapping_ui[0].domain_mapping_name : null
+}

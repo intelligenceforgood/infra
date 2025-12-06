@@ -53,6 +53,15 @@ console_invoker_members = []
 vertex_search_data_store_id = "retrieval-prod"
 vertex_search_display_name  = "Retrieval Production Data Store"
 
+# Custom domains (leave blank if DNS is managed externally and not present in this project)
+fastapi_custom_domain    = "api.intelligenceforgood.org"
+ui_custom_domain         = "app.intelligenceforgood.org"
+dns_managed_zone         = ""
+dns_managed_zone_project = ""
+
+# IAP allowed domains
+iap_allowed_domains = ["intelligenceforgood.org"]
+
 storage_bucket_default_location = "US"
 storage_buckets = {
   evidence = {

@@ -1,6 +1,6 @@
 variable "project_id" {
   type        = string
-  description = "GCP project ID for the dev environment."
+  description = "GCP project ID for the prod environment."
 }
 
 variable "i4g_analyst_members" {
@@ -23,60 +23,60 @@ variable "region" {
 
 variable "iap_support_email" {
   type        = string
-  description = "Verified Google account email used for the IAP OAuth consent screen."
+  description = "Verified Google account email used for the production IAP consent screen."
 }
 
 variable "iap_application_title" {
   type        = string
-  description = "Display title shown on the IAP OAuth consent screen."
+  description = "Display title shown on the production OAuth consent screen."
   default     = "i4g Analyst Surfaces"
 }
 
 variable "iap_manage_brand" {
   type        = bool
-  description = "Set to true only if the project belongs to an organization and Terraform should manage the IAP brand."
+  description = "Set to true only if Terraform should create the IAP brand (requires an organization-owned project)."
   default     = false
 }
 
 variable "iap_existing_brand_name" {
   type        = string
-  description = "Optional brand resource name to reuse when Terraform is not creating one."
+  description = "Optional brand resource name when reusing a manually created brand."
   default     = ""
 }
 
 variable "iap_manage_clients" {
   type        = bool
-  description = "Set to true to create per-service OAuth clients and secrets."
+  description = "Set to true to create per-service OAuth clients and store their secrets."
   default     = false
 }
 
 variable "iap_project_level_bindings" {
   type        = bool
-  description = "When true, create project-level IAP accessor bindings for `i4g_analyst_members`. Set to false to keep IAP bindings out of project-level IAM (use per-service bindings)."
+  description = "When true, create project-level IAP accessor bindings for `i4g_analyst_members`."
   default     = true
 }
 
 variable "iap_enable_allowed_domains" {
   type        = bool
-  description = "Enable allowed-domains enforcement for IAP project settings."
+  description = "Enable allowed domains enforcement for the production IAP project settings."
   default     = false
 }
 
 variable "iap_allowed_domains" {
   type        = list(string)
-  description = "Set of trusted domains applied when allowed-domains is enabled."
+  description = "Trusted domains used when allowed domains is enabled."
   default     = []
 }
 
 variable "iap_allow_http_options" {
   type        = bool
-  description = "Allow unauthenticated HTTP OPTIONS (CORS preflight) to bypass IAP checks."
+  description = "Allow unauthenticated HTTP OPTIONS (CORS preflight) requests through IAP."
   default     = true
 }
 
 variable "iap_secret_replication_locations" {
   type        = list(string)
-  description = "Secret Manager replica locations for storing IAP OAuth client secrets."
+  description = "Secret Manager replica regions storing production OAuth client secrets."
   default     = []
 }
 
@@ -99,7 +99,7 @@ variable "fastapi_env_vars" {
 
 variable "fastapi_invoker_member" {
   type        = string
-  description = "Principal granted Cloud Run invoker on the FastAPI service (leave blank to skip)."
+  description = "Principal granted Cloud Run invoker on the FastAPI service (leave blank to use defaults)."
   default     = ""
 }
 
@@ -120,28 +120,16 @@ variable "streamlit_env_vars" {
   default     = {}
 }
 
-variable "streamlit_invoker_member" {
-  type        = string
-  description = "Principal granted Cloud Run invoker on the Streamlit service (leave blank to skip)."
-  default     = ""
-}
-
 variable "streamlit_invoker_members" {
   type        = list(string)
-  description = "Additional principals granted Cloud Run invoker on the Streamlit service."
+  description = "Principals granted Cloud Run invoker on the Streamlit service."
   default     = []
 }
 
-variable "storage_bucket_default_location" {
+variable "streamlit_invoker_member" {
   type        = string
-  description = "Default location/region for storage buckets."
-  default     = "US"
-}
-
-variable "firestore_location" {
-  type        = string
-  description = "Location/region for the default Firestore database."
-  default     = "us-central1"
+  description = "Principal granted Cloud Run invoker on the Streamlit service (leave blank to use defaults)."
+  default     = ""
 }
 
 variable "console_image" {
@@ -157,7 +145,7 @@ variable "console_env_vars" {
 
 variable "console_invoker_member" {
   type        = string
-  description = "Principal granted Cloud Run invoker on the console service (leave blank to rely on IAM policies)."
+  description = "Principal granted Cloud Run invoker on the console service (leave blank to use IAM policies)."
   default     = ""
 }
 
@@ -166,6 +154,49 @@ variable "console_invoker_members" {
   description = "Additional principals granted Cloud Run invoker on the console service."
   default     = []
 }
+
+variable "fastapi_custom_domain" {
+  type        = string
+  description = "Optional custom domain to map to the FastAPI service (e.g., api.intelligenceforgood.org)."
+  default     = ""
+}
+
+variable "ui_custom_domain" {
+  type        = string
+  description = "Optional custom domain to map to the UI service (e.g., app.intelligenceforgood.org)."
+  default     = ""
+}
+
+variable "dns_managed_zone" {
+  type        = string
+  description = "Optional Cloud DNS managed zone name to create DNS records in for the custom domains. If empty, DNS changes are external/manual."
+  default     = ""
+}
+
+variable "dns_managed_zone_project" {
+  type        = string
+  description = "Optional project ID where the DNS managed zone is located (if different)."
+  default     = ""
+}
+
+variable "vertex_search_location" {
+  type        = string
+  description = "Discovery location for Vertex AI Search resources."
+  default     = "global"
+}
+
+variable "storage_bucket_default_location" {
+  type        = string
+  description = "Default location/region for storage buckets."
+  default     = "US"
+}
+
+variable "firestore_location" {
+  type        = string
+  description = "Location/region for the default Firestore database."
+  default     = "us-central1"
+}
+
 variable "storage_buckets" {
   description = "Map of storage bucket configurations keyed by logical name."
   type = map(object({
@@ -237,20 +268,14 @@ variable "run_jobs" {
   default = {}
 }
 
-variable "vertex_search_location" {
-  type        = string
-  description = "Discovery location for Vertex AI Search resources."
-  default     = "global"
-}
-
 variable "vertex_search_data_store_id" {
   type        = string
   description = "Identifier for the Vertex AI Search data store."
-  default     = "retrieval-poc"
+  default     = "retrieval-prod"
 }
 
 variable "vertex_search_display_name" {
   type        = string
   description = "Display name for the Vertex AI Search data store."
-  default     = "Retrieval PoC Data Store"
+  default     = "Retrieval Production Data Store"
 }
