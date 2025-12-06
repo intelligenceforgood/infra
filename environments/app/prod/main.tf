@@ -538,7 +538,7 @@ module "run_console" {
     source           = "../../modules/run/domain_mapping"
     project_id       = var.project_id
     region           = var.region
-    service_name     = module.run_streamlit.name
+    service_name     = module.run_console.name
     domain           = var.ui_custom_domain
     dns_managed_zone = var.dns_managed_zone
     dns_project      = var.dns_managed_zone_project

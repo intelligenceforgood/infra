@@ -5,7 +5,7 @@ This doc captures the steps to map custom domains to Cloud Run services and alig
 ## Overview
 - Custom domains:
   - `api.intelligenceforgood.org` -> FastAPI gateway
-  - `app.intelligenceforgood.org` -> Streamlit/Console UI
+  -- `app.intelligenceforgood.org` -> `i4g-console` (Node.js console)
 - Terraform will create Cloud Run domain mappings when `fastapi_custom_domain` or `ui_custom_domain` variables are set.
 - DNS records (CNAME) must map the hostnames to `ghs.googlehosted.com` for subdomains. Verify the DNS change with domain owner.
 - IAP brand & OAuth clients cannot be created by Terraform (deprecated API). Create the brand and OAuth client manually or via an alternative automation approach.
