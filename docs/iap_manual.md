@@ -1,31 +1,117 @@
 # IAP OAuth Brand & Client Manual Guide
 
-Terraform config does not create IAP OAuth brands/clients due to the deprecation of the OAuth Admin API. Follow this guide to manually configure IAP OAuth.
+This guide provides step-by-step instructions to manually configure the OAuth Consent Screen and OAuth Client required for Identity-Aware Proxy (IAP).
 
-## Steps
-1. Open Google Cloud Console for the target project (e.g., `i4g-dev`).
-2. Navigate to **Security** → **Identity-Aware Proxy** → **OAuth consent screen** and ensure a brand exists. If not, create one selecting `External` or `Internal` as appropriate.
-3. Under **Credentials**, create an OAuth client (Web application) and note the `Client ID` and `Client secret`.
-4. For each application, add authorized redirect URIs and JavaScript origins:
-   - For FastAPI (server-to-server): ensure the token exchange endpoints are allowed. If your app expects callbacks, add `https://api.intelligenceforgood.org/_gcpgtoken` (or your callback path).
-   - For UI (Streamlit/Console): add `https://app.intelligenceforgood.org` as an authorized origin and `https://app.intelligenceforgood.org/oauth2/callback` if a callback is required.
-5. Save the `Client ID` and `Client secret` securely. Use the `sa-infra` or an automation pipeline to write the secret to Secret Manager under the project using the `iap-client-*` secret IDs used in Terraform (e.g., `iap-client-fastapi`).
+## Prerequisites
 
-## Secret Manager
-- Use the helper script `scripts/infra/add_azure_secrets.py` as a pattern or use `gcloud`:
+- **Permission**: You need `Project Editor` or `OAuth Config Editor` roles.
+- **Audience Decision**:
+  - **Internal (Recommended)**: Choose this if your project belongs to the `intelligenceforgood.org` Google Cloud Organization. This allows you to control access via IAM groups (like `i4g-analyst@intelligenceforgood.org`) without managing individual "Test Users".
+  - **External**: Choose this only if you do not have a Google Workspace Organization. You will be limited to a list of specific "Test Users" unless you go through a verification process.
+
+---
+
+## Step 1: Configure OAuth Consent Screen
+
+1.  Log in to the **Google Cloud Console** and select your project (e.g., `i4g-dev`).
+2.  Navigate to **APIs & Services** > **OAuth consent screen**.
+3.  **User Type Selection**:
+    *   Select **Internal** (if available and you are in an Org).
+    *   Select **External** (if Internal is disabled).
+    *   Click **Create**.
+
+### Tab 1: App Information
+4.  **App Information**:
+    *   **App name**: Enter `Intelligence for Good Analyst Platform`.
+    *   **User support email**: Select your email address.
+    *   **App logo**: (Optional) Skip for now.
+5.  **App Domain**:
+    *   **Application home page**: `https://app.intelligenceforgood.org`
+    *   **Application privacy policy link**: (Optional)
+    *   **Application terms of service link**: (Optional)
+    *   **Authorized domains**: Click **Add Domain** and enter `intelligenceforgood.org`.
+6.  **Developer Contact Information**:
+    *   Enter your email address (e.g., `jerry@intelligenceforgood.org`).
+7.  Click **Save and Continue**.
+
+### Tab 2: Scopes
+8.  Click **Add or Remove Scopes**.
+9.  In the filter list, select the checkboxes for:
+    *   `.../auth/userinfo.email`
+    *   `.../auth/userinfo.profile`
+    *   `openid`
+10. Click **Update**.
+11. Click **Save and Continue**.
+
+### Tab 3: Test Users (External Only)
+*Note: If you selected "Internal", this step is skipped.*
+12. If you selected **External**, click **Add Users**.
+13. Enter the specific email addresses of users who need access (e.g., yourself).
+    *   *Warning*: You cannot add Google Groups (like `i4g-analyst@...`) here. You must add individual emails.
+14. Click **Save and Continue**.
+
+### Tab 4: Summary
+15. Review your settings and click **Back to Dashboard**.
+
+---
+
+## Step 2: Create OAuth Client ID
+
+1.  Navigate to **APIs & Services** > **Credentials**.
+2.  Click **+ Create Credentials** at the top and select **OAuth client ID**.
+3.  **Application type**: Select **Web application**.
+4.  **Name**: Enter `IAP Client - Console`.
+5.  **Authorized JavaScript origins**:
+    *   Click **Add URI**.
+    *   Enter: `https://app.intelligenceforgood.org`
+6.  **Authorized redirect URIs**:
+    *   Click **Add URI**.
+    *   Enter: `https://app.intelligenceforgood.org/api/auth/callback/google` (Standard for NextAuth.js/Auth.js if used).
+    *   Click **Add URI**.
+    *   Enter: `https://iap.googleapis.com/v1/oauth/clientIds/YOUR_CLIENT_ID_HERE:handleRedirect`
+        *   *Note*: You won't know the Client ID until you create it. You can come back and edit this later, or skip it if you are only using IAP's built-in flow (which auto-handles this).
+7.  Click **Create**.
+8.  **Important**: A popup will show "OAuth client created".
+    *   Copy the **Client ID**.
+    *   Copy the **Client Secret**.
+    *   Store these temporarily in a secure note.
+
+---
+
+## Step 3: Store Secrets in Secret Manager
+
+You need to store the Client Secret in Google Secret Manager so Terraform and the application can access it.
+
+1.  Open the **Cloud Shell** (icon in top right) or use your local terminal.
+2.  Run the following command (replace placeholders):
 
 ```bash
-# Example: write a secret version
-printf "${IAP_CLIENT_SECRET}" | gcloud secrets versions add iap-client-fastapi --data-file=- --project i4g-dev
+# Set your variables
+export PROJECT_ID="i4g-dev"  # or i4g-prod
+export SECRET_ID="iap-client-console"
+export CLIENT_SECRET="YOUR_COPIED_CLIENT_SECRET"
+
+# Create the secret (if it doesn't exist)
+gcloud secrets create $SECRET_ID --replication-policy="automatic" --project=$PROJECT_ID || true
+
+# Add the secret version
+printf "$CLIENT_SECRET" | gcloud secrets versions add $SECRET_ID --data-file=- --project=$PROJECT_ID
 ```
 
-- Ensure the service account running Cloud Run has `roles/secretmanager.secretAccessor` on the project where the secret lives.
+3.  Repeat this process if you have a separate client for the API (e.g., `iap-client-fastapi`).
 
-## Verification
-- After setting up the OAuth client and secrets, open a private browser session and visit `https://app.intelligenceforgood.org`.
-- IAP consent screen should appear (or the app may handle the authentication flow). If not, verify that `IAP` is enabled and the allowed domains include `intelligenceforgood.org`.
+---
 
-## Notes
-- Enable `IAP` only after verifying domain mappings are fully operational and DNS records propagated.
-- Keep `iap_manage_clients` set to `false` in Terraform when you intend to manage OAuth clients manually.
-- Consider using a more robust automation path for OAuth clients if your organization requires programmatic creation and rotation.
+## Step 4: Important Architecture Note
+
+**Critical**: Identity-Aware Proxy (IAP) **requires** an HTTP(S) Load Balancer.
+Currently, your infrastructure uses **Cloud Run Domain Mapping** (`google_cloud_run_domain_mapping`), which maps the domain directly to Cloud Run.
+
+**IAP will NOT work with Domain Mapping.**
+
+To enforce IAP:
+1.  You must switch from Domain Mapping to a **Global External Application Load Balancer**.
+2.  The Load Balancer will have IAP enabled on its Backend Service.
+3.  The DNS for `app.intelligenceforgood.org` must point to the Load Balancer IP, not the Cloud Run domain mapping.
+
+If you proceed with the current setup, users will access the app directly, bypassing IAP.

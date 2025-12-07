@@ -133,14 +133,14 @@ resource "google_artifact_registry_repository_iam_member" "serverless_runtime" {
 }
 
 module "iam_service_accounts" {
-  source     = "../../modules/iam/service_accounts"
+  source = "../../../modules/iam/service_accounts"
   project_id = var.project_id
 
   service_accounts = local.service_accounts
 }
 
 module "github_wif" {
-  source              = "../../modules/iam/workload_identity_github"
+  source = "../../../modules/iam/workload_identity_github"
   project_id          = var.project_id
   pool_id             = local.github_wif.pool_id
   provider_id         = local.github_wif.provider_id
@@ -149,7 +149,7 @@ module "github_wif" {
 }
 
 module "iap_project" {
-  source = "../../modules/iap/project"
+  source = "../../../modules/iap/project"
 
   project_id             = var.project_id
   support_email          = var.iap_support_email
@@ -215,7 +215,7 @@ resource "google_project_iam_custom_role" "streamlit_discovery_search" {
 }
 
 module "iam_service_account_bindings" {
-  source     = "../../modules/iam/service_account_bindings"
+  source = "../../../modules/iam/service_account_bindings"
   project_id = var.project_id
 
   bindings = {
@@ -302,7 +302,7 @@ resource "google_project_iam_member" "ingest_discoveryengine_editor" {
 }
 
 module "vertex_search" {
-  source = "../../modules/vertex_search"
+  source = "../../../modules/vertex_search"
 
   providers = {
     google-beta = google-beta
@@ -317,7 +317,7 @@ module "vertex_search" {
 }
 
 module "storage_buckets" {
-  source           = "../../modules/storage/buckets"
+  source = "../../../modules/storage/buckets"
   project_id       = var.project_id
   default_location = var.storage_bucket_default_location
   buckets          = var.storage_buckets
@@ -419,7 +419,7 @@ locals {
 }
 
 module "run_fastapi" {
-  source     = "../../modules/run/service"
+  source = "../../../modules/run/service"
   project_id = var.project_id
   location   = var.region
 
@@ -447,7 +447,7 @@ module "run_fastapi" {
 }
 
 module "iap_fastapi" {
-  source = "../../modules/iap/cloud_run_service"
+  source = "../../../modules/iap/cloud_run_service"
 
   project_id                   = var.project_id
   region                       = var.region
@@ -463,7 +463,7 @@ module "iap_fastapi" {
 }
 
 module "run_streamlit" {
-  source     = "../../modules/run/service"
+  source = "../../../modules/run/service"
   project_id = var.project_id
   location   = var.region
 
@@ -491,7 +491,7 @@ module "run_streamlit" {
 }
 
 module "iap_streamlit" {
-  source = "../../modules/iap/cloud_run_service"
+  source = "../../../modules/iap/cloud_run_service"
 
   project_id                   = var.project_id
   region                       = var.region
@@ -507,7 +507,7 @@ module "iap_streamlit" {
 }
 
 module "run_console" {
-  source     = "../../modules/run/service"
+  source = "../../../modules/run/service"
   project_id = var.project_id
   location   = var.region
 
@@ -523,7 +523,7 @@ module "run_console" {
   )
 
   module "domain_mapping_fastapi" {
-    source           = "../../modules/run/domain_mapping"
+    source = "../../../modules/run/domain_mapping"
     project_id       = var.project_id
     region           = var.region
     service_name     = module.run_fastapi.name
@@ -535,7 +535,7 @@ module "run_console" {
   }
 
   module "domain_mapping_ui" {
-    source           = "../../modules/run/domain_mapping"
+    source = "../../../modules/run/domain_mapping"
     project_id       = var.project_id
     region           = var.region
     service_name     = module.run_console.name
@@ -559,7 +559,7 @@ module "run_console" {
 }
 
 module "iap_console" {
-  source = "../../modules/iap/cloud_run_service"
+  source = "../../../modules/iap/cloud_run_service"
 
   project_id                   = var.project_id
   region                       = var.region
@@ -577,7 +577,7 @@ module "iap_console" {
 module "run_jobs" {
   for_each = local.run_job_configs
 
-  source     = "../../modules/run/job"
+  source = "../../../modules/run/job"
   project_id = var.project_id
   location   = each.value.location
 
@@ -614,7 +614,7 @@ module "run_jobs" {
 module "run_job_schedulers" {
   for_each = local.scheduled_run_jobs
 
-  source     = "../../modules/scheduler/job"
+  source = "../../../modules/scheduler/job"
   project_id = var.project_id
   region     = var.region
 

@@ -278,3 +278,29 @@ variable "vertex_search_display_name" {
   description = "Display name for the Vertex AI Search data store."
   default     = "Retrieval PoC Data Store"
 }
+
+variable "iap_client_id_console" {
+  type        = string
+  description = "OAuth Client ID for the Console IAP."
+  default     = ""
+}
+
+variable "iap_client_secret_console" {
+  type        = string
+  description = "OAuth Client Secret for the Console IAP."
+  default     = ""
+  sensitive   = true
+}
+
+variable "iap_client_id_api" {
+  type        = string
+  description = "OAuth Client ID for the API IAP."
+  default     = ""
+}
+
+variable "iap_client_secret_api" {
+  type        = string
+  description = "OAuth Client Secret for the API IAP."
+  default     = ""
+  sensitive   = true
+}

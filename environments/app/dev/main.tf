@@ -197,14 +197,14 @@ resource "google_artifact_registry_repository_iam_member" "serverless_runtime" {
 }
 
 module "iam_service_accounts" {
-  source     = "../../modules/iam/service_accounts"
+  source     = "../../../modules/iam/service_accounts"
   project_id = var.project_id
 
   service_accounts = local.service_accounts
 }
 
 module "github_wif" {
-  source              = "../../modules/iam/workload_identity_github"
+  source              = "../../../modules/iam/workload_identity_github"
   project_id          = var.project_id
   pool_id             = local.github_wif.pool_id
   provider_id         = local.github_wif.provider_id
@@ -213,7 +213,7 @@ module "github_wif" {
 }
 
 module "iap_project" {
-  source = "../../modules/iap/project"
+  source = "../../../modules/iap/project"
 
   project_id             = var.project_id
   support_email          = var.iap_support_email
@@ -281,7 +281,7 @@ resource "google_project_iam_custom_role" "streamlit_discovery_search" {
 }
 
 module "iam_service_account_bindings" {
-  source     = "../../modules/iam/service_account_bindings"
+  source     = "../../../modules/iam/service_account_bindings"
   project_id = var.project_id
 
   bindings = {
@@ -368,7 +368,7 @@ resource "google_project_iam_member" "ingest_discoveryengine_editor" {
 }
 
 module "vertex_search" {
-  source = "../../modules/vertex_search"
+  source = "../../../modules/vertex_search"
 
   providers = {
     google-beta = google-beta
@@ -383,7 +383,7 @@ module "vertex_search" {
 }
 
 module "storage_buckets" {
-  source           = "../../modules/storage/buckets"
+  source           = "../../../modules/storage/buckets"
   project_id       = var.project_id
   default_location = var.storage_bucket_default_location
   buckets          = var.storage_buckets
@@ -496,7 +496,7 @@ locals {
 }
 
 module "run_fastapi" {
-  source     = "../../modules/run/service"
+  source     = "../../../modules/run/service"
   project_id = var.project_id
   location   = var.region
 
@@ -518,42 +518,12 @@ module "run_fastapi" {
     env     = "dev"
   }
 
-  ingress = "all"
+  ingress = "internal-and-cloud-load-balancing"
 
   invoker_member  = ""
   invoker_members = local.fastapi_invoker_members
 
   depends_on = [module.iam_service_account_bindings, google_project_service.gemini_cloud_assist, google_project_service_identity.iap]
-}
-
-# Domain mapping for FastAPI (dev)
-module "domain_mapping_fastapi" {
-  source           = "../../modules/run/domain_mapping"
-  project_id       = var.project_id
-  region           = var.region
-  service_name     = module.run_fastapi.name
-  domain           = var.fastapi_custom_domain
-  dns_managed_zone = var.dns_managed_zone
-  dns_project      = var.dns_managed_zone_project
-
-  # Only create mapping when a domain is supplied
-  count = trimspace(var.fastapi_custom_domain) == "" ? 0 : 1
-}
-
-module "iap_fastapi" {
-  source = "../../modules/iap/cloud_run_service"
-
-  project_id                   = var.project_id
-  region                       = var.region
-  service_name                 = module.run_fastapi.name
-  manage_client                = var.iap_manage_clients
-  brand_name                   = module.iap_project.brand_name
-  display_name                 = "FastAPI Gateway"
-  access_members               = local.fastapi_iap_access_members
-  secret_replication_locations = var.iap_secret_replication_locations
-  secret_id                    = "iap-client-fastapi"
-
-  depends_on = [module.run_fastapi]
 }
 
 locals {
@@ -568,7 +538,7 @@ locals {
 }
 
 module "run_streamlit" {
-  source     = "../../modules/run/service"
+  source     = "../../../modules/run/service"
   project_id = var.project_id
   location   = var.region
 
@@ -595,36 +565,8 @@ module "run_streamlit" {
   depends_on = [module.iam_service_account_bindings, module.run_fastapi, google_project_service.gemini_cloud_assist, google_project_service_identity.iap]
 }
 
-module "domain_mapping_ui" {
-  source           = "../../modules/run/domain_mapping"
-  project_id       = var.project_id
-  region           = var.region
-  service_name     = module.run_console.name
-  domain           = var.ui_custom_domain
-  dns_managed_zone = var.dns_managed_zone
-  dns_project      = var.dns_managed_zone_project
-
-  count = trimspace(var.ui_custom_domain) == "" ? 0 : 1
-}
-
-module "iap_streamlit" {
-  source = "../../modules/iap/cloud_run_service"
-
-  project_id                   = var.project_id
-  region                       = var.region
-  service_name                 = module.run_streamlit.name
-  manage_client                = var.iap_manage_clients
-  brand_name                   = module.iap_project.brand_name
-  display_name                 = "Streamlit Analyst UI"
-  access_members               = local.i4g_analyst_invokers
-  secret_replication_locations = var.iap_secret_replication_locations
-  secret_id                    = "iap-client-streamlit"
-
-  depends_on = [module.run_streamlit]
-}
-
 module "run_console" {
-  source     = "../../modules/run/service"
+  source     = "../../../modules/run/service"
   project_id = var.project_id
   location   = var.region
 
@@ -643,7 +585,7 @@ module "run_console" {
     env     = "dev"
   }
 
-  ingress = "all"
+  ingress = "internal-and-cloud-load-balancing"
 
   invoker_member  = ""
   invoker_members = local.console_invoker_members
@@ -651,76 +593,43 @@ module "run_console" {
   depends_on = [module.iam_service_account_bindings, module.run_fastapi, google_project_service_identity.iap]
 }
 
-module "iap_console" {
-  source = "../../modules/iap/cloud_run_service"
+module "global_lb" {
+  source     = "../../../modules/lb/iap_https"
+  project_id = var.project_id
+  name       = "i4g-lb"
 
-  project_id                   = var.project_id
-  region                       = var.region
-  service_name                 = module.run_console.name
-  manage_client                = var.iap_manage_clients
-  brand_name                   = module.iap_project.brand_name
-  display_name                 = "Analyst Console"
-  access_members               = local.i4g_analyst_invokers
-  secret_replication_locations = var.iap_secret_replication_locations
-  secret_id                    = "iap-client-console"
-
-  depends_on = [module.run_console]
+  backends = {
+    console = {
+      domain            = var.ui_custom_domain
+      service_name      = module.run_console.name
+      region            = var.region
+      enable_iap        = true
+      iap_client_id     = var.iap_client_id_console
+      iap_client_secret = var.iap_client_secret_console
+    }
+    api = {
+      domain            = var.fastapi_custom_domain
+      service_name      = module.run_fastapi.name
+      region            = var.region
+      enable_iap        = true
+      iap_client_id     = var.iap_client_id_api
+      iap_client_secret = var.iap_client_secret_api
+    }
+  }
 }
 
-module "run_jobs" {
-  for_each = local.run_job_configs
-
-  source     = "../../modules/run/job"
-  project_id = var.project_id
-  location   = each.value.location
-
-  name            = each.value.name
-  service_account = each.value.runtime_service_account_email
-  image           = each.value.image
-  env_vars = merge(
-    lookup(local.run_job_dynamic_env_vars, each.key, {}),
-    coalesce(try(each.value.env_vars, null), {})
-  )
-  secret_env_vars = coalesce(try(each.value.secret_env_vars, null), {})
-  command         = coalesce(try(each.value.command, null), [])
-  args            = coalesce(try(each.value.args, null), [])
-  labels = merge({
-    env = "dev"
-    job = each.key
-  }, try(each.value.labels, {}))
-  annotations                   = coalesce(try(each.value.annotations, null), {})
-  parallelism                   = coalesce(try(each.value.parallelism, null), 1)
-  task_count                    = coalesce(try(each.value.task_count, null), 1)
-  max_retries                   = coalesce(try(each.value.max_retries, null), 3)
-  timeout_seconds               = coalesce(try(each.value.timeout_seconds, null), 600)
-  resource_limits               = coalesce(try(each.value.resource_limits, null), {})
-  vpc_connector                 = try(each.value.vpc_connector, null)
-  vpc_connector_egress_settings = coalesce(try(each.value.vpc_connector_egress_settings, null), "ALL_TRAFFIC")
-
-  depends_on = [module.iam_service_account_bindings]
+resource "google_iap_web_backend_service_iam_binding" "console" {
+  project             = var.project_id
+  web_backend_service = module.global_lb.backend_services["console"]
+  role                = "roles/iap.httpsResourceAccessor"
+  members             = local.i4g_analyst_invokers
 }
 
-module "run_job_schedulers" {
-  for_each = local.scheduled_run_jobs
-
-  source     = "../../modules/scheduler/job"
-  project_id = var.project_id
-  region     = var.region
-
-  name                     = coalesce(try(each.value.scheduler_name, null), "${each.value.name}-schedule")
-  schedule                 = each.value.schedule
-  time_zone                = coalesce(try(each.value.time_zone, null), "UTC")
-  description              = try(each.value.description, null)
-  attempt_deadline_seconds = coalesce(try(each.value.scheduler_attempt_deadline_seconds, null), 300)
-  run_job_name             = module.run_jobs[each.key].name
-  run_job_location         = module.run_jobs[each.key].location
-  service_account_email    = each.value.scheduler_service_account_email
-  audience                 = each.value.scheduler_audience != null ? each.value.scheduler_audience : ""
-  headers                  = coalesce(try(each.value.scheduler_headers, null), {})
-  oauth_scopes             = try(each.value.scheduler_oauth_scopes, [])
-  body                     = coalesce(try(each.value.scheduler_body, null), "{}")
-
-  depends_on = [module.run_jobs]
+resource "google_iap_web_backend_service_iam_binding" "api" {
+  project             = var.project_id
+  web_backend_service = module.global_lb.backend_services["api"]
+  role                = "roles/iap.httpsResourceAccessor"
+  members             = local.fastapi_iap_access_members
 }
 
 resource "google_service_account_iam_member" "cloud_scheduler_token_creator" {
