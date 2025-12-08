@@ -577,13 +577,23 @@ module "run_console" {
     {
       NEXT_PUBLIC_API_BASE_URL = trimspace(var.fastapi_custom_domain) != "" ? format("https://%s", var.fastapi_custom_domain) : module.run_fastapi.uri
       I4G_API_URL              = trimspace(var.fastapi_custom_domain) != "" ? format("https://%s", var.fastapi_custom_domain) : module.run_fastapi.uri
+      HOSTNAME                 = "0.0.0.0"
     },
     var.console_env_vars
   )
+
+  # Increase memory for Next.js
+  resource_limits = {
+    memory = "1Gi"
+    cpu    = "1000m"
+  }
+
   labels = {
     service = "console"
     env     = "dev"
   }
+
+  container_ports = [{ name = "http1", container_port = 8080 }]
 
   ingress = "internal-and-cloud-load-balancing"
 
