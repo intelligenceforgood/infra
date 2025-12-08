@@ -13,45 +13,45 @@ This guide provides step-by-step instructions to manually configure the OAuth Co
 
 ## Step 1: Configure OAuth Consent Screen
 
-1.  Log in to the **Google Cloud Console** and select your project (e.g., `i4g-dev`).
-2.  Navigate to **APIs & Services** > **OAuth consent screen**.
-3.  **User Type Selection**:
-    *   Select **Internal** (if available and you are in an Org).
-    *   Select **External** (if Internal is disabled).
-    *   Click **Create**.
+**Note**: The Google Cloud Console UI has recently changed. You may see a "Google Auth Platform" view with tabs like **Branding**, **Audience**, and **Data Access**.
 
-### Tab 1: App Information
-4.  **App Information**:
+1.  Log in to the **Google Cloud Console** and select your project (e.g., `i4g-dev`).
+2.  Navigate to **APIs & Services** > **OAuth consent screen** (or search for "Branding").
+
+### Tab: Audience (User Type)
+*This is where you define who can access your app.*
+1.  Click the **Audience** tab.
+2.  **User Type**:
+    *   Select **Internal** (Recommended for `intelligenceforgood.org` organization). This allows access control via Google Groups.
+    *   Select **External** (Only if you have no Organization). Requires adding individual "Test Users".
+3.  **Test Users** (External only):
+    *   If External, add specific email addresses here.
+
+### Tab: Branding (App Info)
+*This is where you define what users see on the consent screen.*
+1.  Click the **Branding** tab.
+2.  **App Information**:
     *   **App name**: Enter `Intelligence for Good Analyst Platform`.
     *   **User support email**: Select your email address.
-    *   **App logo**: (Optional) Skip for now.
-5.  **App Domain**:
+3.  **App Domain**:
     *   **Application home page**: `https://app.intelligenceforgood.org`
-    *   **Application privacy policy link**: (Optional)
-    *   **Application terms of service link**: (Optional)
     *   **Authorized domains**: Click **Add Domain** and enter `intelligenceforgood.org`.
-6.  **Developer Contact Information**:
+4.  **Developer Contact Information**:
     *   Enter your email address (e.g., `jerry@intelligenceforgood.org`).
-7.  Click **Save and Continue**.
+5.  Click **Save**.
 
-### Tab 2: Scopes
-8.  Click **Add or Remove Scopes**.
-9.  In the filter list, select the checkboxes for:
+### Tab: Data Access (Scopes)
+*This is where you define what data the app can access.*
+1.  Click the **Data Access** tab.
+2.  Click **Add or Remove Scopes**.
+3.  In the filter list, select the checkboxes for:
     *   `.../auth/userinfo.email`
     *   `.../auth/userinfo.profile`
     *   `openid`
-10. Click **Update**.
-11. Click **Save and Continue**.
+4.  Click **Update** and then **Save**.
 
-### Tab 3: Test Users (External Only)
-*Note: If you selected "Internal", this step is skipped.*
-12. If you selected **External**, click **Add Users**.
-13. Enter the specific email addresses of users who need access (e.g., yourself).
-    *   *Warning*: You cannot add Google Groups (like `i4g-analyst@...`) here. You must add individual emails.
-14. Click **Save and Continue**.
-
-### Tab 4: Summary
-15. Review your settings and click **Back to Dashboard**.
+### Reference
+*   **Official Guide**: [Configure the OAuth consent screen](https://developers.google.com/workspace/guides/configure-oauth-consent) (Most up-to-date resource).
 
 ---
 
@@ -102,16 +102,33 @@ printf "$CLIENT_SECRET" | gcloud secrets versions add $SECRET_ID --data-file=- -
 
 ---
 
-## Step 4: Important Architecture Note
+## Step 4: Apply Configuration & Verify
 
-**Critical**: Identity-Aware Proxy (IAP) **requires** an HTTP(S) Load Balancer.
-Currently, your infrastructure uses **Cloud Run Domain Mapping** (`google_cloud_run_domain_mapping`), which maps the domain directly to Cloud Run.
+Once the OAuth clients are created and secrets are stored (or available to be passed as variables), you must apply the Terraform configuration to deploy the Load Balancer and enable IAP.
 
-**IAP will NOT work with Domain Mapping.**
+1.  **Apply Terraform**:
+    Run the following command in your terminal, ensuring you provide the Client IDs and Secrets you just created.
 
-To enforce IAP:
-1.  You must switch from Domain Mapping to a **Global External Application Load Balancer**.
-2.  The Load Balancer will have IAP enabled on its Backend Service.
-3.  The DNS for `app.intelligenceforgood.org` must point to the Load Balancer IP, not the Cloud Run domain mapping.
+    ```bash
+    # Export your secrets (avoid committing these to git)
+    export TF_VAR_iap_client_id_console="YOUR_CONSOLE_CLIENT_ID"
+    export TF_VAR_iap_client_secret_console="YOUR_CONSOLE_CLIENT_SECRET"
+    export TF_VAR_iap_client_id_api="YOUR_API_CLIENT_ID"      # Can be same as console if sharing client
+    export TF_VAR_iap_client_secret_api="YOUR_API_CLIENT_SECRET"
 
-If you proceed with the current setup, users will access the app directly, bypassing IAP.
+    # Apply the changes
+    conda run -n i4g terraform -chdir=environments/app/dev apply
+    ```
+
+2.  **Update DNS**:
+    *   After Terraform applies, it will output a global IP address for the Load Balancer.
+    *   Update your DNS records (A records) for `app.intelligenceforgood.org` and `api.intelligenceforgood.org` to point to this new IP.
+    *   *Note*: It may take 10-20 minutes for the Google Managed SSL certificates to provision. During this time, you may see SSL errors.
+
+3.  **Verify Access**:
+    *   Open an Incognito window.
+    *   Navigate to `https://app.intelligenceforgood.org`.
+    *   You should be redirected to the Google Sign-In page (the OAuth Consent Screen you configured).
+    *   Sign in with an allowed account (e.g., a member of `i4g-analyst@intelligenceforgood.org`).
+    *   You should successfully access the application.
+

@@ -53,31 +53,13 @@ output "serverless_egress_ip" {
 }
 
 output "iap" {
-  description = "IAP brand and service-specific OAuth client metadata."
+  description = "IAP brand metadata."
   value = {
     brand_name = module.iap_project.brand_name
-    fastapi = {
-      client_id       = module.iap_fastapi.client_id
-      secret_id       = module.iap_fastapi.secret_id
-      secret_resource = module.iap_fastapi.secret_resource
-    }
-    streamlit = {
-      client_id       = module.iap_streamlit.client_id
-      secret_id       = module.iap_streamlit.secret_id
-      secret_resource = module.iap_streamlit.secret_resource
-    }
-    console = {
-      client_id       = module.iap_console.client_id
-      secret_id       = module.iap_console.secret_id
-      secret_resource = module.iap_console.secret_resource
-    }
   }
 }
 
-output "fastapi_domain_mapping" {
-  value = length(module.domain_mapping_fastapi) > 0 ? module.domain_mapping_fastapi[0].domain_mapping_name : null
-}
-
-output "ui_domain_mapping" {
-  value = length(module.domain_mapping_ui) > 0 ? module.domain_mapping_ui[0].domain_mapping_name : null
+output "global_lb_ip" {
+  description = "Global IP address for the Load Balancer."
+  value       = module.global_lb.ip_address
 }

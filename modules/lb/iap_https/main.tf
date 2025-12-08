@@ -77,6 +77,7 @@ resource "google_compute_backend_service" "default" {
   dynamic "iap" {
     for_each = each.value.enable_iap ? [1] : []
     content {
+      enabled              = true
       oauth2_client_id     = each.value.iap_client_id
       oauth2_client_secret = each.value.iap_client_secret
     }
@@ -122,6 +123,32 @@ resource "google_compute_global_forwarding_rule" "default" {
   name       = "${var.name}-forwarding-rule"
   target     = google_compute_target_https_proxy.default.id
   port_range = "443"
+  ip_address = google_compute_global_address.default.address
+}
+
+# 8. HTTP Redirect (Port 80)
+resource "google_compute_url_map" "https_redirect" {
+  project = var.project_id
+  name    = "${var.name}-https-redirect"
+
+  default_url_redirect {
+    https_redirect         = true
+    redirect_response_code = "MOVED_PERMANENTLY_DEFAULT"
+    strip_query            = false
+  }
+}
+
+resource "google_compute_target_http_proxy" "https_redirect" {
+  project = var.project_id
+  name    = "${var.name}-http-proxy"
+  url_map = google_compute_url_map.https_redirect.id
+}
+
+resource "google_compute_global_forwarding_rule" "https_redirect" {
+  project    = var.project_id
+  name       = "${var.name}-forwarding-rule-http"
+  target     = google_compute_target_http_proxy.https_redirect.id
+  port_range = "80"
   ip_address = google_compute_global_address.default.address
 }
 

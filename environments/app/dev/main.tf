@@ -654,6 +654,62 @@ resource "google_cloud_run_v2_job_iam_member" "scheduled_invokers" {
   depends_on = [module.run_jobs]
 }
 
+module "run_jobs" {
+  for_each = local.run_job_configs
+
+  source     = "../../../modules/run/job"
+  project_id = var.project_id
+  location   = each.value.location
+
+  name            = each.value.name
+  service_account = each.value.runtime_service_account_email
+  image           = each.value.image
+  env_vars = merge(
+    lookup(local.run_job_dynamic_env_vars, each.key, {}),
+    coalesce(try(each.value.env_vars, null), {})
+  )
+  secret_env_vars = coalesce(try(each.value.secret_env_vars, null), {})
+  command         = coalesce(try(each.value.command, null), [])
+  args            = coalesce(try(each.value.args, null), [])
+  labels = merge({
+    env = "dev"
+    job = each.key
+  }, try(each.value.labels, {}))
+  annotations                   = coalesce(try(each.value.annotations, null), {})
+  parallelism                   = coalesce(try(each.value.parallelism, null), 1)
+  task_count                    = coalesce(try(each.value.task_count, null), 1)
+  max_retries                   = coalesce(try(each.value.max_retries, null), 3)
+  timeout_seconds               = coalesce(try(each.value.timeout_seconds, null), 600)
+  resource_limits               = coalesce(try(each.value.resource_limits, null), {})
+  vpc_connector                 = try(each.value.vpc_connector, null)
+  vpc_connector_egress_settings = coalesce(try(each.value.vpc_connector_egress_settings, null), "ALL_TRAFFIC")
+
+  depends_on = [module.iam_service_account_bindings]
+}
+
+module "run_job_schedulers" {
+  for_each = local.scheduled_run_jobs
+
+  source     = "../../../modules/scheduler/job"
+  project_id = var.project_id
+  region     = var.region
+
+  name                     = coalesce(try(each.value.scheduler_name, null), "${each.value.name}-schedule")
+  schedule                 = each.value.schedule
+  time_zone                = coalesce(try(each.value.time_zone, null), "UTC")
+  description              = try(each.value.description, null)
+  attempt_deadline_seconds = coalesce(try(each.value.scheduler_attempt_deadline_seconds, null), 300)
+  run_job_name             = module.run_jobs[each.key].name
+  run_job_location         = module.run_jobs[each.key].location
+  service_account_email    = each.value.scheduler_service_account_email
+  audience                 = each.value.scheduler_audience != null ? each.value.scheduler_audience : ""
+  headers                  = coalesce(try(each.value.scheduler_headers, null), {})
+  oauth_scopes             = try(each.value.scheduler_oauth_scopes, [])
+  body                     = coalesce(try(each.value.scheduler_body, null), "{}")
+
+  depends_on = [module.run_jobs]
+}
+
 resource "google_project_organization_policy" "allow_public_invokers" {
   project    = var.project_id
   constraint = "constraints/iam.allowedPolicyMemberDomains"
