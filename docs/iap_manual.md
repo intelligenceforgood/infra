@@ -2,6 +2,44 @@
 
 This guide provides step-by-step instructions to manually configure the OAuth Consent Screen and OAuth Client required for Identity-Aware Proxy (IAP).
 
+## Architecture (IAP + LB + Cloud Run)
+
+```mermaid
+flowchart TD
+    subgraph DNS
+        A[app.intelligenceforgood.org]:::dns
+        B[api.intelligenceforgood.org]:::dns
+    end
+
+    A --> LB[Global HTTPS LB<br/>Managed certs + URL map]:::lb
+    B --> LB
+
+    LB -->|HTTPS + IAP| IAP[IAP Enforcement<br/>OAuth consent + client]:::iap
+
+    subgraph OAuth & Secrets
+        OCS[OAuth Consent Screen]:::config
+        OCI[OAuth Client<br/>Console + API]:::config
+        SM[Secret Manager<br/>Client secrets]:::secret
+        OCS --> OCI --> SM
+    end
+
+    IAP --> CON[Cloud Run: i4g-console<br/>PORT=8080]:::run
+    IAP --> API[Cloud Run: fastapi-gateway<br/>PORT=8080]:::run
+
+    subgraph IAM
+        G[Google Group<br/>i4g-analyst@...]:::iam
+        IAP -. allows .-> G
+    end
+
+    classDef dns fill:#f0f4ff,stroke:#4c6fff,stroke-width:1;
+    classDef lb fill:#e7f9f0,stroke:#0f9d58,stroke-width:1;
+    classDef iap fill:#fff5e6,stroke:#f4b400,stroke-width:1;
+    classDef run fill:#f3e8ff,stroke:#9333ea,stroke-width:1;
+    classDef secret fill:#e8f0fe,stroke:#1a73e8,stroke-width:1;
+    classDef config fill:#fff0f5,stroke:#d946ef,stroke-width:1;
+    classDef iam fill:#fef9c3,stroke:#eab308,stroke-width:1;
+```
+
 ## Prerequisites
 
 - **Permission**: You need `Project Editor` or `OAuth Config Editor` roles.
