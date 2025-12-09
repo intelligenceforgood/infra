@@ -1,0 +1,7 @@
+project_id = "i4g-pii-vault-dev"
+region     = "us-central1"
+
+# Optionally supply app SA emails to grant cross-project access
+app_service_accounts = [
+  # "service-account@app-project.iam.gserviceaccount.com",
+]
