@@ -20,10 +20,10 @@ variable "name" {
 variable "backends" {
   description = "Map of backends. Key is a unique identifier."
   type = map(object({
-    domain            = string
-    service_name      = string
-    region            = string
-    enable_iap        = bool
+    domain       = string
+    service_name = string
+    region       = string
+    enable_iap   = bool
     iap_client_id     = optional(string)
     iap_client_secret = optional(string)
   }))
@@ -64,10 +64,10 @@ resource "google_compute_region_network_endpoint_group" "default" {
 resource "google_compute_backend_service" "default" {
   for_each = var.backends
 
-  project     = var.project_id
-  name        = "${var.name}-backend-${each.key}"
-  protocol    = "HTTPS"
-  port_name   = "http"
+  project = var.project_id
+  name    = "${var.name}-backend-${each.key}"
+  protocol = "HTTPS"
+  port_name = "http"
   timeout_sec = 30
 
   backend {
@@ -111,9 +111,9 @@ resource "google_compute_url_map" "default" {
 
 # 6. Target HTTPS Proxy
 resource "google_compute_target_https_proxy" "default" {
-  project          = var.project_id
-  name             = "${var.name}-proxy"
-  url_map          = google_compute_url_map.default.id
+  project = var.project_id
+  name    = "${var.name}-proxy"
+  url_map = google_compute_url_map.default.id
   ssl_certificates = [for cert in google_compute_managed_ssl_certificate.default : cert.id]
 }
 

@@ -82,24 +82,6 @@ Run these steps once per GCP project before Terraform `init`.
 	 terraform init
 	 ```
 
-**Custom domain + IAP**
-
-To map a custom domain and enable IAP, configure `fastapi_custom_domain` and `ui_custom_domain` in
-the environment `terraform.tfvars` (or `local-overrides.tfvars`) and set `dns_managed_zone` (optional
-if you want Terraform to manage the DNS record in a Cloud DNS managed zone). For LB-style mapping
-in dev the `global_lb` module is used and Terraform can create an A record automatically when
-`dns_managed_zone` is set.
-
-Example for dev `terraform.tfvars`:
-
-```hcl
-fastapi_custom_domain    = "api.intelligenceforgood.org"
-ui_custom_domain         = "app.intelligenceforgood.org"
-dns_managed_zone         = "intelligenceforgood-zone"
-dns_managed_zone_project = "your-dns-hosting-project"
-```
-
-
 	 Initialization uses your local ADC credentials but impersonates `sa-infra` for all state operations and plans.
 
 ---

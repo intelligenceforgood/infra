@@ -642,32 +642,6 @@ resource "google_iap_web_backend_service_iam_binding" "api" {
   members             = local.fastapi_iap_access_members
 }
 
-resource "google_dns_record_set" "fastapi_a_record" {
-  count = trimspace(var.fastapi_custom_domain) != "" && trimspace(var.dns_managed_zone) != "" ? 1 : 0
-
-  project      = trimspace(var.dns_managed_zone_project) != "" ? var.dns_managed_zone_project : var.project_id
-  managed_zone = var.dns_managed_zone
-  name         = "${var.fastapi_custom_domain}."
-  type         = "A"
-  ttl          = 300
-  rrdatas      = [module.global_lb.ip_address]
-
-  depends_on = [module.global_lb]
-}
-
-resource "google_dns_record_set" "ui_a_record" {
-  count = trimspace(var.ui_custom_domain) != "" && trimspace(var.dns_managed_zone) != "" ? 1 : 0
-
-  project      = trimspace(var.dns_managed_zone_project) != "" ? var.dns_managed_zone_project : var.project_id
-  managed_zone = var.dns_managed_zone
-  name         = "${var.ui_custom_domain}."
-  type         = "A"
-  ttl          = 300
-  rrdatas      = [module.global_lb.ip_address]
-
-  depends_on = [module.global_lb]
-}
-
 resource "google_service_account_iam_member" "cloud_scheduler_token_creator" {
   for_each = { for email in local.scheduler_service_account_emails : email => email }
 
