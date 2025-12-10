@@ -5,5 +5,5 @@ resource "google_kms_key_ring" "this" {
 }
 
 output "key_ring_self_link" {
-  value = google_kms_key_ring.this.self_link
+  value = google_kms_key_ring.this.id
 }
