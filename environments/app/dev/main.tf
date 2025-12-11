@@ -410,10 +410,12 @@ locals {
   ]
 
   report_service_account_member = format("serviceAccount:%s", module.iam_service_accounts.emails["report"])
+  app_service_account_member    = format("serviceAccount:%s", module.iam_service_accounts.emails["app"])
 
   fastapi_iap_access_members = distinct(concat(
     local.i4g_analyst_invokers,
-    [local.report_service_account_member]
+    [local.report_service_account_member],
+    [local.app_service_account_member]
   ))
 
   fastapi_requested_invokers = [
