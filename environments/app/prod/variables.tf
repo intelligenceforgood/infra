@@ -97,6 +97,15 @@ variable "fastapi_env_vars" {
   default     = {}
 }
 
+variable "fastapi_secret_env_vars" {
+  description = "Secret-backed environment variables for the FastAPI service."
+  type = map(object({
+    secret  = string
+    version = optional(string)
+  }))
+  default = {}
+}
+
 variable "fastapi_invoker_member" {
   type        = string
   description = "Principal granted Cloud Run invoker on the FastAPI service (leave blank to use defaults)."
@@ -135,6 +144,12 @@ variable "streamlit_invoker_member" {
 variable "console_image" {
   type        = string
   description = "Container image URI for the Next.js console Cloud Run service."
+}
+
+variable "console_enabled" {
+  type        = bool
+  description = "Whether to deploy the console Cloud Run service and related resources."
+  default     = true
 }
 
 variable "console_env_vars" {

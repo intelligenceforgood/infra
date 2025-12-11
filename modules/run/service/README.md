@@ -13,6 +13,8 @@ application services like the FastAPI API gateway or Streamlit UI.
 - `image` – container image URI.
 - `args`, `command` – optional overrides for container args/entrypoint.
 - `env_vars` – map of environment variables.
+- `secret_env_vars` – map of secret-backed environment variables keyed by env var name, each with `secret` and optional
+  `version` (defaults to `latest`).
 - `container_ports` – list of `{ name, container_port }` objects (defaults to single HTTP port 8080).
 - `resource_limits` – map of CPU/memory limits.
 - `container_concurrency`, `timeout_seconds` – runtime tuning.
@@ -41,6 +43,9 @@ module "fastapi_service" {
   service_account   = module.iam_service_accounts.emails["app"]
   image             = "us-docker.pkg.dev/cloudrun/container/hello"
   env_vars          = { ENV = "dev" }
+  secret_env_vars = {
+    I4G_TOKENIZATION__PEPPER = { secret = "projects/i4g-pii-vault-dev/secrets/tokenization-pepper" }
+  }
   invoker_members   = ["user:analyst@example.com", "serviceAccount:${module.iam_service_accounts.emails["app"]}"]
 }
 ```

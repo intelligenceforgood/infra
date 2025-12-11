@@ -20,6 +20,20 @@ This Terraform package defines all shared infrastructure for the i4g platform on
 	helper accepts arbitrary environment strings (e.g., `pii-vault-dev`) so state buckets like `tfstate-i4g-pii-vault-dev`
 	are automatically created when bootstrapping a new stack.
 
+	Example commands for the vault stack:
+
+	```bash
+	# Initialize and plan vault dev
+	cd infra/environments/pii-vault/dev
+	terraform init
+	terraform plan -var "project_id=i4g-pii-vault-dev" -var "github_repository=intelligenceforgood/proto"
+
+	# Initialize and plan vault prod
+	cd ../prod
+	terraform init
+	terraform plan -var "project_id=i4g-pii-vault-prod" -var "github_repository=intelligenceforgood/proto"
+	```
+
 ### Naming conventions
 
 - Stack/project naming example: `i4g-app-dev`, `i4g-app-prod`, `i4g-pii-vault-dev`, `i4g-pii-vault-prod`.
@@ -160,6 +174,7 @@ The dev workflow lives at `.github/workflows/terraform-dev.yml`.
 
 Set the following repository variables under `Settings → Variables → Actions`:
 - `TF_GCP_PROJECT_ID` – e.g., `i4g-dev`.
+- `TF_GCP_PII_VAULT_PROJECT_ID` – e.g., `i4g-pii-vault-dev`.
 - `TF_GCP_WORKLOAD_IDENTITY_PROVIDER` – resource path like `projects/123456789/locations/global/workloadIdentityPools/github-actions/providers/proto`.
 - `TF_GCP_SERVICE_ACCOUNT` – `sa-infra@i4g-dev.iam.gserviceaccount.com`.
 

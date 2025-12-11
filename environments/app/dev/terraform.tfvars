@@ -20,6 +20,17 @@ fastapi_env_vars = {
   I4G_VERTEX_SEARCH_SERVING_CONFIG = "default_search"
 }
 
+fastapi_secret_env_vars = {
+  I4G_TOKENIZATION__PEPPER = {
+    secret  = "projects/i4g-pii-vault-dev/secrets/tokenization-pepper"
+    version = "latest"
+  }
+  I4G_CRYPTO__PII_KEY = {
+    secret  = "projects/i4g-pii-vault-dev/secrets/pii-tokenization-key"
+    version = "latest"
+  }
+}
+
 streamlit_image = "us-central1-docker.pkg.dev/i4g-dev/applications/streamlit:dev"
 
 streamlit_env_vars = {

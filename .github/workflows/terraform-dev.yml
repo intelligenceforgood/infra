@@ -45,8 +45,14 @@ jobs:
       - name: Terraform Init
         run: terraform -chdir="${TF_WORKING_DIR}" init
 
+      - name: Terraform Init (pii-vault)
+        run: terraform -chdir="infra/environments/pii-vault/dev" init
+
       - name: Terraform Fmt
         run: terraform -chdir="${TF_WORKING_DIR}" fmt -check
+
+      - name: Terraform Fmt (pii-vault)
+        run: terraform -chdir="infra/environments/pii-vault/dev" fmt -check
 
       - name: Terraform Plan
         run: terraform -chdir="${TF_WORKING_DIR}" plan -input=false -var "project_id=${TF_GCP_PROJECT_ID}" -var "github_repository=${TF_GITHUB_REPOSITORY}"
@@ -73,6 +79,9 @@ jobs:
 
       - name: Terraform Init
         run: terraform -chdir="${TF_WORKING_DIR}" init
+
+      - name: Terraform Init (pii-vault)
+        run: terraform -chdir="infra/environments/pii-vault/dev" init
 
       - name: Terraform Plan
         run: terraform -chdir="${TF_WORKING_DIR}" plan -input=false -var "project_id=${TF_GCP_PROJECT_ID}" -var "github_repository=${TF_GITHUB_REPOSITORY}"

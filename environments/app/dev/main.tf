@@ -270,6 +270,14 @@ resource "google_service_account_iam_member" "report_token_creators" {
   member             = each.value
 }
 
+resource "google_service_account_iam_member" "app_token_creators" {
+  for_each = toset(var.i4g_admin_members)
+
+  service_account_id = "projects/${var.project_id}/serviceAccounts/${module.iam_service_accounts.emails["app"]}"
+  role               = "roles/iam.serviceAccountTokenCreator"
+  member             = each.value
+}
+
 resource "google_project_iam_custom_role" "streamlit_discovery_search" {
   project     = var.project_id
   role_id     = "streamlitDiscoverySearch"
@@ -513,6 +521,7 @@ module "run_fastapi" {
       I4G_STORAGE__REPORT_BUCKET   = lookup(module.storage_buckets.bucket_names, "reports", "")
     }
   )
+  secret_env_vars = var.fastapi_secret_env_vars
   labels = {
     service = "fastapi"
     env     = "dev"

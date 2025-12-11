@@ -70,9 +70,9 @@ output "iap" {
       secret_resource = module.iap_streamlit.secret_resource
     }
     console = {
-      client_id       = module.iap_console.client_id
-      secret_id       = module.iap_console.secret_id
-      secret_resource = module.iap_console.secret_resource
+      client_id       = length(module.iap_console) > 0 ? module.iap_console[0].client_id : null
+      secret_id       = length(module.iap_console) > 0 ? module.iap_console[0].secret_id : null
+      secret_resource = length(module.iap_console) > 0 ? module.iap_console[0].secret_resource : null
     }
   }
 }

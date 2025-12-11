@@ -42,6 +42,15 @@ variable "env_vars" {
   default     = {}
 }
 
+variable "secret_env_vars" {
+  description = "Secret-backed environment variables injected into the container."
+  type = map(object({
+    secret  = string
+    version = optional(string)
+  }))
+  default = {}
+}
+
 variable "container_ports" {
   description = "List of container ports to expose."
   type = list(object({

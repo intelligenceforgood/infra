@@ -2,6 +2,11 @@ resource "google_cloud_run_domain_mapping" "this" {
   project  = var.project_id
   location = var.region
   name     = var.domain
+
+  metadata {
+    namespace = var.project_id
+  }
+
   spec {
     route_name = var.service_name
   }
@@ -15,7 +20,7 @@ output "domain" {
 resource "google_dns_record_set" "cname_map" {
   count = trimspace(var.dns_managed_zone) == "" ? 0 : 1
 
-  project = var.dns_project == "" ? var.project_id : var.dns_project
+  project      = var.dns_project == "" ? var.project_id : var.dns_project
   managed_zone = var.dns_managed_zone
   name         = "${var.domain}."
   type         = "CNAME"

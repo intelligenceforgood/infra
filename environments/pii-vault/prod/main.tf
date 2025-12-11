@@ -50,6 +50,13 @@ module "tokenization_secret" {
   secret_id  = "pii-tokenization-key"
 }
 
+module "tokenization_pepper" {
+  source     = "../../../modules/security/secret_manager"
+  project_id = var.project_id
+  region     = var.region
+  secret_id  = "tokenization-pepper"
+}
+
 resource "google_project_iam_member" "app_secret_accessor" {
   for_each = { for email in var.app_service_accounts : email => email }
   project  = var.project_id

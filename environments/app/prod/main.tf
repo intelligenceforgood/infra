@@ -133,14 +133,14 @@ resource "google_artifact_registry_repository_iam_member" "serverless_runtime" {
 }
 
 module "iam_service_accounts" {
-  source = "../../../modules/iam/service_accounts"
+  source     = "../../../modules/iam/service_accounts"
   project_id = var.project_id
 
   service_accounts = local.service_accounts
 }
 
 module "github_wif" {
-  source = "../../../modules/iam/workload_identity_github"
+  source              = "../../../modules/iam/workload_identity_github"
   project_id          = var.project_id
   pool_id             = local.github_wif.pool_id
   provider_id         = local.github_wif.provider_id
@@ -197,6 +197,14 @@ resource "google_service_account_iam_member" "report_token_creators" {
   member             = each.value
 }
 
+resource "google_service_account_iam_member" "app_token_creators" {
+  for_each = toset(var.i4g_admin_members)
+
+  service_account_id = "projects/${var.project_id}/serviceAccounts/${module.iam_service_accounts.emails["app"]}"
+  role               = "roles/iam.serviceAccountTokenCreator"
+  member             = each.value
+}
+
 resource "google_project_iam_member" "iap_report_service_account" {
   count   = var.iap_project_level_bindings ? 1 : 0
   project = var.project_id
@@ -215,7 +223,7 @@ resource "google_project_iam_custom_role" "streamlit_discovery_search" {
 }
 
 module "iam_service_account_bindings" {
-  source = "../../../modules/iam/service_account_bindings"
+  source     = "../../../modules/iam/service_account_bindings"
   project_id = var.project_id
 
   bindings = {
@@ -317,7 +325,7 @@ module "vertex_search" {
 }
 
 module "storage_buckets" {
-  source = "../../../modules/storage/buckets"
+  source           = "../../../modules/storage/buckets"
   project_id       = var.project_id
   default_location = var.storage_bucket_default_location
   buckets          = var.storage_buckets
@@ -419,7 +427,7 @@ locals {
 }
 
 module "run_fastapi" {
-  source = "../../../modules/run/service"
+  source     = "../../../modules/run/service"
   project_id = var.project_id
   location   = var.region
 
@@ -433,6 +441,7 @@ module "run_fastapi" {
       I4G_STORAGE__REPORT_BUCKET   = lookup(module.storage_buckets.bucket_names, "reports", "")
     }
   )
+  secret_env_vars = var.fastapi_secret_env_vars
   labels = {
     service = "fastapi"
     env     = "prod"
@@ -463,7 +472,7 @@ module "iap_fastapi" {
 }
 
 module "run_streamlit" {
-  source = "../../../modules/run/service"
+  source     = "../../../modules/run/service"
   project_id = var.project_id
   location   = var.region
 
@@ -507,9 +516,11 @@ module "iap_streamlit" {
 }
 
 module "run_console" {
-  source = "../../../modules/run/service"
+  source     = "../../../modules/run/service"
   project_id = var.project_id
   location   = var.region
+
+  count = var.console_enabled ? 1 : 0
 
   name            = "i4g-console"
   service_account = module.iam_service_accounts.emails["app"]
@@ -522,30 +533,6 @@ module "run_console" {
     },
     var.console_env_vars
   )
-
-  module "domain_mapping_fastapi" {
-    source = "../../../modules/run/domain_mapping"
-    project_id       = var.project_id
-    region           = var.region
-    service_name     = module.run_fastapi.name
-    domain           = var.fastapi_custom_domain
-    dns_managed_zone = var.dns_managed_zone
-    dns_project      = var.dns_managed_zone_project
-
-    count = trimspace(var.fastapi_custom_domain) == "" ? 0 : 1
-  }
-
-  module "domain_mapping_ui" {
-    source = "../../../modules/run/domain_mapping"
-    project_id       = var.project_id
-    region           = var.region
-    service_name     = module.run_console.name
-    domain           = var.ui_custom_domain
-    dns_managed_zone = var.dns_managed_zone
-    dns_project      = var.dns_managed_zone_project
-
-    count = trimspace(var.ui_custom_domain) == "" ? 0 : 1
-  }
   labels = {
     service = "console"
     env     = "prod"
@@ -553,7 +540,7 @@ module "run_console" {
 
   container_ports = [{ name = "http1", container_port = 8080 }]
 
-  ingress = "all"
+  ingress = ""
 
   invoker_member  = ""
   invoker_members = local.console_invoker_members
@@ -561,12 +548,36 @@ module "run_console" {
   depends_on = [module.iam_service_account_bindings, module.run_fastapi, google_project_service_identity.iap]
 }
 
+module "domain_mapping_fastapi" {
+  source           = "../../../modules/run/domain_mapping"
+  project_id       = var.project_id
+  region           = var.region
+  service_name     = module.run_fastapi.name
+  domain           = var.fastapi_custom_domain
+  dns_managed_zone = var.dns_managed_zone
+  dns_project      = var.dns_managed_zone_project
+
+  count = trimspace(var.fastapi_custom_domain) == "" ? 0 : 1
+}
+
+module "domain_mapping_ui" {
+  source           = "../../../modules/run/domain_mapping"
+  project_id       = var.project_id
+  region           = var.region
+  service_name     = module.run_console[0].name
+  domain           = var.ui_custom_domain
+  dns_managed_zone = var.dns_managed_zone
+  dns_project      = var.dns_managed_zone_project
+
+  count = var.console_enabled && trimspace(var.ui_custom_domain) != "" ? 1 : 0
+}
+
 module "iap_console" {
   source = "../../../modules/iap/cloud_run_service"
 
   project_id                   = var.project_id
   region                       = var.region
-  service_name                 = module.run_console.name
+  service_name                 = module.run_console[0].name
   manage_client                = var.iap_manage_clients
   brand_name                   = module.iap_project.brand_name
   display_name                 = "Analyst Console"
@@ -574,13 +585,15 @@ module "iap_console" {
   secret_replication_locations = var.iap_secret_replication_locations
   secret_id                    = "iap-client-console"
 
+  count = var.console_enabled ? 1 : 0
+
   depends_on = [module.run_console]
 }
 
 module "run_jobs" {
   for_each = local.run_job_configs
 
-  source = "../../../modules/run/job"
+  source     = "../../../modules/run/job"
   project_id = var.project_id
   location   = each.value.location
 
@@ -617,7 +630,7 @@ module "run_jobs" {
 module "run_job_schedulers" {
   for_each = local.scheduled_run_jobs
 
-  source = "../../../modules/scheduler/job"
+  source     = "../../../modules/scheduler/job"
   project_id = var.project_id
   region     = var.region
 

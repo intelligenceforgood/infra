@@ -21,6 +21,17 @@ fastapi_env_vars = {
   I4G_VERTEX_SEARCH_SERVING_CONFIG = "default_search"
 }
 
+fastapi_secret_env_vars = {
+  I4G_TOKENIZATION__PEPPER = {
+    secret  = "projects/i4g-pii-vault-prod/secrets/tokenization-pepper"
+    version = "latest"
+  }
+  I4G_CRYPTO__PII_KEY = {
+    secret  = "projects/i4g-pii-vault-prod/secrets/pii-tokenization-key"
+    version = "latest"
+  }
+}
+
 streamlit_image = "us-central1-docker.pkg.dev/i4g-prod/applications/streamlit:prod"
 
 streamlit_env_vars = {
@@ -35,7 +46,8 @@ streamlit_env_vars = {
 streamlit_invoker_member  = ""
 streamlit_invoker_members = []
 
-console_image = "us-central1-docker.pkg.dev/i4g-prod/applications/analyst-console:prod"
+console_image   = "us-central1-docker.pkg.dev/i4g-prod/applications/i4g-console:prod"
+console_enabled = false
 
 console_env_vars = {
   NEXT_PUBLIC_USE_MOCK_DATA        = "false"
@@ -54,8 +66,8 @@ vertex_search_data_store_id = "retrieval-prod"
 vertex_search_display_name  = "Retrieval Production Data Store"
 
 # Custom domains (leave blank if DNS is managed externally and not present in this project)
-fastapi_custom_domain    = "api.intelligenceforgood.org"
-ui_custom_domain         = "app.intelligenceforgood.org"
+fastapi_custom_domain    = ""
+ui_custom_domain         = ""
 dns_managed_zone         = ""
 dns_managed_zone_project = ""
 
@@ -114,6 +126,7 @@ run_jobs = {
     }
   }
   intake = {
+    enabled             = false
     name                = "process-intakes"
     image               = "us-central1-docker.pkg.dev/i4g-prod/applications/intake-job:prod"
     service_account_key = "intake"

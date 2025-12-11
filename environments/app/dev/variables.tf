@@ -97,6 +97,15 @@ variable "fastapi_env_vars" {
   default     = {}
 }
 
+variable "fastapi_secret_env_vars" {
+  description = "Secret-backed environment variables for the FastAPI service."
+  type = map(object({
+    secret  = string
+    version = optional(string)
+  }))
+  default = {}
+}
+
 variable "fastapi_invoker_member" {
   type        = string
   description = "Principal granted Cloud Run invoker on the FastAPI service (leave blank to skip)."

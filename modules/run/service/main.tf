@@ -22,7 +22,20 @@ locals {
     "run.googleapis.com/vpc-egress"           = var.vpc_connector_egress_settings
   }
 
-  template_annotations = merge(var.annotations, local.autoscaling_annotations, local.ingress_annotation, local.vpc_annotations)
+  secret_annotations = length(var.secret_env_vars) == 0 ? {} : {
+    "run.googleapis.com/secrets" = join(",", [
+      for env_key, env_val in var.secret_env_vars :
+      format("%s:%s", env_key, env_val.secret)
+    ])
+  }
+
+  template_annotations = merge(
+    var.annotations,
+    local.autoscaling_annotations,
+    local.ingress_annotation,
+    local.vpc_annotations,
+    local.secret_annotations
+  )
   effective_invokers = distinct([
     for member in concat(
       var.invoker_member == "" ? [] : [var.invoker_member],
@@ -58,6 +71,19 @@ resource "google_cloud_run_service" "this" {
           content {
             name  = env.key
             value = env.value
+          }
+        }
+
+        dynamic "env" {
+          for_each = var.secret_env_vars
+          content {
+            name = env.key
+            value_from {
+              secret_key_ref {
+                name = env.key
+                key  = coalesce(lookup(env.value, "version", null), "latest")
+              }
+            }
           }
         }
 
