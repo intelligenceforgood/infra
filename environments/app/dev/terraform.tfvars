@@ -50,7 +50,7 @@ console_image = "us-central1-docker.pkg.dev/i4g-dev/applications/i4g-console:dev
 
 console_env_vars = {
   NEXT_PUBLIC_USE_MOCK_DATA        = "false"
-  I4G_API_KIND                     = "proto"
+  I4G_API_KIND                     = "core"
   I4G_API_KEY                      = "dev-analyst-token"
   I4G_VERTEX_SEARCH_PROJECT        = "i4g-dev"
   I4G_VERTEX_SEARCH_LOCATION       = "global"

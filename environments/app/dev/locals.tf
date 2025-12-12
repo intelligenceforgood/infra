@@ -39,6 +39,6 @@ locals {
 
   github_wif = {
     pool_id     = "github-actions"
-    provider_id = "proto"
+    provider_id = "core"
   }
 }

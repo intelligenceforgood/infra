@@ -59,7 +59,7 @@ printf '%s' "$KEY" | gcloud secrets versions add pii-tokenization-key \
 3) Validate access via WIF impersonation
 
 ```bash
-cd /Users/jerry/Work/project/i4g/proto
+cd /Users/jerry/Work/project/i4g/core
 python scripts/infra/verify_vault_secret_access.py \
   --project i4g-pii-vault-dev \
   --service-account sa-infra@i4g-pii-vault-dev.iam.gserviceaccount.com \

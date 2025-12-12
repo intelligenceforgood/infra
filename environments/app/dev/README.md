@@ -1,6 +1,6 @@
 # Dev Environment Terraform Notes
 
-This folder composes reusable modules to stand up the prototype stack in the
+This folder composes reusable modules to stand up the core stack in the
 `i4g-dev` project. Key components currently wired in:
 
 - Core service accounts plus scoped IAM bindings for the shared application
@@ -96,8 +96,8 @@ streamlit_invoker_member = "group:analysts@example.com"
 
 ## Deployment Flow
 
-1. Build and push the FastAPI container (see `proto/docker/fastapi.Dockerfile`).
-2. Build and push the Streamlit container (`proto/docker/streamlit.Dockerfile`).
+1. Build and push the FastAPI container (see `core/docker/fastapi.Dockerfile`).
+2. Build and push the Streamlit container (`core/docker/streamlit.Dockerfile`).
 3. Run `terraform init` (one time) and `terraform plan -var-file=terraform.tfvars`.
 4. Apply with `terraform apply -var-file=terraform.tfvars` once the plan looks good.
 5. Capture the service URLs from `terraform output fastapi_service` and

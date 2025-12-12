@@ -51,7 +51,7 @@ console_enabled = false
 
 console_env_vars = {
   NEXT_PUBLIC_USE_MOCK_DATA        = "false"
-  I4G_API_KIND                     = "proto"
+  I4G_API_KIND                     = "core"
   I4G_API_KEY                      = "prod-analyst-token"
   I4G_VERTEX_SEARCH_PROJECT        = "i4g-prod"
   I4G_VERTEX_SEARCH_LOCATION       = "global"

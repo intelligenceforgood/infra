@@ -39,13 +39,13 @@ variable "provider_description" {
 
 variable "github_repository" {
   type        = string
-  description = "GitHub repository in owner/name format (e.g., intelligenceforgood/proto)."
+  description = "GitHub repository in owner/name format (e.g., intelligenceforgood/core)."
 }
 
 variable "attribute_condition" {
   type        = string
   description = "CEL expression filtering acceptable GitHub tokens."
-  default     = "attribute.repository == \"intelligenceforgood/proto\""
+  default     = "attribute.repository == \"intelligenceforgood/core\""
 }
 
 variable "attribute_mapping" {

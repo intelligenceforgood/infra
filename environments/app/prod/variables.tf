@@ -83,7 +83,7 @@ variable "iap_secret_replication_locations" {
 variable "github_repository" {
   type        = string
   description = "GitHub repository (owner/name) allowed to impersonate automation accounts."
-  default     = "intelligenceforgood/proto"
+  default     = "intelligenceforgood/core"
 }
 
 variable "fastapi_image" {

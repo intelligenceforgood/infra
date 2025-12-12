@@ -1,6 +1,6 @@
 # Intelligence for Good — Infrastructure
 
-This Terraform package defines all shared infrastructure for the i4g platform on Google Cloud. It is designed for the Terraform CLI (local laptops and GitHub Actions) with state stored in Google Cloud Storage. Application-specific runbooks live in `proto/docs/dev_guide.md`.
+This Terraform package defines all shared infrastructure for the i4g platform on Google Cloud. It is designed for the Terraform CLI (local laptops and GitHub Actions) with state stored in Google Cloud Storage. Application-specific runbooks live in `core/docs/dev_guide.md`.
 
 ---
 
@@ -26,12 +26,12 @@ This Terraform package defines all shared infrastructure for the i4g platform on
 	# Initialize and plan vault dev
 	cd infra/environments/pii-vault/dev
 	terraform init
-	terraform plan -var "project_id=i4g-pii-vault-dev" -var "github_repository=intelligenceforgood/proto"
+	terraform plan -var "project_id=i4g-pii-vault-dev" -var "github_repository=intelligenceforgood/core"
 
 	# Initialize and plan vault prod
 	cd ../prod
 	terraform init
-	terraform plan -var "project_id=i4g-pii-vault-prod" -var "github_repository=intelligenceforgood/proto"
+	terraform plan -var "project_id=i4g-pii-vault-prod" -var "github_repository=intelligenceforgood/core"
 	```
 
 ### Naming conventions
@@ -175,7 +175,7 @@ The dev workflow lives at `.github/workflows/terraform-dev.yml`.
 Set the following repository variables under `Settings → Variables → Actions`:
 - `TF_GCP_PROJECT_ID` – e.g., `i4g-dev`.
 - `TF_GCP_PII_VAULT_PROJECT_ID` – e.g., `i4g-pii-vault-dev`.
-- `TF_GCP_WORKLOAD_IDENTITY_PROVIDER` – resource path like `projects/123456789/locations/global/workloadIdentityPools/github-actions/providers/proto`.
+- `TF_GCP_WORKLOAD_IDENTITY_PROVIDER` – resource path like `projects/123456789/locations/global/workloadIdentityPools/github-actions/providers/core`.
 - `TF_GCP_SERVICE_ACCOUNT` – `sa-infra@i4g-dev.iam.gserviceaccount.com`.
 
 The workflow uses `google-github-actions/auth@v2` to exchange the GitHub OIDC token for Google credentials, then runs `terraform fmt` and `terraform plan`. Apply automation for prod can be added later following the same pattern.
@@ -189,6 +189,6 @@ The workflow uses `google-github-actions/auth@v2` to exchange the GitHub OIDC to
 - Store no long-lived credentials—use impersonation or Workload Identity Federation.
 
 Related repositories:
-- `intelligenceforgood/proto` – prototype and shared utilities.
+- `intelligenceforgood/core` – prototype and shared utilities.
 - `intelligenceforgood/i4g` – production application services.
 - `intelligenceforgood/docs` – public documentation site.
