@@ -4,7 +4,7 @@
 [![Terraform](https://img.shields.io/badge/Terraform-1.9.x-blueviolet.svg)](https://www.terraform.io/)
 [![Cloud](https://img.shields.io/badge/Cloud-GCP-informational.svg)](https://cloud.google.com/)
 
-This Terraform package defines all shared infrastructure for the i4g platform on Google Cloud. It is designed for the Terraform CLI (local laptops and GitHub Actions) with state stored in Google Cloud Storage. Application-specific runbooks live in `core/docs/dev_guide.md`.
+This Terraform package defines all shared infrastructure for the i4g platform on Google Cloud. It is designed for the Terraform CLI (local laptops and GitHub Actions) with state stored in Google Cloud Storage. Application-specific runbooks live in `core/docs/development/dev_guide.md`.
 
 ---
 
