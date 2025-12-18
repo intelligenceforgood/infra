@@ -79,6 +79,28 @@ storage_buckets = {
       service = "reports"
     }
   }
+  data_bundles = {
+    name          = "i4g-dev-data-bundles"
+    force_destroy = false
+    uniform_bucket_level_access = true
+    public_access_prevention    = "enforced"
+    labels = {
+      env     = "dev"
+      service = "data-bundles"
+    }
+    lifecycle_rules = [
+      {
+        action = {
+          type          = "Delete"
+          storage_class = null
+        }
+        condition = {
+          with_state         = "ARCHIVED" # delete archived (noncurrent) versions
+          num_newer_versions = 5
+        }
+      }
+    ]
+  }
 }
 
 run_jobs = {
