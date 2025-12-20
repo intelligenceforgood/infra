@@ -134,37 +134,7 @@ run_jobs = {
       I4G_ENV = "prod"
     }
   }
-  weekly_refresh = {
-    enabled             = false
-    name                = "weekly-azure-refresh"
-    image               = "us-central1-docker.pkg.dev/i4g-prod/applications/weekly-refresh-job:prod"
-    service_account_key = "ingest"
-    env_vars = {
-      I4G_ENV = "prod"
-    }
-    secret_env_vars = {
-      AZURE_SQL_CONNECTION_STRING = {
-        secret  = "azure-sql-connection-string"
-        version = "latest"
-      }
-      AZURE_STORAGE_CONNECTION_STRING = {
-        secret  = "azure-storage-connection-string"
-        version = "latest"
-      }
-      AZURE_SEARCH_ADMIN_KEY = {
-        secret  = "azure-search-admin-key"
-        version = "latest"
-      }
-    }
-    schedule        = "0 11 * * MON"
-    time_zone       = "UTC"
-    description     = "Weekly Azure -> GCP incremental refresh (prod)."
-    timeout_seconds = 3600
-    resource_limits = {
-      cpu    = "1"
-      memory = "2Gi"
-    }
-  }
+
   report = {
     name                = "generate-reports"
     image               = "us-central1-docker.pkg.dev/i4g-prod/applications/report-job:prod"

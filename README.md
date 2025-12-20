@@ -132,7 +132,6 @@ Run these steps once per GCP project before Terraform `init`.
 - Terraform now manages the regional `applications` repository in Artifact Registry and grants runtime read access plus writer access to `sa-infra`.
 - Docker build/push commands should target `us-central1-docker.pkg.dev/<project>/applications/<name>:<tag>`.
 - For local pushes make sure `gcloud auth configure-docker us-central1-docker.pkg.dev` has been run once; CI uses Workload Identity Federation automatically.
-- `docker/weekly-refresh-job.Dockerfile` builds the Cloud Run job image that executes the Azure -> GCP weekly refresh orchestrator.
 - `scripts/infra/add_azure_secrets.py` adds Secret Manager versions for the Azure connection strings and admin key.
 
 ---

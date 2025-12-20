@@ -125,42 +125,7 @@ run_jobs = {
       I4G_STORAGE__SQLITE_PATH  = "/tmp/i4g/sqlite/intake.db"
     }
   }
-  weekly_refresh = {
-    name                = "weekly-azure-refresh"
-    image               = "us-central1-docker.pkg.dev/i4g-dev/applications/weekly-refresh-job:dev"
-    service_account_key = "ingest"
-    env_vars = {
-      I4G_ENV               = "dev"
-      AZURE_SEARCH_ENDPOINT = "https://ifg-ai-search.search.windows.net"
-    }
-    secret_env_vars = {
-      AZURE_SQL_CONNECTION_STRING = {
-        secret  = "azure-sql-connection-string"
-        version = "latest"
-      }
-      AZURE_STORAGE_CONNECTION_STRING = {
-        secret  = "azure-storage-connection-string"
-        version = "latest"
-      }
-      AZURE_SEARCH_ADMIN_KEY = {
-        secret  = "azure-search-admin-key"
-        version = "latest"
-      }
-    }
-    scheduler_service_account_key = "scheduler"
-    schedule                      = "0 11 * * MON"
-    time_zone                     = "UTC"
-    description                   = "Weekly Azure -> GCP incremental refresh (dev)."
-    scheduler_audience            = "https://us-central1-run.googleapis.com/"
-    scheduler_oauth_scopes = [
-      "https://www.googleapis.com/auth/cloud-platform"
-    ]
-    timeout_seconds = 3600
-    resource_limits = {
-      cpu    = "1"
-      memory = "2Gi"
-    }
-  }
+
   report = {
     name                = "generate-reports"
     image               = "us-central1-docker.pkg.dev/i4g-dev/applications/report-job:dev"

@@ -399,7 +399,6 @@ module "storage_buckets" {
 
 locals {
   run_job_vpc_connector_overrides = {
-    weekly_refresh = google_vpc_access_connector.serverless.id
   }
 }
 
