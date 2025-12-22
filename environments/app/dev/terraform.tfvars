@@ -106,11 +106,25 @@ storage_buckets = {
 run_jobs = {
   ingest = {
     enabled             = true
-    name                = "ingest-azure-snapshot"
+    name                = "ingest-network-smoke"
     image               = "us-central1-docker.pkg.dev/i4g-dev/applications/ingest-job:dev"
     service_account_key = "ingest"
     env_vars = {
-      I4G_ENV = "dev"
+      I4G_ENV                          = "dev"
+      I4G_STORAGE__STRUCTURED_BACKEND  = "cloudsql"
+      I4G_STORAGE__CLOUDSQL_INSTANCE   = "i4g-dev:us-central1:i4g-dev-db"
+      I4G_STORAGE__CLOUDSQL_DATABASE   = "i4g_db"
+      I4G_STORAGE__CLOUDSQL_USER       = "ingest_user"
+      I4G_VECTOR__BACKEND              = "vertex_ai"
+      I4G_VECTOR__VERTEX_AI_PROJECT    = "i4g-dev"
+      I4G_VECTOR__VERTEX_AI_LOCATION   = "global"
+      I4G_VECTOR__VERTEX_AI_DATA_STORE = "retrieval-poc"
+    }
+    secret_env_vars = {
+      I4G_STORAGE__CLOUDSQL_PASSWORD = {
+        secret  = "ingest-db-password"
+        version = "latest"
+      }
     }
   }
   intake = {
