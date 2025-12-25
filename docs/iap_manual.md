@@ -107,7 +107,9 @@ flowchart TD
     *   Enter: `https://app.intelligenceforgood.org/api/auth/callback/google` (Standard for NextAuth.js/Auth.js if used).
     *   Click **Add URI**.
     *   Enter: `https://iap.googleapis.com/v1/oauth/clientIds/YOUR_CLIENT_ID_HERE:handleRedirect`
-        *   *Note*: You won't know the Client ID until you create it. You can come back and edit this later, or skip it if you are only using IAP's built-in flow (which auto-handles this).
+        *   *Note*: Replace `YOUR_CLIENT_ID_HERE` with the actual Client ID generated in this step. This URI is required for IAP to function correctly.
+    *   Click **Add URI**.
+    *   Enter: `https://app.intelligenceforgood.org/_gcp_gatekeeper/authenticate` (Required for IAP to handle authentication callbacks).
 7.  Click **Create**.
 8.  **Important**: A popup will show "OAuth client created".
     *   Copy the **Client ID**.
