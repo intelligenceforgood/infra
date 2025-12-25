@@ -4,5 +4,5 @@
 .terraform.lock.hcl
 
 # Local overrides and plan files
-infra/environments/dev/local-overrides.tfvars
-infra/environments/dev/tfplan
+*local-overrides.tfvars
+*.tfplan

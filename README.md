@@ -108,6 +108,10 @@ Run these steps once per GCP project before Terraform `init`.
 1. Work from a feature branch and edit files under `modules/` or `environments/app/<env>/`.
 2. Format and lint locally: `terraform fmt -recursive` (tflint optional but recommended).
 3. Run `terraform plan` inside the relevant environment directory. Provide overrides such as `-var "github_repository=owner/repo"` if you are testing from a fork.
+   > **Note:** If you have local overrides (e.g., for IAP secrets), you must explicitly include them:
+   > `terraform plan -var-file="local-overrides.tfvars"`
+   > `terraform apply -var-file="local-overrides.tfvars"`
+
 4. Open a pull request. GitHub Actions (`.github/workflows/terraform-dev.yml`) re-runs `fmt` and `plan` using Workload Identity Federation.
 5. After review merge into `main`. Dev applies run automatically; prod applies remain manual for now.
 

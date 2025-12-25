@@ -528,10 +528,14 @@ module "run_fastapi" {
     env     = "dev"
   }
 
-  ingress = "all"
+  ingress = "internal-and-cloud-load-balancing"
+
+  annotations = {
+    "run.googleapis.com/custom-audiences" = jsonencode([try(var.iap_clients["api"].client_id, "")])
+  }
 
   invoker_member  = ""
-  invoker_members = local.fastapi_invoker_members
+  invoker_members = concat(local.fastapi_invoker_members, ["allUsers"])
 
   depends_on = [module.iam_service_account_bindings, google_project_service.gemini_cloud_assist, google_project_service_identity.iap]
 }
@@ -587,6 +591,7 @@ module "run_console" {
     {
       NEXT_PUBLIC_API_BASE_URL = trimspace(var.fastapi_custom_domain) != "" ? format("https://%s", var.fastapi_custom_domain) : module.run_fastapi.uri
       I4G_API_URL              = module.run_fastapi.uri
+      I4G_IAP_CLIENT_ID        = try(var.iap_clients["api"].client_id, "")
       HOSTNAME                 = "0.0.0.0"
       FORCE_REDEPLOY           = "7"
     },
@@ -625,16 +630,16 @@ module "global_lb" {
       service_name      = module.run_console.name
       region            = var.region
       enable_iap        = true
-      iap_client_id     = var.iap_client_id_console
-      iap_client_secret = var.iap_client_secret_console
+      iap_client_id     = try(var.iap_clients["console"].client_id, "")
+      iap_client_secret = try(var.iap_clients["console"].client_secret, "")
     }
     api = {
       domain            = var.fastapi_custom_domain
       service_name      = module.run_fastapi.name
       region            = var.region
       enable_iap        = true
-      iap_client_id     = var.iap_client_id_api
-      iap_client_secret = var.iap_client_secret_api
+      iap_client_id     = try(var.iap_clients["api"].client_id, "")
+      iap_client_secret = try(var.iap_clients["api"].client_secret, "")
     }
   }
 }

@@ -199,10 +199,14 @@ dns_managed_zone_project = ""
 # IAP allowed domains
 iap_allowed_domains = ["intelligenceforgood.org"]
 
-
-iap_client_id_api     = "REPLACE_WITH_CLIENT_ID"
-iap_client_secret_api = "REPLACE_WITH_CLIENT_SECRET"
-
-iap_client_id_console     = "REPLACE_WITH_CLIENT_ID"
-iap_client_secret_console = "REPLACE_WITH_CLIENT_SECRET"
+iap_clients = {
+  api = {
+    client_id     = "REPLACE_WITH_CLIENT_ID"
+    client_secret = "REPLACE_WITH_CLIENT_SECRET"
+  }
+  console = {
+    client_id     = "REPLACE_WITH_CLIENT_ID"
+    client_secret = "REPLACE_WITH_CLIENT_SECRET"
+  }
+}
 

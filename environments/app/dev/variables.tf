@@ -298,28 +298,20 @@ variable "vertex_search_display_name" {
   default     = "Retrieval PoC Data Store"
 }
 
-variable "iap_client_id_console" {
-  type        = string
-  description = "OAuth Client ID for the Console IAP."
-  default     = ""
-}
+variable "iap_clients" {
+  description = "OAuth client credentials for IAP-protected services, keyed by service name (e.g., 'api', 'console')."
+  type = map(object({
+    client_id     = string
+    client_secret = string
+  }))
+  default   = {}
+  sensitive = true
 
-variable "iap_client_secret_console" {
-  type        = string
-  description = "OAuth Client Secret for the Console IAP."
-  default     = ""
-  sensitive   = true
-}
-
-variable "iap_client_id_api" {
-  type        = string
-  description = "OAuth Client ID for the API IAP."
-  default     = ""
-}
-
-variable "iap_client_secret_api" {
-  type        = string
-  description = "OAuth Client Secret for the API IAP."
-  default     = ""
-  sensitive   = true
+  validation {
+    condition = alltrue([
+      for k, v in var.iap_clients :
+      v.client_id != "REPLACE_WITH_CLIENT_ID" && v.client_secret != "REPLACE_WITH_CLIENT_SECRET"
+    ])
+    error_message = "IAP client credentials must be provided in local-overrides.tfvars. The default placeholders are not valid."
+  }
 }
