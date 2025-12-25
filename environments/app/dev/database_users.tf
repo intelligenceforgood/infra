@@ -1,0 +1,71 @@
+resource "random_password" "ingest_db_password" {
+  length  = 16
+  special = true
+}
+
+data "google_secret_manager_secret" "ingest_db_password" {
+  secret_id = "ingest-db-password"
+  project   = var.project_id
+}
+
+resource "google_secret_manager_secret_version" "ingest_db_password" {
+  secret      = data.google_secret_manager_secret.ingest_db_password.id
+  secret_data = random_password.ingest_db_password.result
+}
+
+resource "google_sql_user" "ingest_user" {
+  name     = "ingest_user"
+  instance = google_sql_database_instance.default.name
+  password = random_password.ingest_db_password.result
+  project  = var.project_id
+}
+
+resource "google_sql_user" "iam_admin_group" {
+  name     = var.db_admin_group
+  instance = google_sql_database_instance.default.name
+  project  = var.project_id
+  type     = "CLOUD_IAM_GROUP"
+}
+
+resource "google_sql_user" "iam_analyst_group" {
+  name     = var.db_analyst_group
+  instance = google_sql_database_instance.default.name
+  project  = var.project_id
+  type     = "CLOUD_IAM_GROUP"
+}
+
+resource "google_project_iam_member" "db_admin_connect" {
+  project = var.project_id
+  role    = "roles/cloudsql.client"
+  member  = "group:${var.db_admin_group}"
+}
+
+resource "google_project_iam_member" "db_admin_login" {
+  project = var.project_id
+  role    = "roles/cloudsql.instanceUser"
+  member  = "group:${var.db_admin_group}"
+}
+
+resource "google_project_iam_member" "db_analyst_connect" {
+  project = var.project_id
+  role    = "roles/cloudsql.client"
+  member  = "group:${var.db_analyst_group}"
+}
+
+resource "google_project_iam_member" "db_analyst_login" {
+  project = var.project_id
+  role    = "roles/cloudsql.instanceUser"
+  member  = "group:${var.db_analyst_group}"
+}
+
+resource "google_project_iam_member" "db_admin_viewer" {
+  project = var.project_id
+  role    = "roles/cloudsql.viewer"
+  member  = "group:${var.db_admin_group}"
+}
+
+resource "google_project_iam_member" "db_analyst_viewer" {
+  project = var.project_id
+  role    = "roles/cloudsql.viewer"
+  member  = "group:${var.db_analyst_group}"
+}

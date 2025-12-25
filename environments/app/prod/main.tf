@@ -375,6 +375,7 @@ locals {
 
   default_runtime_invokers = [
     format("serviceAccount:%s", module.iam_service_accounts.emails["app"]),
+    format("serviceAccount:%s", module.iam_service_accounts.emails["intake"]),
     local.iap_service_agent_member
   ]
 

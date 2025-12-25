@@ -528,7 +528,7 @@ module "run_fastapi" {
     env     = "dev"
   }
 
-  ingress = "internal-and-cloud-load-balancing"
+  ingress = "all"
 
   invoker_member  = ""
   invoker_members = local.fastapi_invoker_members
@@ -586,8 +586,9 @@ module "run_console" {
   env_vars = merge(
     {
       NEXT_PUBLIC_API_BASE_URL = trimspace(var.fastapi_custom_domain) != "" ? format("https://%s", var.fastapi_custom_domain) : module.run_fastapi.uri
-      I4G_API_URL              = trimspace(var.fastapi_custom_domain) != "" ? format("https://%s", var.fastapi_custom_domain) : module.run_fastapi.uri
+      I4G_API_URL              = module.run_fastapi.uri
       HOSTNAME                 = "0.0.0.0"
+      FORCE_REDEPLOY           = "7"
     },
     var.console_env_vars
   )

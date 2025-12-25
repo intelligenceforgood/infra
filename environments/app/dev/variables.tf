@@ -50,6 +50,16 @@ variable "iap_manage_clients" {
   default     = false
 }
 
+variable "db_admin_group" {
+  type        = string
+  description = "Google Group email for DB admins (IAM auth)."
+}
+
+variable "db_analyst_group" {
+  type        = string
+  description = "Google Group email for DB analysts (IAM auth)."
+}
+
 variable "iap_project_level_bindings" {
   type        = bool
   description = "When true, create project-level IAP accessor bindings for `i4g_analyst_members`. Set to false to keep IAP bindings out of project-level IAM (use per-service bindings)."

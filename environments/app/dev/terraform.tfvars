@@ -6,6 +6,9 @@ i4g_admin_members = [
   "group:gcp-i4g-admin@intelligenceforgood.org",
 ]
 
+db_admin_group   = "gcp-i4g-admin@intelligenceforgood.org"
+db_analyst_group = "gcp-i4g-analyst@intelligenceforgood.org"
+
 project_id            = "i4g-dev"
 iap_support_email     = "jerry@intelligenceforgood.org"
 iap_application_title = "i4g Analyst Surfaces (Dev)"
@@ -80,8 +83,8 @@ storage_buckets = {
     }
   }
   data_bundles = {
-    name          = "i4g-dev-data-bundles"
-    force_destroy = false
+    name                        = "i4g-dev-data-bundles"
+    force_destroy               = false
     uniform_bucket_level_access = true
     public_access_prevention    = "enforced"
     labels = {
@@ -106,9 +109,10 @@ storage_buckets = {
 run_jobs = {
   ingest = {
     enabled             = true
-    name                = "ingest-network-smoke"
+    name                = "ingest-azure-snapshot"
     image               = "us-central1-docker.pkg.dev/i4g-dev/applications/ingest-job:dev"
     service_account_key = "ingest"
+    timeout_seconds     = 3600
     env_vars = {
       I4G_ENV                          = "dev"
       I4G_STORAGE__STRUCTURED_BACKEND  = "cloudsql"
@@ -132,11 +136,20 @@ run_jobs = {
     image               = "us-central1-docker.pkg.dev/i4g-dev/applications/intake-job:dev"
     service_account_key = "intake"
     env_vars = {
-      I4G_ENV                   = "dev"
-      I4G_API__KEY              = "dev-analyst-token"
-      I4G_INGEST__ENABLE_VECTOR = "false"
-      I4G_RUNTIME__FALLBACK_DIR = "/tmp/i4g"
-      I4G_STORAGE__SQLITE_PATH  = "/tmp/i4g/sqlite/intake.db"
+      I4G_ENV                         = "dev"
+      I4G_API__KEY                    = "dev-analyst-token"
+      I4G_INGEST__ENABLE_VECTOR       = "false"
+      I4G_RUNTIME__FALLBACK_DIR       = "/tmp/i4g"
+      I4G_STORAGE__STRUCTURED_BACKEND = "cloudsql"
+      I4G_STORAGE__CLOUDSQL_INSTANCE  = "i4g-dev:us-central1:i4g-dev-db"
+      I4G_STORAGE__CLOUDSQL_DATABASE  = "i4g_db"
+      I4G_STORAGE__CLOUDSQL_USER      = "ingest_user"
+    }
+    secret_env_vars = {
+      I4G_STORAGE__CLOUDSQL_PASSWORD = {
+        secret  = "ingest-db-password"
+        version = "latest"
+      }
     }
   }
 
@@ -185,4 +198,11 @@ dns_managed_zone_project = ""
 
 # IAP allowed domains
 iap_allowed_domains = ["intelligenceforgood.org"]
+
+
+iap_client_id_api     = "REPLACE_WITH_CLIENT_ID"
+iap_client_secret_api = "REPLACE_WITH_CLIENT_SECRET"
+
+iap_client_id_console     = "REPLACE_WITH_CLIENT_ID"
+iap_client_secret_console = "REPLACE_WITH_CLIENT_SECRET"
 
