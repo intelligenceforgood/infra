@@ -3,8 +3,6 @@
 This folder contains infrastructure operational notes and short-runbooks for
 the `infra` Terraform workspace.
 
-- `IAP_CLEANUP.md`: Guidance for cleaning up Terraform-managed IAP artifacts.
-
 Policy: local overrides
 
 - Keep local environment overrides (for example, `local-overrides.tfvars`) out
