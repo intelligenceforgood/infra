@@ -16,11 +16,14 @@ fastapi_image         = "us-central1-docker.pkg.dev/i4g-dev/applications/fastapi
 
 fastapi_env_vars = {
   I4G_ENV                          = "dev"
-  I4G_STORAGE__SQLITE_PATH         = "/tmp/i4g_store.db"
-  I4G_VERTEX_SEARCH_PROJECT        = "i4g-dev"
-  I4G_VERTEX_SEARCH_LOCATION       = "global"
-  I4G_VERTEX_SEARCH_DATA_STORE     = "retrieval-poc"
-  I4G_VERTEX_SEARCH_SERVING_CONFIG = "default_search"
+  I4G_STORAGE__STRUCTURED_BACKEND  = "cloudsql"
+  I4G_STORAGE__CLOUDSQL_INSTANCE   = "i4g-dev:us-central1:i4g-dev-db"
+  I4G_STORAGE__CLOUDSQL_DATABASE   = "i4g_db"
+  I4G_STORAGE__CLOUDSQL_USER       = "ingest_user"
+  I4G_STORAGE__FIRESTORE__PROJECT  = "i4g-dev"
+  I4G_VECTOR__BACKEND              = "vertex_ai"
+  I4G_VECTOR__VERTEX_AI_BRANCH     = "default_branch"
+  I4G_API__RATE_LIMIT_PER_MINUTE   = "1000"
 }
 
 fastapi_secret_env_vars = {
@@ -32,6 +35,10 @@ fastapi_secret_env_vars = {
     secret  = "projects/i4g-pii-vault-dev/secrets/pii-tokenization-key"
     version = "latest"
   }
+  I4G_STORAGE__CLOUDSQL_PASSWORD = {
+    secret  = "projects/i4g-dev/secrets/ingest-db-password"
+    version = "latest"
+  }
 }
 
 streamlit_image = "us-central1-docker.pkg.dev/i4g-dev/applications/streamlit:dev"
@@ -40,9 +47,6 @@ streamlit_env_vars = {
   I4G_ENV                          = "dev"
   I4G_API__KEY                     = "" # real token lives in local-overrides.tfvars (see infra/docs/README.md)
   STREAMLIT_SERVER_TITLE           = "I4G Analyst Dashboard"
-  I4G_VERTEX_SEARCH_PROJECT        = "i4g-dev"
-  I4G_VERTEX_SEARCH_LOCATION       = "global"
-  I4G_VERTEX_SEARCH_DATA_STORE     = "retrieval-poc"
   I4G_VERTEX_SEARCH_SERVING_CONFIG = "default_search"
 }
 
@@ -55,9 +59,6 @@ console_env_vars = {
   NEXT_PUBLIC_USE_MOCK_DATA        = "false"
   I4G_API_KIND                     = "core"
   I4G_API_KEY                      = "dev-analyst-token"
-  I4G_VERTEX_SEARCH_PROJECT        = "i4g-dev"
-  I4G_VERTEX_SEARCH_LOCATION       = "global"
-  I4G_VERTEX_SEARCH_DATA_STORE     = "retrieval-poc"
   I4G_VERTEX_SEARCH_SERVING_CONFIG = "default_search"
 }
 
@@ -120,9 +121,6 @@ run_jobs = {
       I4G_STORAGE__CLOUDSQL_DATABASE   = "i4g_db"
       I4G_STORAGE__CLOUDSQL_USER       = "ingest_user"
       I4G_VECTOR__BACKEND              = "vertex_ai"
-      I4G_VECTOR__VERTEX_AI_PROJECT    = "i4g-dev"
-      I4G_VECTOR__VERTEX_AI_LOCATION   = "global"
-      I4G_VECTOR__VERTEX_AI_DATA_STORE = "retrieval-poc"
     }
     secret_env_vars = {
       I4G_STORAGE__CLOUDSQL_PASSWORD = {
@@ -187,8 +185,12 @@ run_jobs = {
   }
 }
 
-vertex_search_data_store_id = "retrieval-poc"
-vertex_search_display_name  = "Retrieval PoC Data Store"
+vertex_ai_search = {
+  project_id    = "REPLACE_WITH_PROJECT_ID"
+  location      = "global"
+  data_store_id = "REPLACE_WITH_DATA_STORE_ID"
+  display_name  = "Retrieval PoC Data Store"
+}
 
 # Custom domains (leave blank if DNS is managed externally and not present in this project)
 fastapi_custom_domain    = "api.intelligenceforgood.org"

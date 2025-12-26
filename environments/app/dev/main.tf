@@ -278,15 +278,6 @@ resource "google_service_account_iam_member" "app_token_creators" {
   member             = each.value
 }
 
-resource "google_project_iam_custom_role" "streamlit_discovery_search" {
-  project     = var.project_id
-  role_id     = "streamlitDiscoverySearch"
-  title       = "Streamlit Discovery Search"
-  description = "Allows the Streamlit service to call Discovery search APIs"
-  permissions = [
-    "discoveryengine.servingConfigs.search"
-  ]
-}
 
 module "iam_service_account_bindings" {
   source     = "../../../modules/iam/service_account_bindings"
@@ -301,9 +292,10 @@ module "iam_service_account_bindings" {
         "roles/storage.objectViewer",
         "roles/artifactregistry.reader",
         "roles/secretmanager.secretAccessor",
-        google_project_iam_custom_role.streamlit_discovery_search.name,
+        "roles/discoveryengine.viewer",
         "roles/logging.logWriter",
-        "roles/monitoring.metricWriter"
+        "roles/monitoring.metricWriter",
+        "roles/cloudsql.client"
       ]
     }
 
@@ -317,7 +309,8 @@ module "iam_service_account_bindings" {
         "roles/secretmanager.secretAccessor",
         "roles/pubsub.publisher",
         "roles/logging.logWriter",
-        "roles/monitoring.metricWriter"
+        "roles/monitoring.metricWriter",
+        "roles/cloudsql.client"
       ]
     }
 
@@ -383,9 +376,9 @@ module "vertex_search" {
   }
 
   project_id    = var.project_id
-  location      = var.vertex_search_location
-  data_store_id = var.vertex_search_data_store_id
-  display_name  = var.vertex_search_display_name
+  location      = var.vertex_ai_search.location
+  data_store_id = var.vertex_ai_search.data_store_id
+  display_name  = var.vertex_ai_search.display_name
 
   depends_on = [google_project_service.vertex_ai_search]
 }
@@ -518,8 +511,15 @@ module "run_fastapi" {
     },
     var.fastapi_env_vars,
     {
-      I4G_STORAGE__EVIDENCE_BUCKET = lookup(module.storage_buckets.bucket_names, "evidence", "")
-      I4G_STORAGE__REPORT_BUCKET   = lookup(module.storage_buckets.bucket_names, "reports", "")
+      I4G_STORAGE__EVIDENCE_BUCKET     = lookup(module.storage_buckets.bucket_names, "evidence", "")
+      I4G_STORAGE__REPORT_BUCKET       = lookup(module.storage_buckets.bucket_names, "reports", "")
+      I4G_VECTOR__VERTEX_AI_PROJECT    = var.vertex_ai_search.project_id
+      I4G_VECTOR__VERTEX_AI_LOCATION   = var.vertex_ai_search.location
+      I4G_VECTOR__VERTEX_AI_DATA_STORE = var.vertex_ai_search.data_store_id
+      # Explicitly set Vertex Search env vars to avoid ambiguity
+      I4G_VERTEX_SEARCH_PROJECT        = var.vertex_ai_search.project_id
+      I4G_VERTEX_SEARCH_LOCATION       = var.vertex_ai_search.location
+      I4G_VERTEX_SEARCH_DATA_STORE     = var.vertex_ai_search.data_store_id
     }
   )
   secret_env_vars = var.fastapi_secret_env_vars
@@ -542,6 +542,11 @@ module "run_fastapi" {
 
 locals {
   run_job_dynamic_env_vars = {
+    ingest = {
+      I4G_VECTOR__VERTEX_AI_PROJECT    = var.vertex_ai_search.project_id
+      I4G_VECTOR__VERTEX_AI_LOCATION   = var.vertex_ai_search.location
+      I4G_VECTOR__VERTEX_AI_DATA_STORE = var.vertex_ai_search.data_store_id
+    }
     intake = {
       I4G_INTAKE__API_BASE = format("%s/intakes", trimsuffix(module.run_fastapi.uri, "/"))
     }
@@ -562,8 +567,11 @@ module "run_streamlit" {
   env_vars = merge(
     var.streamlit_env_vars,
     {
-      I4G_API__BASE_URL = trimspace(var.fastapi_custom_domain) != "" ? format("https://%s", var.fastapi_custom_domain) : module.run_fastapi.uri
-      I4G_API_URL       = trimspace(var.fastapi_custom_domain) != "" ? format("https://%s", var.fastapi_custom_domain) : module.run_fastapi.uri
+      I4G_API__BASE_URL            = trimspace(var.fastapi_custom_domain) != "" ? format("https://%s", var.fastapi_custom_domain) : module.run_fastapi.uri
+      I4G_API_URL                  = trimspace(var.fastapi_custom_domain) != "" ? format("https://%s", var.fastapi_custom_domain) : module.run_fastapi.uri
+      I4G_VERTEX_SEARCH_PROJECT    = var.vertex_ai_search.project_id
+      I4G_VERTEX_SEARCH_LOCATION   = var.vertex_ai_search.location
+      I4G_VERTEX_SEARCH_DATA_STORE = var.vertex_ai_search.data_store_id
     },
   )
   labels = {
@@ -589,11 +597,14 @@ module "run_console" {
   image           = var.console_image
   env_vars = merge(
     {
-      NEXT_PUBLIC_API_BASE_URL = trimspace(var.fastapi_custom_domain) != "" ? format("https://%s", var.fastapi_custom_domain) : module.run_fastapi.uri
-      I4G_API_URL              = module.run_fastapi.uri
-      I4G_IAP_CLIENT_ID        = try(var.iap_clients["api"].client_id, "")
-      HOSTNAME                 = "0.0.0.0"
-      FORCE_REDEPLOY           = "7"
+      NEXT_PUBLIC_API_BASE_URL     = trimspace(var.fastapi_custom_domain) != "" ? format("https://%s", var.fastapi_custom_domain) : module.run_fastapi.uri
+      I4G_API_URL                  = module.run_fastapi.uri
+      I4G_IAP_CLIENT_ID            = try(var.iap_clients["api"].client_id, "")
+      HOSTNAME                     = "0.0.0.0"
+      FORCE_REDEPLOY               = "7"
+      I4G_VERTEX_SEARCH_PROJECT    = var.vertex_ai_search.project_id
+      I4G_VERTEX_SEARCH_LOCATION   = var.vertex_ai_search.location
+      I4G_VERTEX_SEARCH_DATA_STORE = var.vertex_ai_search.data_store_id
     },
     var.console_env_vars
   )

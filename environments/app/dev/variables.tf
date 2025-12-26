@@ -280,22 +280,25 @@ variable "run_jobs" {
   default = {}
 }
 
-variable "vertex_search_location" {
-  type        = string
-  description = "Discovery location for Vertex AI Search resources."
-  default     = "global"
-}
+variable "vertex_ai_search" {
+  description = "Configuration for Vertex AI Search."
+  type = object({
+    project_id    = string
+    location      = string
+    data_store_id = string
+    display_name  = string
+  })
+  default = {
+    project_id    = "REPLACE_WITH_PROJECT_ID"
+    location      = "global"
+    data_store_id = "REPLACE_WITH_DATA_STORE_ID"
+    display_name  = "Retrieval PoC Data Store"
+  }
 
-variable "vertex_search_data_store_id" {
-  type        = string
-  description = "Identifier for the Vertex AI Search data store."
-  default     = "retrieval-poc"
-}
-
-variable "vertex_search_display_name" {
-  type        = string
-  description = "Display name for the Vertex AI Search data store."
-  default     = "Retrieval PoC Data Store"
+  validation {
+    condition = var.vertex_ai_search.project_id != "REPLACE_WITH_PROJECT_ID" && var.vertex_ai_search.data_store_id != "REPLACE_WITH_DATA_STORE_ID"
+    error_message = "Vertex AI Search configuration must be provided in local-overrides.tfvars."
+  }
 }
 
 variable "iap_clients" {

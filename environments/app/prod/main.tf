@@ -212,15 +212,6 @@ resource "google_project_iam_member" "iap_report_service_account" {
   member  = format("serviceAccount:%s", module.iam_service_accounts.emails["report"])
 }
 
-resource "google_project_iam_custom_role" "streamlit_discovery_search" {
-  project     = var.project_id
-  role_id     = "streamlitDiscoverySearch"
-  title       = "Streamlit Discovery Search"
-  description = "Allows the Streamlit service to call Discovery search APIs"
-  permissions = [
-    "discoveryengine.servingConfigs.search"
-  ]
-}
 
 module "iam_service_account_bindings" {
   source     = "../../../modules/iam/service_account_bindings"
@@ -235,7 +226,7 @@ module "iam_service_account_bindings" {
         "roles/storage.objectViewer",
         "roles/artifactregistry.reader",
         "roles/secretmanager.secretAccessor",
-        google_project_iam_custom_role.streamlit_discovery_search.name,
+        "roles/discoveryengine.viewer",
         "roles/logging.logWriter",
         "roles/monitoring.metricWriter"
       ]
