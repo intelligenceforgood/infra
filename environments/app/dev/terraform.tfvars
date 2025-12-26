@@ -1,5 +1,6 @@
 i4g_analyst_members = [
   "group:gcp-i4g-analyst@intelligenceforgood.org",
+  "group:i4g-friend@intelligenceforgood.org",
 ]
 
 i4g_admin_members = [
