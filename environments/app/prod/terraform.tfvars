@@ -118,13 +118,14 @@ storage_buckets = {
 run_jobs = {
   ingest = {
     enabled             = false
-    name                = "ingest-azure-snapshot"
+    name                = "ingest-bootstrap"
     image               = "us-central1-docker.pkg.dev/i4g-prod/applications/ingest-job:prod"
     service_account_key = "ingest"
     env_vars = {
       I4G_ENV = "prod"
     }
   }
+
   intake = {
     enabled             = false
     name                = "process-intakes"

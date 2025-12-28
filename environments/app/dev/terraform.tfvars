@@ -111,7 +111,7 @@ storage_buckets = {
 run_jobs = {
   ingest = {
     enabled             = true
-    name                = "ingest-azure-snapshot"
+    name                = "ingest-bootstrap"
     image               = "us-central1-docker.pkg.dev/i4g-dev/applications/ingest-job:dev"
     service_account_key = "ingest"
     timeout_seconds     = 3600
@@ -130,6 +130,7 @@ run_jobs = {
       }
     }
   }
+
   intake = {
     name                = "process-intakes"
     image               = "us-central1-docker.pkg.dev/i4g-dev/applications/intake-job:dev"
