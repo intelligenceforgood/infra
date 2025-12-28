@@ -16,6 +16,18 @@ resource "google_project_service" "cloud_scheduler" {
   disable_on_destroy = false
 }
 
+resource "google_project_service" "compute" {
+  project            = var.project_id
+  service            = "compute.googleapis.com"
+  disable_on_destroy = false
+}
+
+resource "google_project_service" "vpc_access" {
+  project            = var.project_id
+  service            = "vpcaccess.googleapis.com"
+  disable_on_destroy = false
+}
+
 resource "google_project_service" "artifact_registry" {
   project            = var.project_id
   service            = "artifactregistry.googleapis.com"

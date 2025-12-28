@@ -75,6 +75,16 @@ storage_buckets = {
       env     = "dev"
       service = "evidence"
     }
+    lifecycle_rules = [
+      {
+        action = {
+          type = "Delete"
+        }
+        condition = {
+          age = 365
+        }
+      }
+    ]
   }
   reports = {
     name          = "i4g-reports-dev"
@@ -83,6 +93,16 @@ storage_buckets = {
       env     = "dev"
       service = "reports"
     }
+    lifecycle_rules = [
+      {
+        action = {
+          type = "Delete"
+        }
+        condition = {
+          age = 365
+        }
+      }
+    ]
   }
   data_bundles = {
     name                        = "i4g-dev-data-bundles"
