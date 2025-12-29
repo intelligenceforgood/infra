@@ -295,7 +295,8 @@ module "iam_service_account_bindings" {
         "roles/discoveryengine.viewer",
         "roles/logging.logWriter",
         "roles/monitoring.metricWriter",
-        "roles/cloudsql.client"
+        "roles/cloudsql.client",
+        "roles/cloudsql.instanceUser"
       ]
     }
 

@@ -34,6 +34,13 @@ resource "google_sql_user" "iam_analyst_group" {
   type     = "CLOUD_IAM_GROUP"
 }
 
+resource "google_sql_user" "iam_app_sa" {
+  name     = trimsuffix(module.iam_service_accounts.emails["app"], ".gserviceaccount.com")
+  instance = google_sql_database_instance.default.name
+  project  = var.project_id
+  type     = "CLOUD_IAM_SERVICE_ACCOUNT"
+}
+
 resource "google_project_iam_member" "db_admin_connect" {
   project = var.project_id
   role    = "roles/cloudsql.client"

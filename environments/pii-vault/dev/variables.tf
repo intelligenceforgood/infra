@@ -14,3 +14,9 @@ variable "app_service_accounts" {
   description = "List of app service account emails to grant cross-project access (optional)."
   default     = []
 }
+
+variable "iam_db_groups" {
+  type        = list(string)
+  description = "List of IAM group emails to grant database access."
+  default     = []
+}

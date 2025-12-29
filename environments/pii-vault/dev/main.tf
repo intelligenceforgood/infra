@@ -16,6 +16,18 @@ resource "google_project_service" "cloudkms" {
   disable_on_destroy = false
 }
 
+resource "google_project_service" "sqladmin" {
+  project            = var.project_id
+  service            = "sqladmin.googleapis.com"
+  disable_on_destroy = false
+}
+
+resource "google_project_service" "run" {
+  project            = var.project_id
+  service            = "run.googleapis.com"
+  disable_on_destroy = false
+}
+
 resource "google_storage_bucket" "vault_objects" {
   project                     = var.project_id
   name                        = "i4g-vault-objects-${var.project_id}"
