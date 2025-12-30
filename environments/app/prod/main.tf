@@ -441,8 +441,8 @@ module "run_fastapi" {
   env_vars = merge(
     var.fastapi_env_vars,
     {
-      I4G_STORAGE__EVIDENCE_BUCKET = lookup(module.storage_buckets.bucket_names, "evidence", "")
-      I4G_STORAGE__REPORT_BUCKET   = lookup(module.storage_buckets.bucket_names, "reports", "")
+      I4G_STORAGE__EVIDENCE_BUCKET    = lookup(module.storage_buckets.bucket_names, "evidence", "")
+      I4G_STORAGE__REPORT_BUCKET      = lookup(module.storage_buckets.bucket_names, "reports", "")
     }
   )
   secret_env_vars = var.fastapi_secret_env_vars
@@ -607,9 +607,9 @@ module "run_jobs" {
   env_vars = merge(
     coalesce(try(each.value.env_vars, null), {}),
     {
-      I4G_ENV                      = "prod"
-      I4G_STORAGE__EVIDENCE_BUCKET = lookup(module.storage_buckets.bucket_names, "evidence", "")
-      I4G_STORAGE__REPORT_BUCKET   = lookup(module.storage_buckets.bucket_names, "reports", "")
+      I4G_ENV                         = "prod"
+      I4G_STORAGE__EVIDENCE_BUCKET    = lookup(module.storage_buckets.bucket_names, "evidence", "")
+      I4G_STORAGE__REPORT_BUCKET      = lookup(module.storage_buckets.bucket_names, "reports", "")
     }
   )
   secret_env_vars = coalesce(try(each.value.secret_env_vars, null), {})
