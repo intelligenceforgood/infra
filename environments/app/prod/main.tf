@@ -443,6 +443,7 @@ module "run_fastapi" {
     {
       I4G_STORAGE__EVIDENCE_BUCKET    = lookup(module.storage_buckets.bucket_names, "evidence", "")
       I4G_STORAGE__REPORT_BUCKET      = lookup(module.storage_buckets.bucket_names, "reports", "")
+      I4G_INGEST__ENABLE_TOKENIZATION = "true"
     }
   )
   secret_env_vars = var.fastapi_secret_env_vars
@@ -610,6 +611,7 @@ module "run_jobs" {
       I4G_ENV                         = "prod"
       I4G_STORAGE__EVIDENCE_BUCKET    = lookup(module.storage_buckets.bucket_names, "evidence", "")
       I4G_STORAGE__REPORT_BUCKET      = lookup(module.storage_buckets.bucket_names, "reports", "")
+      I4G_INGEST__ENABLE_TOKENIZATION = "true"
     }
   )
   secret_env_vars = coalesce(try(each.value.secret_env_vars, null), {})

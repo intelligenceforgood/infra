@@ -18,31 +18,28 @@ fastapi_image         = "us-central1-docker.pkg.dev/i4g-dev/applications/fastapi
 fastapi_env_vars = {
   I4G_ENV                                     = "dev"
   I4G_STORAGE__STRUCTURED_BACKEND             = "cloudsql"
-  I4G_STORAGE__CLOUDSQL_INSTANCE              = "i4g-dev:us-central1:i4g-dev-db"
-  I4G_STORAGE__CLOUDSQL_DATABASE              = "i4g_db"
-  I4G_STORAGE__CLOUDSQL_USER                  = "ingest_user"
+  I4G_APP__CLOUDSQL__INSTANCE                 = "i4g-dev:us-central1:i4g-dev-db"
+  I4G_APP__CLOUDSQL__DATABASE                 = "i4g_db"
+  I4G_APP__CLOUDSQL__USER                     = "sa-app@i4g-dev.iam"
+  I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH          = "true"
   I4G_STORAGE__FIRESTORE__PROJECT             = "i4g-dev"
   I4G_VECTOR__BACKEND                         = "vertex_ai"
   I4G_VECTOR__VERTEX_AI_BRANCH                = "default_branch"
   I4G_API__RATE_LIMIT_PER_MINUTE              = "1000"
-  I4G_TOKENIZATION__BACKEND                   = "cloudsql"
-  I4G_TOKENIZATION__CLOUDSQL_INSTANCE         = "i4g-dev:us-central1:i4g-dev-db"
-  I4G_TOKENIZATION__CLOUDSQL_DATABASE         = "vault_db"
-  I4G_TOKENIZATION__CLOUDSQL_USER             = "sa-app@i4g-dev.iam"
-  I4G_TOKENIZATION__CLOUDSQL_ENABLE_IAM_AUTH  = "true"
+  I4G_PII__BACKEND                            = "cloudsql"
+  I4G_PII__CLOUDSQL__INSTANCE                 = "i4g-pii-vault-dev:us-central1:i4g-vault-dev-db"
+  I4G_PII__CLOUDSQL__DATABASE                 = "vault_db"
+  I4G_PII__CLOUDSQL__USER                     = "sa-app@i4g-dev.iam"
+  I4G_PII__CLOUDSQL__ENABLE_IAM_AUTH          = "true"
 }
 
 fastapi_secret_env_vars = {
-  I4G_TOKENIZATION__PEPPER = {
+  I4G_PII__PEPPER = {
     secret  = "projects/i4g-pii-vault-dev/secrets/tokenization-pepper"
     version = "latest"
   }
   I4G_CRYPTO__PII_KEY = {
     secret  = "projects/i4g-pii-vault-dev/secrets/pii-tokenization-key"
-    version = "latest"
-  }
-  I4G_STORAGE__CLOUDSQL_PASSWORD = {
-    secret  = "projects/i4g-dev/secrets/ingest-db-password"
     version = "latest"
   }
 }
@@ -143,14 +140,24 @@ run_jobs = {
     env_vars = {
       I4G_ENV                          = "dev"
       I4G_STORAGE__STRUCTURED_BACKEND  = "cloudsql"
-      I4G_STORAGE__CLOUDSQL_INSTANCE   = "i4g-dev:us-central1:i4g-dev-db"
-      I4G_STORAGE__CLOUDSQL_DATABASE   = "i4g_db"
-      I4G_STORAGE__CLOUDSQL_USER       = "ingest_user"
+      I4G_APP__CLOUDSQL__INSTANCE      = "i4g-dev:us-central1:i4g-dev-db"
+      I4G_APP__CLOUDSQL__DATABASE      = "i4g_db"
+      I4G_APP__CLOUDSQL__USER          = "sa-ingest@i4g-dev.iam"
+      I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH = "true"
       I4G_VECTOR__BACKEND              = "vertex_ai"
+      I4G_PII__BACKEND                 = "cloudsql"
+      I4G_PII__CLOUDSQL__INSTANCE      = "i4g-pii-vault-dev:us-central1:i4g-vault-dev-db"
+      I4G_PII__CLOUDSQL__DATABASE      = "vault_db"
+      I4G_PII__CLOUDSQL__USER          = "sa-ingest@i4g-dev.iam"
+      I4G_PII__CLOUDSQL__ENABLE_IAM_AUTH = "true"
     }
     secret_env_vars = {
-      I4G_STORAGE__CLOUDSQL_PASSWORD = {
-        secret  = "ingest-db-password"
+      I4G_PII__PEPPER = {
+        secret  = "projects/i4g-pii-vault-dev/secrets/tokenization-pepper"
+        version = "latest"
+      }
+      I4G_CRYPTO__PII_KEY = {
+        secret  = "projects/i4g-pii-vault-dev/secrets/pii-tokenization-key"
         version = "latest"
       }
     }
@@ -166,15 +173,12 @@ run_jobs = {
       I4G_INGEST__ENABLE_VECTOR       = "false"
       I4G_RUNTIME__FALLBACK_DIR       = "/tmp/i4g"
       I4G_STORAGE__STRUCTURED_BACKEND = "cloudsql"
-      I4G_STORAGE__CLOUDSQL_INSTANCE  = "i4g-dev:us-central1:i4g-dev-db"
-      I4G_STORAGE__CLOUDSQL_DATABASE  = "i4g_db"
-      I4G_STORAGE__CLOUDSQL_USER      = "ingest_user"
+      I4G_APP__CLOUDSQL__INSTANCE     = "i4g-dev:us-central1:i4g-dev-db"
+      I4G_APP__CLOUDSQL__DATABASE     = "i4g_db"
+      I4G_APP__CLOUDSQL__USER         = "sa-intake@i4g-dev.iam"
+      I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH = "true"
     }
     secret_env_vars = {
-      I4G_STORAGE__CLOUDSQL_PASSWORD = {
-        secret  = "ingest-db-password"
-        version = "latest"
-      }
     }
   }
 
@@ -238,4 +242,6 @@ iap_clients = {
     client_secret = "REPLACE_WITH_CLIENT_SECRET"
   }
 }
+
+
 

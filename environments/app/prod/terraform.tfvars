@@ -6,6 +6,9 @@ i4g_admin_members = [
   "group:gcp-i4g-admin@intelligenceforgood.org",
 ]
 
+db_admin_group   = "gcp-i4g-admin@intelligenceforgood.org"
+db_analyst_group = "gcp-i4g-analyst@intelligenceforgood.org"
+
 project_id            = "i4g-prod"
 iap_support_email     = "jerry@intelligenceforgood.org"
 iap_application_title = "i4g Analyst Surfaces (Prod)"
@@ -15,6 +18,10 @@ fastapi_env_vars = {
   I4G_ENV                          = "prod"
   I4G_RUNTIME__LOG_LEVEL           = "WARNING"
   I4G_STORAGE__STRUCTURED_BACKEND  = "firestore"
+  I4G_APP__CLOUDSQL__INSTANCE      = "i4g-prod:us-central1:i4g-prod-db"
+  I4G_APP__CLOUDSQL__DATABASE      = "i4g_db"
+  I4G_APP__CLOUDSQL__USER          = "sa-app@i4g-prod.iam.gserviceaccount.com"
+  I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH = "true"
   I4G_VERTEX_SEARCH_PROJECT        = "i4g-prod"
   I4G_VERTEX_SEARCH_LOCATION       = "global"
   I4G_VERTEX_SEARCH_DATA_STORE     = "retrieval-prod"
@@ -22,7 +29,7 @@ fastapi_env_vars = {
 }
 
 fastapi_secret_env_vars = {
-  I4G_TOKENIZATION__PEPPER = {
+  I4G_PII__PEPPER = {
     secret  = "projects/i4g-pii-vault-prod/secrets/tokenization-pepper"
     version = "latest"
   }
@@ -123,6 +130,10 @@ run_jobs = {
     service_account_key = "ingest"
     env_vars = {
       I4G_ENV = "prod"
+      I4G_APP__CLOUDSQL__INSTANCE        = "i4g-prod:us-central1:i4g-prod-db"
+      I4G_APP__CLOUDSQL__DATABASE        = "i4g_db"
+      I4G_APP__CLOUDSQL__USER            = "sa-ingest@i4g-prod.iam.gserviceaccount.com"
+      I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH = "true"
     }
   }
 
@@ -133,6 +144,10 @@ run_jobs = {
     service_account_key = "intake"
     env_vars = {
       I4G_ENV = "prod"
+      I4G_APP__CLOUDSQL__INSTANCE        = "i4g-prod:us-central1:i4g-prod-db"
+      I4G_APP__CLOUDSQL__DATABASE        = "i4g_db"
+      I4G_APP__CLOUDSQL__USER            = "sa-intake@i4g-prod.iam.gserviceaccount.com"
+      I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH = "true"
     }
   }
 

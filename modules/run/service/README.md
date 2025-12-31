@@ -44,7 +44,7 @@ module "fastapi_service" {
   image             = "us-docker.pkg.dev/cloudrun/container/hello"
   env_vars          = { ENV = "dev" }
   secret_env_vars = {
-    I4G_TOKENIZATION__PEPPER = { secret = "projects/i4g-pii-vault-dev/secrets/tokenization-pepper" }
+    I4G_PII__PEPPER = { secret = "projects/i4g-pii-vault-dev/secrets/tokenization-pepper" }
   }
   invoker_members   = ["user:analyst@example.com", "serviceAccount:${module.iam_service_accounts.emails["app"]}"]
 }

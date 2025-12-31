@@ -294,3 +294,13 @@ variable "vertex_search_display_name" {
   description = "Display name for the Vertex AI Search data store."
   default     = "Retrieval Production Data Store"
 }
+
+variable "db_admin_group" {
+  type        = string
+  description = "Google Group email for database administrators."
+}
+
+variable "db_analyst_group" {
+  type        = string
+  description = "Google Group email for database analysts."
+}

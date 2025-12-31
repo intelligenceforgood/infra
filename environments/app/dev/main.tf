@@ -509,6 +509,7 @@ module "run_fastapi" {
   env_vars = merge(
     {
       I4G_STORAGE__EVIDENCE__LOCAL_DIR = "/tmp/evidence"
+      I4G_INGEST__ENABLE_TOKENIZATION  = "true"
     },
     var.fastapi_env_vars,
     {
@@ -547,6 +548,7 @@ locals {
       I4G_VECTOR__VERTEX_AI_PROJECT    = var.vertex_ai_search.project_id
       I4G_VECTOR__VERTEX_AI_LOCATION   = var.vertex_ai_search.location
       I4G_VECTOR__VERTEX_AI_DATA_STORE = var.vertex_ai_search.data_store_id
+      I4G_INGEST__ENABLE_TOKENIZATION  = "true"
     }
     intake = {
       I4G_INTAKE__API_BASE = format("%s/intakes", trimsuffix(module.run_fastapi.uri, "/"))

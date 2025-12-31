@@ -83,3 +83,7 @@ resource "google_kms_crypto_key_iam_member" "app_key_access" {
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
   member        = format("serviceAccount:%s", each.value)
 }
+
+
+
+

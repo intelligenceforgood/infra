@@ -1,5 +1,4 @@
 
-
 resource "google_sql_user" "iam_ingest_sa" {
   name     = trimsuffix(module.iam_service_accounts.emails["ingest"], ".gserviceaccount.com")
   instance = google_sql_database_instance.default.name
@@ -62,40 +61,4 @@ resource "google_project_iam_member" "db_analyst_viewer" {
   project = var.project_id
   role    = "roles/cloudsql.viewer"
   member  = "group:${var.db_analyst_group}"
-}
-
-resource "google_project_iam_member" "app_sa_connect" {
-  project = var.project_id
-  role    = "roles/cloudsql.client"
-  member  = "serviceAccount:${module.iam_service_accounts.emails["app"]}"
-}
-
-resource "google_project_iam_member" "app_sa_login" {
-  project = var.project_id
-  role    = "roles/cloudsql.instanceUser"
-  member  = "serviceAccount:${module.iam_service_accounts.emails["app"]}"
-}
-
-resource "google_project_iam_member" "ingest_sa_connect" {
-  project = var.project_id
-  role    = "roles/cloudsql.client"
-  member  = "serviceAccount:${module.iam_service_accounts.emails["ingest"]}"
-}
-
-resource "google_project_iam_member" "ingest_sa_login" {
-  project = var.project_id
-  role    = "roles/cloudsql.instanceUser"
-  member  = "serviceAccount:${module.iam_service_accounts.emails["ingest"]}"
-}
-
-resource "google_project_iam_member" "intake_sa_connect" {
-  project = var.project_id
-  role    = "roles/cloudsql.client"
-  member  = "serviceAccount:${module.iam_service_accounts.emails["intake"]}"
-}
-
-resource "google_project_iam_member" "intake_sa_login" {
-  project = var.project_id
-  role    = "roles/cloudsql.instanceUser"
-  member  = "serviceAccount:${module.iam_service_accounts.emails["intake"]}"
 }
