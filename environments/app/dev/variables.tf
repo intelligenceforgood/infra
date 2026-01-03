@@ -157,11 +157,7 @@ variable "storage_bucket_default_location" {
   default     = "US"
 }
 
-variable "firestore_location" {
-  type        = string
-  description = "Location/region for the default Firestore database."
-  default     = "us-central1"
-}
+
 
 variable "console_image" {
   type        = string

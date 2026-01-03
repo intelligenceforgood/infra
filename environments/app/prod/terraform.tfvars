@@ -17,7 +17,7 @@ fastapi_image         = "us-central1-docker.pkg.dev/i4g-prod/applications/fastap
 fastapi_env_vars = {
   I4G_ENV                          = "prod"
   I4G_RUNTIME__LOG_LEVEL           = "WARNING"
-  I4G_STORAGE__STRUCTURED_BACKEND  = "firestore"
+  I4G_STORAGE__STRUCTURED_BACKEND  = "cloudsql"
   I4G_APP__CLOUDSQL__INSTANCE      = "i4g-prod:us-central1:i4g-prod-db"
   I4G_APP__CLOUDSQL__DATABASE      = "i4g_db"
   I4G_APP__CLOUDSQL__USER          = "sa-app@i4g-prod.iam.gserviceaccount.com"
@@ -132,7 +132,7 @@ run_jobs = {
       I4G_ENV = "prod"
       I4G_APP__CLOUDSQL__INSTANCE        = "i4g-prod:us-central1:i4g-prod-db"
       I4G_APP__CLOUDSQL__DATABASE        = "i4g_db"
-      I4G_APP__CLOUDSQL__USER            = "sa-ingest@i4g-prod.iam.gserviceaccount.com"
+      I4G_APP__CLOUDSQL__USER            = "sa-ingest@i4g-prod.iam"
       I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH = "true"
     }
   }
@@ -146,7 +146,7 @@ run_jobs = {
       I4G_ENV = "prod"
       I4G_APP__CLOUDSQL__INSTANCE        = "i4g-prod:us-central1:i4g-prod-db"
       I4G_APP__CLOUDSQL__DATABASE        = "i4g_db"
-      I4G_APP__CLOUDSQL__USER            = "sa-intake@i4g-prod.iam.gserviceaccount.com"
+      I4G_APP__CLOUDSQL__USER            = "sa-intake@i4g-prod.iam"
       I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH = "true"
     }
   }
@@ -156,7 +156,12 @@ run_jobs = {
     image               = "us-central1-docker.pkg.dev/i4g-prod/applications/report-job:prod"
     service_account_key = "report"
     env_vars = {
-      I4G_ENV = "prod"
+      I4G_ENV                            = "prod"
+      I4G_STORAGE__STRUCTURED_BACKEND    = "cloudsql"
+      I4G_APP__CLOUDSQL__INSTANCE        = "i4g-prod:us-central1:i4g-prod-db"
+      I4G_APP__CLOUDSQL__DATABASE        = "i4g_db"
+      I4G_APP__CLOUDSQL__USER            = "sa-report@i4g-prod.iam"
+      I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH = "true"
     }
   }
   dossier_queue = {

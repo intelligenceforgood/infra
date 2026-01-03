@@ -40,11 +40,7 @@ resource "google_project_service" "secret_manager" {
   disable_on_destroy = false
 }
 
-resource "google_project_service" "firestore" {
-  project            = var.project_id
-  service            = "firestore.googleapis.com"
-  disable_on_destroy = false
-}
+
 
 resource "google_project_service" "iap" {
   project            = var.project_id
@@ -61,15 +57,7 @@ resource "google_project_service_identity" "iap" {
   depends_on = [google_project_service.iap]
 }
 
-resource "google_firestore_database" "default" {
-  project          = var.project_id
-  name             = "(default)"
-  location_id      = var.firestore_location
-  type             = "FIRESTORE_NATIVE"
-  concurrency_mode = "OPTIMISTIC"
 
-  depends_on = [google_project_service.firestore]
-}
 
 resource "google_secret_manager_secret" "azure_sql_connection_string" {
   project   = var.project_id
@@ -335,7 +323,10 @@ module "iam_service_account_bindings" {
         "roles/artifactregistry.reader",
         "roles/secretmanager.secretAccessor",
         "roles/logging.logWriter",
-        "roles/monitoring.metricWriter"
+        "roles/monitoring.metricWriter",
+        "roles/cloudsql.client",
+        "roles/cloudsql.instanceUser",
+        "roles/discoveryengine.viewer"
       ]
     }
 

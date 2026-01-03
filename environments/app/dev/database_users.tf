@@ -99,3 +99,35 @@ resource "google_project_iam_member" "intake_sa_login" {
   role    = "roles/cloudsql.instanceUser"
   member  = "serviceAccount:${module.iam_service_accounts.emails["intake"]}"
 }
+
+resource "google_sql_user" "iam_intake_sa" {
+  name     = trimsuffix(module.iam_service_accounts.emails["intake"], ".gserviceaccount.com")
+  instance = google_sql_database_instance.default.name
+  project  = var.project_id
+  type     = "CLOUD_IAM_SERVICE_ACCOUNT"
+}
+
+resource "google_sql_user" "iam_report_sa" {
+  name     = trimsuffix(module.iam_service_accounts.emails["report"], ".gserviceaccount.com")
+  instance = google_sql_database_instance.default.name
+  project  = var.project_id
+  type     = "CLOUD_IAM_SERVICE_ACCOUNT"
+}
+
+resource "google_project_iam_member" "report_sa_connect" {
+  project = var.project_id
+  role    = "roles/cloudsql.client"
+  member  = "serviceAccount:${module.iam_service_accounts.emails["report"]}"
+}
+
+resource "google_project_iam_member" "report_sa_login" {
+  project = var.project_id
+  role    = "roles/cloudsql.instanceUser"
+  member  = "serviceAccount:${module.iam_service_accounts.emails["report"]}"
+}
+
+resource "google_project_iam_member" "report_sa_service_usage" {
+  project = var.project_id
+  role    = "roles/serviceusage.serviceUsageConsumer"
+  member  = "serviceAccount:${module.iam_service_accounts.emails["report"]}"
+}

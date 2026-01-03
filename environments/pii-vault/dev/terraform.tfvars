@@ -4,6 +4,7 @@ region     = "us-central1"
 app_service_accounts = [
   "sa-app@i4g-dev.iam.gserviceaccount.com",
   "sa-ingest@i4g-dev.iam.gserviceaccount.com",
+  "sa-report@i4g-dev.iam.gserviceaccount.com",
 ]
 
 iam_db_groups = [

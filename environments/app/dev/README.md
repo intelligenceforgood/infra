@@ -42,7 +42,7 @@ Set the following before running `terraform plan`/`apply`:
 - `fastapi_env_vars` *(optional)* — Map of environment variables injected into
   the container. Recommended values:
   - `I4G_ENV = dev`
-  - `I4G_STORAGE__STRUCTURED_BACKEND = sqlite`
+  - `I4G_STORAGE__STRUCTURED_BACKEND = cloudsql`
   - `I4G_RUNTIME__LOG_LEVEL = INFO`
 - `fastapi_invoker_member` *(optional)* — Principal with `roles/run.invoker` on
   the service (the module automatically grants the shared runtime service account
@@ -79,7 +79,7 @@ fastapi_image          = "us-central1-docker.pkg.dev/i4g-dev/applications/fastap
 fastapi_env_vars = {
   I4G_ENV                          = "dev"
   I4G_RUNTIME__LOG_LEVEL           = "INFO"
-  I4G_STORAGE__STRUCTURED_BACKEND  = "sqlite"
+  I4G_STORAGE__STRUCTURED_BACKEND  = "cloudsql"
 }
 fastapi_invoker_members = [
   "serviceAccount:custom-ui@i4g-dev.iam.gserviceaccount.com"

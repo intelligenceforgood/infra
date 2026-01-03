@@ -22,7 +22,6 @@ fastapi_env_vars = {
   I4G_APP__CLOUDSQL__DATABASE                 = "i4g_db"
   I4G_APP__CLOUDSQL__USER                     = "sa-app@i4g-dev.iam"
   I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH          = "true"
-  I4G_STORAGE__FIRESTORE__PROJECT             = "i4g-dev"
   I4G_VECTOR__BACKEND                         = "vertex_ai"
   I4G_VECTOR__VERTEX_AI_BRANCH                = "default_branch"
   I4G_API__RATE_LIMIT_PER_MINUTE              = "1000"
@@ -187,7 +186,12 @@ run_jobs = {
     image               = "us-central1-docker.pkg.dev/i4g-dev/applications/report-job:dev"
     service_account_key = "report"
     env_vars = {
-      I4G_ENV = "dev"
+      I4G_ENV                            = "dev"
+      I4G_STORAGE__STRUCTURED_BACKEND    = "cloudsql"
+      I4G_APP__CLOUDSQL__INSTANCE        = "i4g-dev:us-central1:i4g-dev-db"
+      I4G_APP__CLOUDSQL__DATABASE        = "i4g_db"
+      I4G_APP__CLOUDSQL__USER            = "sa-report@i4g-dev.iam"
+      I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH = "true"
     }
   }
   account_list = {
@@ -203,7 +207,6 @@ run_jobs = {
       I4G_RUNTIME__LOG_LEVEL           = "INFO"
       I4G_ACCOUNT_LIST__ENABLE_VECTOR  = "false"
       I4G_LLM__PROVIDER                = "mock"
-      I4G_STORAGE__FIRESTORE__PROJECT  = "i4g-dev"
     }
   }
   dossier_queue = {
