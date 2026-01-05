@@ -10,6 +10,12 @@ resource "google_project_service" "vertex_ai_search" {
   disable_on_destroy = false
 }
 
+resource "google_project_service" "vertex_ai" {
+  project            = var.project_id
+  service            = "aiplatform.googleapis.com"
+  disable_on_destroy = false
+}
+
 resource "google_project_service" "cloud_scheduler" {
   project            = var.project_id
   service            = "cloudscheduler.googleapis.com"
@@ -299,7 +305,8 @@ module "iam_service_account_bindings" {
         "roles/pubsub.publisher",
         "roles/logging.logWriter",
         "roles/monitoring.metricWriter",
-        "roles/cloudsql.client"
+        "roles/cloudsql.client",
+        "roles/aiplatform.user"
       ]
     }
 
