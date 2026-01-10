@@ -16,20 +16,20 @@ iap_application_title = "i4g Analyst Surfaces (Dev)"
 fastapi_image         = "us-central1-docker.pkg.dev/i4g-dev/applications/fastapi:dev"
 
 fastapi_env_vars = {
-  I4G_ENV                                     = "dev"
-  I4G_STORAGE__STRUCTURED_BACKEND             = "cloudsql"
-  I4G_APP__CLOUDSQL__INSTANCE                 = "i4g-dev:us-central1:i4g-dev-db"
-  I4G_APP__CLOUDSQL__DATABASE                 = "i4g_db"
-  I4G_APP__CLOUDSQL__USER                     = "sa-app@i4g-dev.iam"
-  I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH          = "true"
-  I4G_VECTOR__BACKEND                         = "vertex_ai"
-  I4G_VECTOR__VERTEX_AI_BRANCH                = "default_branch"
-  I4G_API__RATE_LIMIT_PER_MINUTE              = "1000"
-  I4G_PII__BACKEND                            = "cloudsql"
-  I4G_PII__CLOUDSQL__INSTANCE                 = "i4g-pii-vault-dev:us-central1:i4g-vault-dev-db"
-  I4G_PII__CLOUDSQL__DATABASE                 = "vault_db"
-  I4G_PII__CLOUDSQL__USER                     = "sa-app@i4g-dev.iam"
-  I4G_PII__CLOUDSQL__ENABLE_IAM_AUTH          = "true"
+  I4G_ENV                            = "dev"
+  I4G_STORAGE__STRUCTURED_BACKEND    = "cloudsql"
+  I4G_APP__CLOUDSQL__INSTANCE        = "i4g-dev:us-central1:i4g-dev-db"
+  I4G_APP__CLOUDSQL__DATABASE        = "i4g_db"
+  I4G_APP__CLOUDSQL__USER            = "sa-app@i4g-dev.iam"
+  I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH = "true"
+  I4G_VECTOR__BACKEND                = "vertex_ai"
+  I4G_VECTOR__VERTEX_AI_BRANCH       = "default_branch"
+  I4G_API__RATE_LIMIT_PER_MINUTE     = "1000"
+  I4G_PII__BACKEND                   = "cloudsql"
+  I4G_PII__CLOUDSQL__INSTANCE        = "i4g-pii-vault-dev:us-central1:i4g-vault-dev-db"
+  I4G_PII__CLOUDSQL__DATABASE        = "vault_db"
+  I4G_PII__CLOUDSQL__USER            = "sa-app@i4g-dev.iam"
+  I4G_PII__CLOUDSQL__ENABLE_IAM_AUTH = "true"
 }
 
 fastapi_secret_env_vars = {
@@ -138,17 +138,17 @@ run_jobs = {
     timeout_seconds     = 3600
     max_retries         = 0
     env_vars = {
-      I4G_ENV                          = "dev"
-      I4G_STORAGE__STRUCTURED_BACKEND  = "cloudsql"
-      I4G_APP__CLOUDSQL__INSTANCE      = "i4g-dev:us-central1:i4g-dev-db"
-      I4G_APP__CLOUDSQL__DATABASE      = "i4g_db"
-      I4G_APP__CLOUDSQL__USER          = "sa-ingest@i4g-dev.iam"
+      I4G_ENV                            = "dev"
+      I4G_STORAGE__STRUCTURED_BACKEND    = "cloudsql"
+      I4G_APP__CLOUDSQL__INSTANCE        = "i4g-dev:us-central1:i4g-dev-db"
+      I4G_APP__CLOUDSQL__DATABASE        = "i4g_db"
+      I4G_APP__CLOUDSQL__USER            = "sa-ingest@i4g-dev.iam"
       I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH = "true"
-      I4G_VECTOR__BACKEND              = "vertex_ai"
-      I4G_PII__BACKEND                 = "cloudsql"
-      I4G_PII__CLOUDSQL__INSTANCE      = "i4g-pii-vault-dev:us-central1:i4g-vault-dev-db"
-      I4G_PII__CLOUDSQL__DATABASE      = "vault_db"
-      I4G_PII__CLOUDSQL__USER          = "sa-ingest@i4g-dev.iam"
+      I4G_VECTOR__BACKEND                = "vertex_ai"
+      I4G_PII__BACKEND                   = "cloudsql"
+      I4G_PII__CLOUDSQL__INSTANCE        = "i4g-pii-vault-dev:us-central1:i4g-vault-dev-db"
+      I4G_PII__CLOUDSQL__DATABASE        = "vault_db"
+      I4G_PII__CLOUDSQL__USER            = "sa-ingest@i4g-dev.iam"
       I4G_PII__CLOUDSQL__ENABLE_IAM_AUTH = "true"
     }
     secret_env_vars = {
@@ -169,14 +169,14 @@ run_jobs = {
     service_account_key = "intake"
     max_retries         = 0
     env_vars = {
-      I4G_ENV                         = "dev"
-      I4G_API__KEY                    = "dev-analyst-token"
-      I4G_INGEST__ENABLE_VECTOR       = "false"
-      I4G_RUNTIME__FALLBACK_DIR       = "/tmp/i4g"
-      I4G_STORAGE__STRUCTURED_BACKEND = "cloudsql"
-      I4G_APP__CLOUDSQL__INSTANCE     = "i4g-dev:us-central1:i4g-dev-db"
-      I4G_APP__CLOUDSQL__DATABASE     = "i4g_db"
-      I4G_APP__CLOUDSQL__USER         = "sa-intake@i4g-dev.iam"
+      I4G_ENV                            = "dev"
+      I4G_API__KEY                       = "dev-analyst-token"
+      I4G_INGEST__ENABLE_VECTOR          = "false"
+      I4G_RUNTIME__FALLBACK_DIR          = "/tmp/i4g"
+      I4G_STORAGE__STRUCTURED_BACKEND    = "cloudsql"
+      I4G_APP__CLOUDSQL__INSTANCE        = "i4g-dev:us-central1:i4g-dev-db"
+      I4G_APP__CLOUDSQL__DATABASE        = "i4g_db"
+      I4G_APP__CLOUDSQL__USER            = "sa-intake@i4g-dev.iam"
       I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH = "true"
     }
     secret_env_vars = {
@@ -197,6 +197,32 @@ run_jobs = {
       I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH = "true"
     }
   }
+
+  sweeper = {
+    enabled             = true
+    name                = "classification-sweeper"
+    image               = "us-central1-docker.pkg.dev/i4g-dev/applications/ingest-job:dev" # Reusing ingest image
+    service_account_key = "ingest"                                                         # Has required SQL/Vertex permissions
+    timeout_seconds     = 3600
+    parallelism         = 1
+    max_retries         = 0
+    args                = ["sweeper"]
+    schedule            = "*/5 * * * *" # Every 5 minutes
+
+    env_vars = {
+      I4G_ENV                            = "dev"
+      I4G_STORAGE__STRUCTURED_BACKEND    = "cloudsql"
+      I4G_APP__CLOUDSQL__INSTANCE        = "i4g-dev:us-central1:i4g-dev-db"
+      I4G_APP__CLOUDSQL__DATABASE        = "i4g_db"
+      I4G_APP__CLOUDSQL__USER            = "sa-ingest@i4g-dev.iam"
+      I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH = "true"
+      # Vertex AI for Classifier
+      I4G_VECTOR__BACKEND = "vertex_ai"
+      I4G_LLM__PROVIDER   = "vertex_ai"
+      I4G_LLM__CHAT_MODEL = "gemini-2.5-flash"
+    }
+  }
+
   account_list = {
     name                = "account-list"
     image               = "us-central1-docker.pkg.dev/i4g-dev/applications/account-job:dev"

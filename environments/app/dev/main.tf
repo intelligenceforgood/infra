@@ -517,9 +517,9 @@ module "run_fastapi" {
       I4G_VECTOR__VERTEX_AI_LOCATION   = var.vertex_ai_search.location
       I4G_VECTOR__VERTEX_AI_DATA_STORE = var.vertex_ai_search.data_store_id
       # Explicitly set Vertex Search env vars to avoid ambiguity
-      I4G_VERTEX_SEARCH_PROJECT        = var.vertex_ai_search.project_id
-      I4G_VERTEX_SEARCH_LOCATION       = var.vertex_ai_search.location
-      I4G_VERTEX_SEARCH_DATA_STORE     = var.vertex_ai_search.data_store_id
+      I4G_VERTEX_SEARCH_PROJECT    = var.vertex_ai_search.project_id
+      I4G_VERTEX_SEARCH_LOCATION   = var.vertex_ai_search.location
+      I4G_VERTEX_SEARCH_DATA_STORE = var.vertex_ai_search.data_store_id
     }
   )
   secret_env_vars = var.fastapi_secret_env_vars
@@ -547,6 +547,12 @@ locals {
       I4G_VECTOR__VERTEX_AI_LOCATION   = var.vertex_ai_search.location
       I4G_VECTOR__VERTEX_AI_DATA_STORE = var.vertex_ai_search.data_store_id
       I4G_INGEST__ENABLE_TOKENIZATION  = "true"
+    }
+    sweeper = {
+      I4G_VECTOR__VERTEX_AI_PROJECT  = var.vertex_ai_search.project_id
+      I4G_VECTOR__VERTEX_AI_LOCATION = var.vertex_ai_search.location
+      I4G_LLM__VERTEX_AI_PROJECT     = var.vertex_ai_search.project_id
+      I4G_LLM__VERTEX_AI_LOCATION    = var.vertex_ai_search.location
     }
     intake = {
       I4G_INTAKE__API_BASE = format("%s/intakes", trimsuffix(module.run_fastapi.uri, "/"))
@@ -742,7 +748,7 @@ module "run_job_schedulers" {
   service_account_email    = each.value.scheduler_service_account_email
   audience                 = each.value.scheduler_audience != null ? each.value.scheduler_audience : ""
   headers                  = coalesce(try(each.value.scheduler_headers, null), {})
-  oauth_scopes             = try(each.value.scheduler_oauth_scopes, [])
+  oauth_scopes             = each.value.scheduler_oauth_scopes != null ? each.value.scheduler_oauth_scopes : ["https://www.googleapis.com/auth/cloud-platform"]
   body                     = coalesce(try(each.value.scheduler_body, null), "{}")
 
   depends_on = [module.run_jobs]
