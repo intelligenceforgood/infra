@@ -501,6 +501,8 @@ module "run_fastapi" {
   project_id = var.project_id
   location   = var.region
 
+  min_instances = 1
+
   name            = "fastapi-gateway"
   service_account = module.iam_service_accounts.emails["app"]
   image           = var.fastapi_image
@@ -598,6 +600,8 @@ module "run_console" {
   source     = "../../../modules/run/service"
   project_id = var.project_id
   location   = var.region
+
+  min_instances = 1
 
   name            = "i4g-console"
   service_account = module.iam_service_accounts.emails["app"]
