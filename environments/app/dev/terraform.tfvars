@@ -206,7 +206,7 @@ run_jobs = {
     timeout_seconds     = 3600
     parallelism         = 1
     max_retries         = 0
-    args                = ["sweeper"]
+    args                = ["jobs", "sweeper"]
     schedule            = "*/5 * * * *" # Every 5 minutes
 
     env_vars = {
