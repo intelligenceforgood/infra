@@ -283,14 +283,15 @@ module "iam_service_account_bindings" {
       roles = [
         "roles/datastore.user",
         "roles/datastore.viewer",
-        "roles/storage.objectViewer",
+        "roles/storage.objectAdmin",
         "roles/artifactregistry.reader",
         "roles/secretmanager.secretAccessor",
         "roles/discoveryengine.viewer",
         "roles/logging.logWriter",
         "roles/monitoring.metricWriter",
         "roles/cloudsql.client",
-        "roles/cloudsql.instanceUser"
+        "roles/cloudsql.instanceUser",
+        "roles/aiplatform.user"
       ]
     }
 
@@ -510,6 +511,8 @@ module "run_fastapi" {
     {
       I4G_STORAGE__EVIDENCE__LOCAL_DIR = "/tmp/evidence"
       I4G_INGEST__ENABLE_TOKENIZATION  = "true"
+      I4G_LLM__PROVIDER                = "vertex_ai"
+      I4G_LLM__CHAT_MODEL              = "gemini-2.0-flash"
     },
     var.fastapi_env_vars,
     {
@@ -560,7 +563,7 @@ locals {
       I4G_INTAKE__API_BASE = format("%s/intakes", trimsuffix(module.run_fastapi.uri, "/"))
     }
     account_list = {
-      I4G_STORAGE__REPORTS_BUCKET = lookup(module.storage_buckets.bucket_names, "reports", "")
+      I4G_STORAGE__REPORT_BUCKET = lookup(module.storage_buckets.bucket_names, "reports", "")
     }
   }
 }
