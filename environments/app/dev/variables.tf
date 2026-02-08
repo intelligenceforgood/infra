@@ -292,7 +292,7 @@ variable "vertex_ai_search" {
   }
 
   validation {
-    condition = var.vertex_ai_search.project_id != "REPLACE_WITH_PROJECT_ID" && var.vertex_ai_search.data_store_id != "REPLACE_WITH_DATA_STORE_ID"
+    condition     = var.vertex_ai_search.project_id != "REPLACE_WITH_PROJECT_ID" && var.vertex_ai_search.data_store_id != "REPLACE_WITH_DATA_STORE_ID"
     error_message = "Vertex AI Search configuration must be provided in local-overrides.tfvars."
   }
 }

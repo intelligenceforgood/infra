@@ -31,7 +31,7 @@ resource "google_sql_database_instance" "vault" {
   }
 
   deletion_protection = false
-  
+
   depends_on = [google_project_service.sqladmin]
 }
 

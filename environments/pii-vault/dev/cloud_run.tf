@@ -45,17 +45,17 @@ module "vault_service" {
   image           = "us-central1-docker.pkg.dev/i4g-dev/applications/fastapi:dev"
 
   env_vars = {
-    "I4G_ENV"                                    = "dev"
-    "I4G_STORAGE__STRUCTURED_BACKEND"            = "cloudsql"
-    "I4G_APP__CLOUDSQL__INSTANCE"                = google_sql_database_instance.vault.connection_name
-    "I4G_APP__CLOUDSQL__DATABASE"                = google_sql_database.vault_db.name
-    "I4G_APP__CLOUDSQL__USER"                    = trimsuffix(google_service_account.vault_sa.email, ".gserviceaccount.com")
-    "I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH"         = "true"
-    "I4G_PII__BACKEND"                           = "cloudsql"
-    "I4G_PII__CLOUDSQL__INSTANCE"                = google_sql_database_instance.vault.connection_name
-    "I4G_PII__CLOUDSQL__DATABASE"                = google_sql_database.vault_db.name
-    "I4G_PII__CLOUDSQL__USER"                    = trimsuffix(google_service_account.vault_sa.email, ".gserviceaccount.com")
-    "I4G_PII__CLOUDSQL__ENABLE_IAM_AUTH"         = "true"
+    "I4G_ENV"                            = "dev"
+    "I4G_STORAGE__STRUCTURED_BACKEND"    = "cloudsql"
+    "I4G_APP__CLOUDSQL__INSTANCE"        = google_sql_database_instance.vault.connection_name
+    "I4G_APP__CLOUDSQL__DATABASE"        = google_sql_database.vault_db.name
+    "I4G_APP__CLOUDSQL__USER"            = trimsuffix(google_service_account.vault_sa.email, ".gserviceaccount.com")
+    "I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH" = "true"
+    "I4G_PII__BACKEND"                   = "cloudsql"
+    "I4G_PII__CLOUDSQL__INSTANCE"        = google_sql_database_instance.vault.connection_name
+    "I4G_PII__CLOUDSQL__DATABASE"        = google_sql_database.vault_db.name
+    "I4G_PII__CLOUDSQL__USER"            = trimsuffix(google_service_account.vault_sa.email, ".gserviceaccount.com")
+    "I4G_PII__CLOUDSQL__ENABLE_IAM_AUTH" = "true"
   }
 
   secret_env_vars = {
