@@ -2,7 +2,7 @@
 set -euo pipefail
 PROJECT="i4g-dev"
 REGION="us-central1"
-SERVICES=("i4g-console" "fastapi-gateway" "streamlit-analyst-ui")
+SERVICES=("i4g-console" "fastapi-gateway")
 IAP_PRINCIPAL="user:jerry@intelligenceforgood.org"
 
 echo "Securing services behind IAP and removing allUsers invoker in project ${PROJECT}"

@@ -418,14 +418,6 @@ locals {
     if trimspace(member) != ""
   ]
 
-  streamlit_requested_invokers = [
-    for member in concat(
-      var.streamlit_invoker_member == "" ? [] : [var.streamlit_invoker_member],
-      var.streamlit_invoker_members
-    ) : trimspace(member)
-    if trimspace(member) != ""
-  ]
-
   console_requested_invokers = [
     for member in concat(
       var.console_invoker_member == "" ? [] : [var.console_invoker_member],
@@ -447,11 +439,6 @@ locals {
   fastapi_invoker_members = distinct(concat(
     local.default_runtime_invokers,
     local.fastapi_requested_invokers
-  ))
-
-  streamlit_invoker_members = distinct(concat(
-    local.default_runtime_invokers,
-    local.streamlit_requested_invokers
   ))
 
   console_invoker_members = distinct(concat(
@@ -566,37 +553,6 @@ locals {
       I4G_STORAGE__REPORT_BUCKET = lookup(module.storage_buckets.bucket_names, "reports", "")
     }
   }
-}
-
-module "run_streamlit" {
-  source     = "../../../modules/run/service"
-  project_id = var.project_id
-  location   = var.region
-
-  name            = "streamlit-analyst-ui"
-  service_account = module.iam_service_accounts.emails["app"]
-  image           = var.streamlit_image
-  env_vars = merge(
-    var.streamlit_env_vars,
-    {
-      I4G_API__BASE_URL            = trimspace(var.fastapi_custom_domain) != "" ? format("https://%s", var.fastapi_custom_domain) : module.run_fastapi.uri
-      I4G_API_URL                  = trimspace(var.fastapi_custom_domain) != "" ? format("https://%s", var.fastapi_custom_domain) : module.run_fastapi.uri
-      I4G_VERTEX_SEARCH_PROJECT    = var.vertex_ai_search.project_id
-      I4G_VERTEX_SEARCH_LOCATION   = var.vertex_ai_search.location
-      I4G_VERTEX_SEARCH_DATA_STORE = var.vertex_ai_search.data_store_id
-    },
-  )
-  labels = {
-    service = "streamlit"
-    env     = "dev"
-  }
-
-  ingress = "all"
-
-  invoker_member  = ""
-  invoker_members = local.streamlit_invoker_members
-
-  depends_on = [module.iam_service_account_bindings, module.run_fastapi, google_project_service.gemini_cloud_assist, google_project_service_identity.iap]
 }
 
 module "run_console" {

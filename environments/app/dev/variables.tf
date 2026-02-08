@@ -128,29 +128,6 @@ variable "fastapi_invoker_members" {
   default     = []
 }
 
-variable "streamlit_image" {
-  type        = string
-  description = "Container image URI for the Streamlit Cloud Run service."
-}
-
-variable "streamlit_env_vars" {
-  type        = map(string)
-  description = "Environment variables injected into the Streamlit service container."
-  default     = {}
-}
-
-variable "streamlit_invoker_member" {
-  type        = string
-  description = "Principal granted Cloud Run invoker on the Streamlit service (leave blank to skip)."
-  default     = ""
-}
-
-variable "streamlit_invoker_members" {
-  type        = list(string)
-  description = "Additional principals granted Cloud Run invoker on the Streamlit service."
-  default     = []
-}
-
 variable "storage_bucket_default_location" {
   type        = string
   description = "Default location/region for storage buckets."

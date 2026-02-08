@@ -43,18 +43,6 @@ fastapi_secret_env_vars = {
   }
 }
 
-streamlit_image = "us-central1-docker.pkg.dev/i4g-dev/applications/streamlit:dev"
-
-streamlit_env_vars = {
-  I4G_ENV                          = "dev"
-  I4G_API__KEY                     = "" # real token lives in local-overrides.tfvars (see infra/docs/README.md)
-  STREAMLIT_SERVER_TITLE           = "I4G Analyst Dashboard"
-  I4G_VERTEX_SEARCH_SERVING_CONFIG = "default_search"
-}
-
-streamlit_invoker_member  = ""
-streamlit_invoker_members = []
-
 console_image = "us-central1-docker.pkg.dev/i4g-dev/applications/i4g-console:dev"
 
 console_env_vars = {

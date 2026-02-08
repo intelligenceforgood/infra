@@ -118,29 +118,6 @@ variable "fastapi_invoker_members" {
   default     = []
 }
 
-variable "streamlit_image" {
-  type        = string
-  description = "Container image URI for the Streamlit Cloud Run service."
-}
-
-variable "streamlit_env_vars" {
-  type        = map(string)
-  description = "Environment variables injected into the Streamlit service container."
-  default     = {}
-}
-
-variable "streamlit_invoker_members" {
-  type        = list(string)
-  description = "Principals granted Cloud Run invoker on the Streamlit service."
-  default     = []
-}
-
-variable "streamlit_invoker_member" {
-  type        = string
-  description = "Principal granted Cloud Run invoker on the Streamlit service (leave blank to use defaults)."
-  default     = ""
-}
-
 variable "console_image" {
   type        = string
   description = "Container image URI for the Next.js console Cloud Run service."

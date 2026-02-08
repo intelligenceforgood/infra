@@ -16,14 +16,6 @@ output "fastapi_service" {
   }
 }
 
-output "streamlit_service" {
-  description = "Metadata for the Streamlit Cloud Run service."
-  value = {
-    name = module.run_streamlit.name
-    url  = module.run_streamlit.uri
-  }
-}
-
 output "vertex_search" {
   description = "Discovery resources backing Vertex AI Search retrieval."
   value = {
@@ -63,11 +55,6 @@ output "iap" {
       client_id       = module.iap_fastapi.client_id
       secret_id       = module.iap_fastapi.secret_id
       secret_resource = module.iap_fastapi.secret_resource
-    }
-    streamlit = {
-      client_id       = module.iap_streamlit.client_id
-      secret_id       = module.iap_streamlit.secret_id
-      secret_resource = module.iap_streamlit.secret_resource
     }
     console = {
       client_id       = length(module.iap_console) > 0 ? module.iap_console[0].client_id : null

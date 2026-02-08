@@ -4,13 +4,12 @@ This folder composes reusable modules to stand up the core stack in the
 `i4g-dev` project. Key components currently wired in:
 
 - Core service accounts plus scoped IAM bindings for the shared application
-  runtime service account (`sa-app` powering Streamlit/FastAPI/console), ingestion jobs, report generation,
+  runtime service account (`sa-app` powering FastAPI and the analyst console), ingestion jobs, report generation,
   vault, and automation.
 - Workload Identity Federation pool/provider granting GitHub Actions access to
   the `sa-infra` automation account.
-- Cloud Run service modules (`run_fastapi`, `run_streamlit`) deploying the API
-  gateway and the analyst Streamlit UI once container images are published to
-  Artifact Registry.
+- Cloud Run service module (`run_fastapi`) deploying the API
+  gateway once container images are published to Artifact Registry.
   - Note: For dev projects outside an Organization this repo expects you to
     manage the OAuth consent screen (brand) and OAuth clients manually. The
     Terraform modules do not create brands/clients by default; set
@@ -49,20 +48,6 @@ Set the following before running `terraform plan`/`apply`:
   plus the IAP service agent; provide extra service accounts only when necessary).
 - `fastapi_invoker_members` *(optional)* — Additional principals that should be
   granted the invoker role on FastAPI.
-- `streamlit_image` — Container image URI for the Streamlit UI service (e.g.
-  `us-central1-docker.pkg.dev/i4g-dev/applications/streamlit:dev`).
-- `streamlit_env_vars` *(optional)* — Map of environment variables for
-  Streamlit. Recommended values:
-  - `I4G_ENV = dev`
-  - `I4G_API__KEY = dev-analyst-token`
-  - `STREAMLIT_SERVER_TITLE = i4g Analyst Dashboard`
-  The FastAPI base URL is injected automatically from the `run_fastapi`
-  module output.
-- `streamlit_invoker_member` *(optional)* — Principal with `roles/run.invoker`
-  on the Streamlit service (IAP + runtime accounts are configured automatically).
-- `streamlit_invoker_members` *(optional)* — Additional invoker principals for
-  the Streamlit service (leave empty to rely on IAM policies).
-
 Example `terraform.tfvars` fragment:
 
 ```hcl
@@ -84,24 +69,14 @@ fastapi_env_vars = {
 fastapi_invoker_members = [
   "serviceAccount:custom-ui@i4g-dev.iam.gserviceaccount.com"
 ]
-
-streamlit_image = "us-central1-docker.pkg.dev/i4g-dev/applications/streamlit:dev"
-streamlit_env_vars = {
-  I4G_ENV                = "dev"
-  I4G_API__KEY           = "dev-analyst-token"
-  STREAMLIT_SERVER_TITLE = "i4g Analyst Dashboard"
-}
-streamlit_invoker_member = "group:analysts@example.com"
 ```
 
 ## Deployment Flow
 
 1. Build and push the FastAPI container (see `core/docker/fastapi.Dockerfile`).
-2. Build and push the Streamlit container (`core/docker/streamlit.Dockerfile`).
-3. Run `terraform init` (one time) and `terraform plan -var-file=terraform.tfvars`.
-4. Apply with `terraform apply -var-file=terraform.tfvars` once the plan looks good.
-5. Capture the service URLs from `terraform output fastapi_service` and
-  `terraform output streamlit_service`.
+2. Run `terraform init` (one time) and `terraform plan -var-file=terraform.tfvars`.
+3. Apply with `terraform apply -var-file=terraform.tfvars` once the plan looks good.
+4. Capture the service URLs from `terraform output fastapi_service`.
 
 Future enhancements will add additional Cloud Run services, jobs, Scheduler
 triggers, and Secret Manager wiring—compose them here by instantiating the

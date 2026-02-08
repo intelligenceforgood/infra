@@ -4,9 +4,9 @@ This directory provisions the production (`i4g-prod`) stack using the shared Ter
 
 ## Components
 
-- Core service accounts (`sa-app` shared by FastAPI/Streamlit/console, `sa-ingest`, `sa-report`, `sa-vault`, `sa-infra`) plus least-privilege IAM bindings.
+- Core service accounts (`sa-app` shared by FastAPI and the analyst console, `sa-ingest`, `sa-report`, `sa-vault`, `sa-infra`) plus least-privilege IAM bindings.
 - GitHub Actions Workload Identity Federation mapped to `sa-infra` so CI can plan/apply without JSON keys.
-- Cloud Run services for FastAPI and Streamlit plus the analyst console. Identity-Aware Proxy (IAP) protects each
+- Cloud Run services for FastAPI and the analyst console. Identity-Aware Proxy (IAP) protects each
 	surface (brand, OAuth clients, IAM bindings) so analysts must authenticate via Google.
 - Vertex AI Search data store (`retrieval-prod`) for production retrieval workflows.
 
@@ -30,9 +30,7 @@ Populate these inputs before planning/applying:
 - `iap_secret_replication_locations` *(optional)* — Secret Manager replica regions for the OAuth client secrets (defaults to the service region).
 - `fastapi_image` — Artifact Registry image tag for the FastAPI service (`us-central1-docker.pkg.dev/i4g-prod/applications/fastapi:prod`).
 - `fastapi_env_vars` *(optional)* — override or extend the default map (Firestone/Cloud Storage buckets, log level, etc.).
-- `streamlit_image` — Artifact Registry image tag for the Streamlit UI (`us-central1-docker.pkg.dev/i4g-prod/applications/streamlit:prod`).
-- `streamlit_env_vars` *(optional)* — add branding or feature flags; FastAPI URL is injected automatically.
-- `fastapi_invoker_member`, `fastapi_invoker_members`, and `streamlit_invoker_member` *(optional)* — set explicit principals if additional service accounts need direct `roles/run.invoker`. The Terraform module automatically grants the shared runtime service account plus the IAP service agent.
+- `fastapi_invoker_member`, `fastapi_invoker_members` *(optional)* — set explicit principals if additional service accounts need direct `roles/run.invoker`. The Terraform module automatically grants the shared runtime service account plus the IAP service agent.
 
 ## Usage
 

@@ -326,14 +326,6 @@ locals {
     if trimspace(member) != ""
   ]
 
-  streamlit_requested_invokers = [
-    for member in concat(
-      var.streamlit_invoker_member == "" ? [] : [var.streamlit_invoker_member],
-      var.streamlit_invoker_members
-    ) : trimspace(member)
-    if trimspace(member) != ""
-  ]
-
   console_requested_invokers = [
     for member in concat(
       var.console_invoker_member == "" ? [] : [var.console_invoker_member],
@@ -356,11 +348,6 @@ locals {
   fastapi_invoker_members = distinct(concat(
     local.default_runtime_invokers,
     local.fastapi_requested_invokers
-  ))
-
-  streamlit_invoker_members = distinct(concat(
-    local.default_runtime_invokers,
-    local.streamlit_requested_invokers
   ))
 
   console_invoker_members = distinct(concat(
@@ -445,50 +432,6 @@ module "iap_fastapi" {
   secret_id                    = "iap-client-fastapi"
 
   depends_on = [module.run_fastapi]
-}
-
-module "run_streamlit" {
-  source     = "../../../modules/run/service"
-  project_id = var.project_id
-  location   = var.region
-
-  name            = "streamlit-analyst-ui"
-  service_account = module.iam_service_accounts.emails["app"]
-  image           = var.streamlit_image
-  env_vars = merge(
-    var.streamlit_env_vars,
-    {
-      I4G_API__BASE_URL = trimspace(var.fastapi_custom_domain) != "" ? format("https://%s", var.fastapi_custom_domain) : module.run_fastapi.uri
-      I4G_API_URL       = trimspace(var.fastapi_custom_domain) != "" ? format("https://%s", var.fastapi_custom_domain) : module.run_fastapi.uri
-    }
-  )
-  labels = {
-    service = "streamlit"
-    env     = "prod"
-  }
-
-  ingress = "all"
-
-  invoker_member  = ""
-  invoker_members = local.streamlit_invoker_members
-
-  depends_on = [module.iam_service_account_bindings, module.run_fastapi, google_project_service.gemini_cloud_assist, google_project_service_identity.iap]
-}
-
-module "iap_streamlit" {
-  source = "../../../modules/iap/cloud_run_service"
-
-  project_id                   = var.project_id
-  region                       = var.region
-  service_name                 = module.run_streamlit.name
-  manage_client                = var.iap_manage_clients
-  brand_name                   = module.iap_project.brand_name
-  display_name                 = "Streamlit Analyst UI"
-  access_members               = local.i4g_analyst_invokers
-  secret_replication_locations = var.iap_secret_replication_locations
-  secret_id                    = "iap-client-streamlit"
-
-  depends_on = [module.run_streamlit]
 }
 
 module "run_console" {

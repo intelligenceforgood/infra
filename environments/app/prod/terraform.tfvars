@@ -39,20 +39,6 @@ fastapi_secret_env_vars = {
   }
 }
 
-streamlit_image = "us-central1-docker.pkg.dev/i4g-prod/applications/streamlit:prod"
-
-streamlit_env_vars = {
-  I4G_ENV                          = "prod"
-  STREAMLIT_SERVER_TITLE           = "i4g Analyst Dashboard"
-  I4G_VERTEX_SEARCH_PROJECT        = "i4g-prod"
-  I4G_VERTEX_SEARCH_LOCATION       = "global"
-  I4G_VERTEX_SEARCH_DATA_STORE     = "retrieval-prod"
-  I4G_VERTEX_SEARCH_SERVING_CONFIG = "default_search"
-}
-
-streamlit_invoker_member  = ""
-streamlit_invoker_members = []
-
 console_image   = "us-central1-docker.pkg.dev/i4g-prod/applications/i4g-console:prod"
 console_enabled = false
 

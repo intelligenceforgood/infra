@@ -16,14 +16,6 @@ output "fastapi_service" {
   }
 }
 
-output "streamlit_service" {
-  description = "Metadata for the Streamlit Cloud Run service."
-  value = {
-    name = module.run_streamlit.name
-    url  = module.run_streamlit.uri
-  }
-}
-
 output "vertex_search" {
   description = "Discovery resources backing Vertex AI Search retrieval."
   value = {

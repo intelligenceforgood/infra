@@ -2,7 +2,7 @@
 
 Reusable module for provisioning a Cloud Run service with optional autoscaling,
 VPC connector, environment variables, and invoker bindings. Intended for
-application services like the FastAPI API gateway or Streamlit UI.
+application services like the FastAPI API gateway.
 
 ## Inputs
 

@@ -128,7 +128,7 @@ Run these steps once per GCP project before Terraform `init`.
 	 terraform apply
 	 ```
 
-5. Smoke test FastAPI and Streamlit endpoints, confirm Cloud Run jobs, and update `planning/change_log.md` with noteworthy outcomes.
+5. Smoke test FastAPI endpoints, confirm Cloud Run jobs, and update `planning/change_log.md` with noteworthy outcomes.
 
 ---
 
@@ -154,7 +154,7 @@ Run these steps once per GCP project before Terraform `init`.
 			projects/<project>/serviceAccounts/sa-infra@<project>.iam.gserviceaccount.com
 		```
 
-	- Repeat for any other pre-existing accounts (`fastapi`, `streamlit`, etc.).
+	- Repeat for any other pre-existing accounts (`fastapi`, etc.).
 
 - **`permission denied for impersonating sa-infra`**
 	- Grant the operator account (or GitHub Actions WIF principal) `roles/iam.serviceAccountTokenCreator` on `sa-infra`.

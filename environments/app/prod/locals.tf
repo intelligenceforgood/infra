@@ -3,7 +3,7 @@ locals {
     app = {
       account_id   = "sa-app"
       display_name = "Application Runtime"
-      description  = "Runs FastAPI, Streamlit, and console services"
+      description  = "Runs FastAPI and console services"
     }
     ingest = {
       account_id   = "sa-ingest"
