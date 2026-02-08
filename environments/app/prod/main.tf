@@ -57,23 +57,6 @@ resource "google_project_service_identity" "iap" {
   depends_on = [google_project_service.iap]
 }
 
-resource "google_firestore_database" "default" {
-  project          = var.project_id
-  name             = "(default)"
-  location_id      = var.firestore_location
- secret_id = "azure-sql-connection-string"
-
-  replication {
-    user_managed {
-      replicas {
-        location = var.region
-      }
-    }
-  }
-
-  depends_on = [google_project_service.secret_manager]
-}
-
 resource "google_secret_manager_secret" "azure_storage_connection_string" {
   project   = var.project_id
   secret_id = "azure-storage-connection-string"
