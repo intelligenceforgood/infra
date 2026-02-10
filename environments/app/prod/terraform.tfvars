@@ -22,6 +22,9 @@ fastapi_env_vars = {
   I4G_APP__CLOUDSQL__DATABASE        = "i4g_db"
   I4G_APP__CLOUDSQL__USER            = "sa-app@i4g-prod.iam.gserviceaccount.com"
   I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH = "true"
+  I4G_VECTOR__BACKEND                = "vertex_ai"
+  I4G_LLM__PROVIDER                  = "vertex_ai"
+  I4G_LLM__CHAT_MODEL                = "gemini-2.5-flash"
   I4G_VERTEX_SEARCH_PROJECT          = "i4g-prod"
   I4G_VERTEX_SEARCH_LOCATION         = "global"
   I4G_VERTEX_SEARCH_DATA_STORE       = "retrieval-prod"
@@ -45,11 +48,17 @@ console_enabled = false
 console_env_vars = {
   NEXT_PUBLIC_USE_MOCK_DATA        = "false"
   I4G_API_KIND                     = "core"
-  I4G_API_KEY                      = "prod-analyst-token"
   I4G_VERTEX_SEARCH_PROJECT        = "i4g-prod"
   I4G_VERTEX_SEARCH_LOCATION       = "global"
   I4G_VERTEX_SEARCH_DATA_STORE     = "retrieval-prod"
   I4G_VERTEX_SEARCH_SERVING_CONFIG = "default_search"
+}
+
+console_secret_env_vars = {
+  I4G_API_KEY = {
+    secret  = "projects/i4g-prod/secrets/api-key"
+    version = "latest"
+  }
 }
 
 console_invoker_member  = ""
@@ -121,6 +130,16 @@ run_jobs = {
       I4G_APP__CLOUDSQL__USER            = "sa-ingest@i4g-prod.iam"
       I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH = "true"
     }
+    secret_env_vars = {
+      I4G_PII__PEPPER = {
+        secret  = "projects/i4g-pii-vault-prod/secrets/tokenization-pepper"
+        version = "latest"
+      }
+      I4G_CRYPTO__PII_KEY = {
+        secret  = "projects/i4g-pii-vault-prod/secrets/pii-tokenization-key"
+        version = "latest"
+      }
+    }
   }
 
   intake = {
@@ -148,6 +167,16 @@ run_jobs = {
       I4G_APP__CLOUDSQL__DATABASE        = "i4g_db"
       I4G_APP__CLOUDSQL__USER            = "sa-report@i4g-prod.iam"
       I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH = "true"
+    }
+    secret_env_vars = {
+      I4G_PII__PEPPER = {
+        secret  = "projects/i4g-pii-vault-prod/secrets/tokenization-pepper"
+        version = "latest"
+      }
+      I4G_CRYPTO__PII_KEY = {
+        secret  = "projects/i4g-pii-vault-prod/secrets/pii-tokenization-key"
+        version = "latest"
+      }
     }
   }
   dossier_queue = {

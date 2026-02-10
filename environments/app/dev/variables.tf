@@ -147,6 +147,15 @@ variable "console_env_vars" {
   default     = {}
 }
 
+variable "console_secret_env_vars" {
+  description = "Secret-backed environment variables injected into the console service."
+  type = map(object({
+    secret  = string
+    version = optional(string)
+  }))
+  default = {}
+}
+
 variable "console_invoker_member" {
   type        = string
   description = "Principal granted Cloud Run invoker on the console service (leave blank to rely on IAM policies)."

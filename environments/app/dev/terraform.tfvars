@@ -48,8 +48,14 @@ console_image = "us-central1-docker.pkg.dev/i4g-dev/applications/i4g-console:dev
 console_env_vars = {
   NEXT_PUBLIC_USE_MOCK_DATA        = "false"
   I4G_API_KIND                     = "core"
-  I4G_API_KEY                      = "dev-analyst-token"
   I4G_VERTEX_SEARCH_SERVING_CONFIG = "default_search"
+}
+
+console_secret_env_vars = {
+  I4G_API_KEY = {
+    secret  = "projects/i4g-dev/secrets/api-key"
+    version = "latest"
+  }
 }
 
 console_invoker_member  = ""
@@ -158,7 +164,6 @@ run_jobs = {
     max_retries         = 0
     env_vars = {
       I4G_ENV                            = "dev"
-      I4G_API__KEY                       = "dev-analyst-token"
       I4G_INGEST__ENABLE_VECTOR          = "false"
       I4G_RUNTIME__FALLBACK_DIR          = "/tmp/i4g"
       I4G_STORAGE__STRUCTURED_BACKEND    = "cloudsql"
@@ -168,6 +173,10 @@ run_jobs = {
       I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH = "true"
     }
     secret_env_vars = {
+      I4G_API__KEY = {
+        secret  = "projects/i4g-dev/secrets/api-key"
+        version = "latest"
+      }
     }
   }
 
@@ -183,6 +192,16 @@ run_jobs = {
       I4G_APP__CLOUDSQL__DATABASE        = "i4g_db"
       I4G_APP__CLOUDSQL__USER            = "sa-report@i4g-dev.iam"
       I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH = "true"
+    }
+    secret_env_vars = {
+      I4G_PII__PEPPER = {
+        secret  = "projects/i4g-pii-vault-dev/secrets/tokenization-pepper"
+        version = "latest"
+      }
+      I4G_CRYPTO__PII_KEY = {
+        secret  = "projects/i4g-pii-vault-dev/secrets/pii-tokenization-key"
+        version = "latest"
+      }
     }
   }
 

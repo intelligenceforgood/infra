@@ -578,6 +578,7 @@ module "run_console" {
     },
     var.console_env_vars
   )
+  secret_env_vars = var.console_secret_env_vars
 
   # Increase memory for Next.js
   resource_limits = {
