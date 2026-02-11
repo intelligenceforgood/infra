@@ -8,9 +8,3 @@ variable "region" {
   description = "Primary region for regional resources."
   default     = "us-central1"
 }
-
-variable "app_service_accounts" {
-  type        = list(string)
-  description = "List of app service account emails to grant cross-project access (optional)."
-  default     = []
-}

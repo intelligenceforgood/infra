@@ -22,7 +22,6 @@ module "iam_service_account_bindings" {
     app = {
       member = "serviceAccount:${module.iam_service_accounts.emails["app"]}"
       roles  = [
-        "roles/datastore.user",
         "roles/storage.objectViewer",
         "roles/secretmanager.secretAccessor"
       ]

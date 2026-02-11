@@ -57,36 +57,6 @@ resource "google_project_service_identity" "iap" {
   depends_on = [google_project_service.iap]
 }
 
-resource "google_secret_manager_secret" "azure_storage_connection_string" {
-  project   = var.project_id
-  secret_id = "azure-storage-connection-string"
-
-  replication {
-    user_managed {
-      replicas {
-        location = var.region
-      }
-    }
-  }
-
-  depends_on = [google_project_service.secret_manager]
-}
-
-resource "google_secret_manager_secret" "azure_search_admin_key" {
-  project   = var.project_id
-  secret_id = "azure-search-admin-key"
-
-  replication {
-    user_managed {
-      replicas {
-        location = var.region
-      }
-    }
-  }
-
-  depends_on = [google_project_service.secret_manager]
-}
-
 data "google_project" "current" {
   project_id = var.project_id
 }
@@ -204,8 +174,6 @@ module "iam_service_account_bindings" {
     app = {
       member = "serviceAccount:${module.iam_service_accounts.emails["app"]}"
       roles = [
-        "roles/datastore.user",
-        "roles/datastore.viewer",
         "roles/storage.objectViewer",
         "roles/artifactregistry.reader",
         "roles/secretmanager.secretAccessor",
@@ -218,7 +186,6 @@ module "iam_service_account_bindings" {
     ingest = {
       member = "serviceAccount:${module.iam_service_accounts.emails["ingest"]}"
       roles = [
-        "roles/datastore.user",
         "roles/storage.objectAdmin",
         "roles/run.invoker",
         "roles/artifactregistry.reader",
@@ -232,7 +199,6 @@ module "iam_service_account_bindings" {
     intake = {
       member = "serviceAccount:${module.iam_service_accounts.emails["intake"]}"
       roles = [
-        "roles/datastore.user",
         "roles/storage.objectAdmin",
         "roles/artifactregistry.reader",
         "roles/secretmanager.secretAccessor",
@@ -244,7 +210,6 @@ module "iam_service_account_bindings" {
     report = {
       member = "serviceAccount:${module.iam_service_accounts.emails["report"]}"
       roles = [
-        "roles/datastore.user",
         "roles/storage.objectAdmin",
         "roles/artifactregistry.reader",
         "roles/secretmanager.secretAccessor",
@@ -256,7 +221,6 @@ module "iam_service_account_bindings" {
     vault = {
       member = "serviceAccount:${module.iam_service_accounts.emails["vault"]}"
       roles = [
-        "roles/datastore.user",
         "roles/cloudkms.cryptoKeyEncrypterDecrypter"
       ]
     }
@@ -399,9 +363,8 @@ module "run_fastapi" {
   env_vars = merge(
     var.fastapi_env_vars,
     {
-      I4G_STORAGE__EVIDENCE_BUCKET    = lookup(module.storage_buckets.bucket_names, "evidence", "")
-      I4G_STORAGE__REPORT_BUCKET      = lookup(module.storage_buckets.bucket_names, "reports", "")
-      I4G_INGEST__ENABLE_TOKENIZATION = "true"
+      I4G_STORAGE__EVIDENCE_BUCKET = lookup(module.storage_buckets.bucket_names, "evidence", "")
+      I4G_STORAGE__REPORT_BUCKET   = lookup(module.storage_buckets.bucket_names, "reports", "")
     }
   )
   secret_env_vars = var.fastapi_secret_env_vars
@@ -523,10 +486,9 @@ module "run_jobs" {
   env_vars = merge(
     coalesce(try(each.value.env_vars, null), {}),
     {
-      I4G_ENV                         = "prod"
-      I4G_STORAGE__EVIDENCE_BUCKET    = lookup(module.storage_buckets.bucket_names, "evidence", "")
-      I4G_STORAGE__REPORT_BUCKET      = lookup(module.storage_buckets.bucket_names, "reports", "")
-      I4G_INGEST__ENABLE_TOKENIZATION = "true"
+      I4G_ENV                      = "prod"
+      I4G_STORAGE__EVIDENCE_BUCKET = lookup(module.storage_buckets.bucket_names, "evidence", "")
+      I4G_STORAGE__REPORT_BUCKET   = lookup(module.storage_buckets.bucket_names, "reports", "")
     }
   )
   secret_env_vars = coalesce(try(each.value.secret_env_vars, null), {})

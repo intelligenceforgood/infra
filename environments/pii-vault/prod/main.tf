@@ -56,17 +56,3 @@ module "tokenization_pepper" {
   region     = var.region
   secret_id  = "tokenization-pepper"
 }
-
-resource "google_project_iam_member" "app_secret_accessor" {
-  for_each = { for email in var.app_service_accounts : email => email }
-  project  = var.project_id
-  role     = "roles/secretmanager.secretAccessor"
-  member   = format("serviceAccount:%s", each.value)
-}
-
-resource "google_kms_crypto_key_iam_member" "app_key_access" {
-  for_each      = { for email in var.app_service_accounts : email => email }
-  crypto_key_id = google_kms_crypto_key.vault_key.id
-  role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
-  member        = format("serviceAccount:%s", each.value)
-}

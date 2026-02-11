@@ -63,53 +63,6 @@ resource "google_project_service_identity" "iap" {
   depends_on = [google_project_service.iap]
 }
 
-
-
-resource "google_secret_manager_secret" "azure_sql_connection_string" {
-  project   = var.project_id
-  secret_id = "azure-sql-connection-string"
-
-  replication {
-    user_managed {
-      replicas {
-        location = var.region
-      }
-    }
-  }
-
-  depends_on = [google_project_service.secret_manager]
-}
-
-resource "google_secret_manager_secret" "azure_storage_connection_string" {
-  project   = var.project_id
-  secret_id = "azure-storage-connection-string"
-
-  replication {
-    user_managed {
-      replicas {
-        location = var.region
-      }
-    }
-  }
-
-  depends_on = [google_project_service.secret_manager]
-}
-
-resource "google_secret_manager_secret" "azure_search_admin_key" {
-  project   = var.project_id
-  secret_id = "azure-search-admin-key"
-
-  replication {
-    user_managed {
-      replicas {
-        location = var.region
-      }
-    }
-  }
-
-  depends_on = [google_project_service.secret_manager]
-}
-
 data "google_project" "current" {
   project_id = var.project_id
 }
@@ -281,8 +234,6 @@ module "iam_service_account_bindings" {
     app = {
       member = "serviceAccount:${module.iam_service_accounts.emails["app"]}"
       roles = [
-        "roles/datastore.user",
-        "roles/datastore.viewer",
         "roles/storage.objectAdmin",
         "roles/artifactregistry.reader",
         "roles/secretmanager.secretAccessor",
@@ -298,7 +249,6 @@ module "iam_service_account_bindings" {
     ingest = {
       member = "serviceAccount:${module.iam_service_accounts.emails["ingest"]}"
       roles = [
-        "roles/datastore.user",
         "roles/storage.objectAdmin",
         "roles/run.invoker",
         "roles/artifactregistry.reader",
@@ -314,7 +264,6 @@ module "iam_service_account_bindings" {
     intake = {
       member = "serviceAccount:${module.iam_service_accounts.emails["intake"]}"
       roles = [
-        "roles/datastore.user",
         "roles/storage.objectAdmin",
         "roles/artifactregistry.reader",
         "roles/secretmanager.secretAccessor",
@@ -326,7 +275,6 @@ module "iam_service_account_bindings" {
     report = {
       member = "serviceAccount:${module.iam_service_accounts.emails["report"]}"
       roles = [
-        "roles/datastore.user",
         "roles/storage.objectAdmin",
         "roles/artifactregistry.reader",
         "roles/secretmanager.secretAccessor",
@@ -341,7 +289,6 @@ module "iam_service_account_bindings" {
     vault = {
       member = "serviceAccount:${module.iam_service_accounts.emails["vault"]}"
       roles = [
-        "roles/datastore.user",
         "roles/cloudkms.cryptoKeyEncrypterDecrypter"
       ]
     }
@@ -497,7 +444,6 @@ module "run_fastapi" {
   env_vars = merge(
     {
       I4G_STORAGE__EVIDENCE__LOCAL_DIR = "/tmp/evidence"
-      I4G_INGEST__ENABLE_TOKENIZATION  = "true"
       I4G_LLM__PROVIDER                = "vertex_ai"
       I4G_LLM__CHAT_MODEL              = "gemini-2.0-flash"
     },
@@ -538,7 +484,6 @@ locals {
       I4G_VECTOR__VERTEX_AI_PROJECT    = var.vertex_ai_search.project_id
       I4G_VECTOR__VERTEX_AI_LOCATION   = var.vertex_ai_search.location
       I4G_VECTOR__VERTEX_AI_DATA_STORE = var.vertex_ai_search.data_store_id
-      I4G_INGEST__ENABLE_TOKENIZATION  = "true"
     }
     sweeper = {
       I4G_VECTOR__VERTEX_AI_PROJECT  = var.vertex_ai_search.project_id

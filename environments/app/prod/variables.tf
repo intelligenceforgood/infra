@@ -3,6 +3,11 @@ variable "project_id" {
   description = "GCP project ID for the prod environment."
 }
 
+variable "pii_vault_project_id" {
+  type        = string
+  description = "GCP project ID of the companion PII Vault project."
+}
+
 variable "i4g_analyst_members" {
   type        = list(string)
   description = "Principals (users, service accounts, or Google Groups) that need Cloud Run access to analyst surfaces."

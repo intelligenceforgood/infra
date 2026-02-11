@@ -41,21 +41,9 @@ resource "google_sql_database" "vault_db" {
   project  = var.project_id
 }
 
-# Grant the app service accounts access to the DB instance (Cloud SQL Client)
-resource "google_project_iam_member" "app_sql_client" {
-  for_each = { for email in var.app_service_accounts : email => email }
-  project  = var.project_id
-  role     = "roles/cloudsql.client"
-  member   = format("serviceAccount:%s", each.value)
-}
-
-# Grant the app service accounts access to log in as a database user (IAM User)
-resource "google_project_iam_member" "app_sql_instance_user" {
-  for_each = { for email in var.app_service_accounts : email => email }
-  project  = var.project_id
-  role     = "roles/cloudsql.instanceUser"
-  member   = format("serviceAccount:%s", each.value)
-}
+# NOTE: Cloud SQL IAM roles (cloudsql.client, cloudsql.instanceUser) for app
+# service accounts are managed in app/dev via the pii_vault_access module.
+# Only database-local resources (instance, DB, users, groups) remain here.
 
 # Create IAM groups in the database
 resource "google_sql_user" "iam_groups" {

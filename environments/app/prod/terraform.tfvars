@@ -10,6 +10,7 @@ db_admin_group   = "gcp-i4g-admin@intelligenceforgood.org"
 db_analyst_group = "gcp-i4g-analyst@intelligenceforgood.org"
 
 project_id            = "i4g-prod"
+pii_vault_project_id  = "i4g-pii-vault-prod"
 iap_support_email     = "jerry@intelligenceforgood.org"
 iap_application_title = "i4g Analyst Surfaces (Prod)"
 fastapi_image         = "us-central1-docker.pkg.dev/i4g-prod/applications/fastapi:prod"
@@ -179,6 +180,48 @@ run_jobs = {
       }
     }
   }
+  sweeper = {
+    enabled             = false
+    name                = "classification-sweeper"
+    image               = "us-central1-docker.pkg.dev/i4g-prod/applications/ingest-job:prod"
+    service_account_key = "ingest"
+    timeout_seconds     = 3600
+    parallelism         = 1
+    max_retries         = 0
+    args                = ["jobs", "sweeper"]
+    schedule            = "*/5 * * * *"
+
+    env_vars = {
+      I4G_ENV                            = "prod"
+      I4G_STORAGE__STRUCTURED_BACKEND    = "cloudsql"
+      I4G_APP__CLOUDSQL__INSTANCE        = "i4g-prod:us-central1:i4g-prod-db"
+      I4G_APP__CLOUDSQL__DATABASE        = "i4g_db"
+      I4G_APP__CLOUDSQL__USER            = "sa-ingest@i4g-prod.iam"
+      I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH = "true"
+      I4G_VECTOR__BACKEND                = "vertex_ai"
+      I4G_LLM__PROVIDER                  = "vertex_ai"
+      I4G_LLM__CHAT_MODEL                = "gemini-2.5-flash"
+    }
+  }
+
+  account_list = {
+    enabled             = false
+    name                = "account-list"
+    image               = "us-central1-docker.pkg.dev/i4g-prod/applications/account-job:prod"
+    service_account_key = "report"
+    max_retries         = 0
+    env_vars = {
+      I4G_ENV                          = "prod"
+      I4G_ACCOUNT_JOB__WINDOW_DAYS     = "15"
+      I4G_ACCOUNT_JOB__CATEGORIES      = "bank,crypto,payments"
+      I4G_ACCOUNT_JOB__OUTPUT_FORMATS  = "pdf,xlsx"
+      I4G_ACCOUNT_JOB__INCLUDE_SOURCES = "true"
+      I4G_RUNTIME__LOG_LEVEL           = "INFO"
+      I4G_ACCOUNT_LIST__ENABLE_VECTOR  = "false"
+      I4G_LLM__PROVIDER                = "vertex_ai"
+    }
+  }
+
   dossier_queue = {
     enabled             = false
     name                = "dossier-queue"

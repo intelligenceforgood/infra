@@ -11,6 +11,7 @@ db_admin_group   = "gcp-i4g-admin@intelligenceforgood.org"
 db_analyst_group = "gcp-i4g-analyst@intelligenceforgood.org"
 
 project_id            = "i4g-dev"
+pii_vault_project_id  = "i4g-pii-vault-dev"
 iap_support_email     = "jerry@intelligenceforgood.org"
 iap_application_title = "i4g Analyst Surfaces (Dev)"
 fastapi_image         = "us-central1-docker.pkg.dev/i4g-dev/applications/fastapi:dev"
@@ -257,6 +258,8 @@ run_jobs = {
   }
 }
 
+# Vertex AI Search – Override these in local-overrides.tfvars (gitignored).
+# Sentinel values are rejected at plan time by validation rules in variables.tf.
 vertex_ai_search = {
   project_id    = "REPLACE_WITH_PROJECT_ID"
   location      = "global"
@@ -273,6 +276,8 @@ dns_managed_zone_project = ""
 # IAP allowed domains
 iap_allowed_domains = ["intelligenceforgood.org"]
 
+# IAP OAuth clients – Override these in local-overrides.tfvars (gitignored).
+# Sentinel values are rejected at plan time by validation rules in variables.tf.
 iap_clients = {
   api = {
     client_id     = "REPLACE_WITH_CLIENT_ID"
