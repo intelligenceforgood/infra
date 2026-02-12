@@ -1,0 +1,103 @@
+name: Terraform (Prod)
+
+on:
+  pull_request:
+    paths:
+      - "environments/app/prod/**"
+      - "environments/pii-vault/prod/**"
+      - "modules/**"
+  push:
+    branches:
+      - main
+    paths:
+      - "environments/app/prod/**"
+      - "environments/pii-vault/prod/**"
+      - "modules/**"
+
+env:
+  TF_WORKING_DIR: environments/app/prod
+  TF_PII_VAULT_DIR: environments/pii-vault/prod
+  TF_GCP_PROJECT_ID: ${{ vars.TF_GCP_PROD_PROJECT_ID }}
+  TF_GCP_PII_VAULT_PROJECT_ID: ${{ vars.TF_GCP_PROD_PII_VAULT_PROJECT_ID }}
+  TF_GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ vars.TF_GCP_PROD_WORKLOAD_IDENTITY_PROVIDER }}
+  TF_GCP_SERVICE_ACCOUNT: ${{ vars.TF_GCP_PROD_SERVICE_ACCOUNT }}
+  TF_GITHUB_REPOSITORY: ${{ github.repository }}
+
+permissions:
+  contents: read
+  id-token: write
+  pull-requests: write
+
+jobs:
+  plan:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.TF_GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.TF_GCP_SERVICE_ACCOUNT }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Terraform Init (app)
+        run: terraform -chdir="${TF_WORKING_DIR}" init
+
+      - name: Terraform Init (pii-vault)
+        run: terraform -chdir="${TF_PII_VAULT_DIR}" init
+
+      - name: Terraform Fmt (app)
+        run: terraform -chdir="${TF_WORKING_DIR}" fmt -check
+
+      - name: Terraform Fmt (pii-vault)
+        run: terraform -chdir="${TF_PII_VAULT_DIR}" fmt -check
+
+      - name: Terraform Plan (app)
+        run: terraform -chdir="${TF_WORKING_DIR}" plan -input=false -var "project_id=${TF_GCP_PROJECT_ID}" -var "github_repository=${TF_GITHUB_REPOSITORY}"
+
+      - name: Terraform Plan (pii-vault)
+        run: terraform -chdir="${TF_PII_VAULT_DIR}" plan -input=false -var "project_id=${TF_GCP_PII_VAULT_PROJECT_ID}" -var "github_repository=${TF_GITHUB_REPOSITORY}"
+
+  apply:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.TF_GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.TF_GCP_SERVICE_ACCOUNT }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Terraform Init (app)
+        run: terraform -chdir="${TF_WORKING_DIR}" init
+
+      - name: Terraform Init (pii-vault)
+        run: terraform -chdir="${TF_PII_VAULT_DIR}" init
+
+      - name: Terraform Plan (app)
+        run: terraform -chdir="${TF_WORKING_DIR}" plan -input=false -var "project_id=${TF_GCP_PROJECT_ID}" -var "github_repository=${TF_GITHUB_REPOSITORY}"
+
+      - name: Terraform Plan (pii-vault)
+        run: terraform -chdir="${TF_PII_VAULT_DIR}" plan -input=false -var "project_id=${TF_GCP_PII_VAULT_PROJECT_ID}" -var "github_repository=${TF_GITHUB_REPOSITORY}"
+
+      - name: Terraform Apply (app)
+        run: terraform -chdir="${TF_WORKING_DIR}" apply -input=false -auto-approve -var "project_id=${TF_GCP_PROJECT_ID}" -var "github_repository=${TF_GITHUB_REPOSITORY}"
+
+      - name: Terraform Apply (pii-vault)
+        run: terraform -chdir="${TF_PII_VAULT_DIR}" apply -input=false -auto-approve -var "project_id=${TF_GCP_PII_VAULT_PROJECT_ID}" -var "github_repository=${TF_GITHUB_REPOSITORY}"
