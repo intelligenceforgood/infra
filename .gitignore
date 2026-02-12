@@ -6,3 +6,4 @@
 # Local overrides and plan files
 *local-overrides.tfvars
 *.tfplan
+tfplan

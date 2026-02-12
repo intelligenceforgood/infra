@@ -487,7 +487,7 @@ module "run_fastapi" {
   } : {}
 
   invoker_member  = ""
-  invoker_members = concat(local.fastapi_invoker_members, ["allUsers"])
+  invoker_members = local.fastapi_invoker_members
 
   depends_on = [module.iam_service_account_bindings, google_project_service.gemini_cloud_assist, google_project_service_identity.iap]
 }
