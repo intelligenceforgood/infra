@@ -17,16 +17,6 @@ terraform {
   }
 }
 
-variable "pii_vault_project_id" {
-  description = "GCP project ID of the PII Vault project (e.g. i4g-pii-vault-dev)."
-  type        = string
-}
-
-variable "accessor_emails" {
-  description = "List of service-account emails that need access to vault secrets and KMS keys."
-  type        = list(string)
-}
-
 # ---------------------------------------------------------------------------
 # Secret Manager – read-only access to tokenization secrets
 # ---------------------------------------------------------------------------

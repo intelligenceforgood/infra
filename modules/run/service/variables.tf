@@ -88,8 +88,16 @@ variable "timeout_seconds" {
 
 variable "ingress" {
   type        = string
-  description = "Ingress setting for the service (leave blank to use provider default)."
+  description = "Ingress setting for the service. Accepts v2 enum values (INGRESS_TRAFFIC_ALL, INGRESS_TRAFFIC_INTERNAL_ONLY, INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER) or legacy v1 annotation values. Leave blank for provider default."
   default     = ""
+
+  validation {
+    condition = var.ingress == "" || contains([
+      "all", "internal", "internal-only", "internal-and-cloud-load-balancing",
+      "INGRESS_TRAFFIC_ALL", "INGRESS_TRAFFIC_INTERNAL_ONLY", "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
+    ], var.ingress)
+    error_message = "ingress must be one of: INGRESS_TRAFFIC_ALL, INGRESS_TRAFFIC_INTERNAL_ONLY, INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER (or legacy values: all, internal, internal-only, internal-and-cloud-load-balancing), or empty string."
+  }
 }
 
 variable "min_instances" {
@@ -144,10 +152,4 @@ variable "vpc_connector_egress_settings" {
   type        = string
   description = "Egress settings when a VPC connector is used."
   default     = "ALL_TRAFFIC"
-}
-
-variable "autogenerate_revision_name" {
-  type        = bool
-  description = "Whether Terraform should auto-generate revision names."
-  default     = true
 }

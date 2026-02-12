@@ -10,31 +10,20 @@ terraform {
 }
 
 locals {
-  autoscaling_annotations = merge(
-    var.min_instances == null ? {} : { "autoscaling.knative.dev/minScale" = tostring(var.min_instances) },
-    var.max_instances == null ? {} : { "autoscaling.knative.dev/maxScale" = tostring(var.max_instances) }
-  )
-
-  ingress_annotation = var.ingress == "" ? {} : { "run.googleapis.com/ingress" = var.ingress }
-
-  vpc_annotations = var.vpc_connector == "" ? {} : {
-    "run.googleapis.com/vpc-access-connector" = var.vpc_connector,
-    "run.googleapis.com/vpc-egress"           = var.vpc_connector_egress_settings
+  # Map legacy v1 annotation values to v2 enum values for backward compatibility.
+  ingress_map = {
+    ""                                       = null
+    "all"                                    = "INGRESS_TRAFFIC_ALL"
+    "internal"                               = "INGRESS_TRAFFIC_INTERNAL_ONLY"
+    "internal-only"                          = "INGRESS_TRAFFIC_INTERNAL_ONLY"
+    "internal-and-cloud-load-balancing"      = "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
+    "INGRESS_TRAFFIC_ALL"                    = "INGRESS_TRAFFIC_ALL"
+    "INGRESS_TRAFFIC_INTERNAL_ONLY"          = "INGRESS_TRAFFIC_INTERNAL_ONLY"
+    "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER" = "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
   }
 
-  secret_annotations = length(var.secret_env_vars) == 0 ? {} : {
-    "run.googleapis.com/secrets" = join(",", [
-      for env_key, env_val in var.secret_env_vars :
-      format("%s:%s", env_key, env_val.secret)
-    ])
-  }
+  effective_ingress = var.ingress == "" ? null : lookup(local.ingress_map, var.ingress, var.ingress)
 
-  template_annotations = merge(
-    var.annotations,
-    local.autoscaling_annotations,
-    local.vpc_annotations,
-    local.secret_annotations
-  )
   effective_invokers = distinct([
     for member in concat(
       var.invoker_member == "" ? [] : [var.invoker_member],
@@ -44,83 +33,86 @@ locals {
   ])
 }
 
-resource "google_cloud_run_service" "this" {
+resource "google_cloud_run_v2_service" "this" {
   name     = var.name
   project  = var.project_id
   location = var.location
 
-  autogenerate_revision_name = var.autogenerate_revision_name
-
-  metadata {
-    annotations = local.ingress_annotation
-  }
+  ingress = local.effective_ingress
 
   template {
-    metadata {
-      annotations = local.template_annotations
-      labels      = var.labels
+    service_account = var.service_account
+    labels          = var.labels
+    annotations     = var.annotations
+
+    scaling {
+      min_instance_count = var.min_instances
+      max_instance_count = var.max_instances
     }
 
-    spec {
-      service_account_name = var.service_account
+    max_instance_request_concurrency = var.container_concurrency
+    timeout                          = "${var.timeout_seconds}s"
 
-      containers {
-        image   = var.image
-        args    = var.args
-        command = var.command
+    dynamic "vpc_access" {
+      for_each = var.vpc_connector != "" ? [1] : []
+      content {
+        connector = var.vpc_connector
+        egress    = var.vpc_connector_egress_settings
+      }
+    }
 
-        dynamic "env" {
-          for_each = var.env_vars
-          content {
-            name  = env.key
-            value = env.value
-          }
-        }
+    containers {
+      image   = var.image
+      args    = var.args
+      command = var.command
 
-        dynamic "env" {
-          for_each = var.secret_env_vars
-          content {
-            name = env.key
-            value_from {
-              secret_key_ref {
-                name = env.key
-                key  = coalesce(lookup(env.value, "version", null), "latest")
-              }
-            }
-          }
-        }
-
-        dynamic "ports" {
-          for_each = var.container_ports
-          content {
-            name           = try(ports.value.name, null)
-            container_port = try(ports.value.container_port, 8080)
-          }
-        }
-
-        resources {
-          limits = var.resource_limits
+      dynamic "env" {
+        for_each = var.env_vars
+        content {
+          name  = env.key
+          value = env.value
         }
       }
 
-      container_concurrency = var.container_concurrency
-      timeout_seconds       = var.timeout_seconds
+      dynamic "env" {
+        for_each = var.secret_env_vars
+        content {
+          name = env.key
+          value_source {
+            secret_key_ref {
+              secret  = env.value.secret
+              version = coalesce(env.value.version, "latest")
+            }
+          }
+        }
+      }
+
+      dynamic "ports" {
+        for_each = var.container_ports
+        content {
+          name           = try(ports.value.name, null)
+          container_port = try(ports.value.container_port, 8080)
+        }
+      }
+
+      resources {
+        limits = var.resource_limits
+      }
     }
   }
 
   traffic {
-    percent         = 100
-    latest_revision = true
+    percent = 100
+    type    = "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST"
   }
-
 }
 
-resource "google_cloud_run_service_iam_binding" "invoker" {
+resource "google_cloud_run_v2_service_iam_binding" "invoker" {
   count = length(local.effective_invokers) > 0 ? 1 : 0
 
   project  = var.project_id
   location = var.location
-  service  = google_cloud_run_service.this.name
+  name     = google_cloud_run_v2_service.this.name
   role     = var.invoker_role
   members  = local.effective_invokers
 }

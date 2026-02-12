@@ -516,7 +516,6 @@ module "run_console" {
       I4G_API_URL                  = module.run_fastapi.uri
       I4G_IAP_CLIENT_ID            = try(var.iap_clients["api"].client_id, "")
       HOSTNAME                     = "0.0.0.0"
-      FORCE_REDEPLOY               = "7"
       I4G_VERTEX_SEARCH_PROJECT    = var.vertex_ai_search.project_id
       I4G_VERTEX_SEARCH_LOCATION   = var.vertex_ai_search.location
       I4G_VERTEX_SEARCH_DATA_STORE = var.vertex_ai_search.data_store_id

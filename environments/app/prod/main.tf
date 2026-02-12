@@ -669,7 +669,7 @@ resource "google_cloud_run_v2_job_iam_member" "scheduled_invokers" {
 
 resource "google_project_organization_policy" "allow_public_invokers" {
   project    = var.project_id
-  constraint = "iam.allowedPolicyMemberDomains"
+  constraint = "constraints/iam.allowedPolicyMemberDomains"
 
   list_policy {
     allow {

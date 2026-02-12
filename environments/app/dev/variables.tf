@@ -49,12 +49,6 @@ variable "iap_existing_brand_name" {
   default     = ""
 }
 
-variable "iap_manage_clients" {
-  type        = bool
-  description = "Set to true to create per-service OAuth clients and secrets."
-  default     = false
-}
-
 variable "db_admin_group" {
   type        = string
   description = "Google Group email for DB admins (IAM auth)."
@@ -100,12 +94,6 @@ variable "iap_allow_http_options" {
   type        = bool
   description = "Allow unauthenticated HTTP OPTIONS (CORS preflight) to bypass IAP checks."
   default     = true
-}
-
-variable "iap_secret_replication_locations" {
-  type        = list(string)
-  description = "Secret Manager replica locations for storing IAP OAuth client secrets."
-  default     = []
 }
 
 variable "github_repository" {

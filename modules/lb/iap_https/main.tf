@@ -8,27 +8,6 @@ terraform {
   }
 }
 
-variable "project_id" {
-  type = string
-}
-
-variable "name" {
-  description = "Name prefix for LB resources"
-  type        = string
-}
-
-variable "backends" {
-  description = "Map of backends. Key is a unique identifier."
-  type = map(object({
-    domain            = string
-    service_name      = string
-    region            = string
-    enable_iap        = bool
-    iap_client_id     = optional(string)
-    iap_client_secret = optional(string)
-  }))
-}
-
 # 1. Global IP
 resource "google_compute_global_address" "default" {
   project = var.project_id
@@ -150,12 +129,4 @@ resource "google_compute_global_forwarding_rule" "https_redirect" {
   target     = google_compute_target_http_proxy.https_redirect.id
   port_range = "80"
   ip_address = google_compute_global_address.default.address
-}
-
-output "ip_address" {
-  value = google_compute_global_address.default.address
-}
-
-output "backend_services" {
-  value = { for k, v in google_compute_backend_service.default : k => v.name }
 }
