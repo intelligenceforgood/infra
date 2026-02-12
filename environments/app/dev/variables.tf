@@ -65,6 +65,19 @@ variable "db_analyst_group" {
   description = "Google Group email for DB analysts (IAM auth)."
 }
 
+variable "database_config" {
+  description = "Cloud SQL instance configuration."
+  type = object({
+    instance_name       = string
+    tier                = string
+    disk_size           = number
+    availability_type   = string
+    backup_enabled      = bool
+    backup_start_time   = optional(string, "02:00")
+    deletion_protection = bool
+  })
+}
+
 variable "iap_project_level_bindings" {
   type        = bool
   description = "When true, create project-level IAP accessor bindings for `i4g_analyst_members`. Set to false to keep IAP bindings out of project-level IAM (use per-service bindings)."

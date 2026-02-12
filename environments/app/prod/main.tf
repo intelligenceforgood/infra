@@ -10,6 +10,12 @@ resource "google_project_service" "vertex_ai_search" {
   disable_on_destroy = false
 }
 
+resource "google_project_service" "vertex_ai" {
+  project            = var.project_id
+  service            = "aiplatform.googleapis.com"
+  disable_on_destroy = false
+}
+
 resource "google_project_service" "cloud_scheduler" {
   project            = var.project_id
   service            = "cloudscheduler.googleapis.com"
@@ -59,6 +65,68 @@ resource "google_project_service_identity" "iap" {
 
 data "google_project" "current" {
   project_id = var.project_id
+}
+
+# ---------------------------------------------------------------------------
+# Networking — deterministic egress IP for external API allow-listing
+# ---------------------------------------------------------------------------
+
+resource "google_compute_address" "serverless_egress" {
+  project      = var.project_id
+  name         = "serverless-egress-ip"
+  region       = var.region
+  address_type = "EXTERNAL"
+
+  depends_on = [google_project_service.compute]
+}
+
+resource "google_compute_router" "serverless" {
+  project = var.project_id
+  name    = "serverless-egress-router"
+  region  = var.region
+  network = "default"
+
+  depends_on = [google_project_service.compute]
+}
+
+resource "google_compute_router_nat" "serverless" {
+  project                            = var.project_id
+  name                               = "serverless-egress-nat"
+  region                             = var.region
+  router                             = google_compute_router.serverless.name
+  nat_ip_allocate_option             = "MANUAL_ONLY"
+  nat_ips                            = [google_compute_address.serverless_egress.self_link]
+  endpoint_types                     = ["ENDPOINT_TYPE_SERVERLESS"]
+  source_subnetwork_ip_ranges_to_nat = "ALL_SUBNETWORKS_ALL_IP_RANGES"
+  enable_dynamic_port_allocation     = true
+
+  log_config {
+    enable = true
+    filter = "ALL"
+  }
+
+  # endpoint_types drifts to ENDPOINT_TYPE_VM in the GCP API after creation;
+  # ignore to prevent perpetual replacement.
+  lifecycle {
+    ignore_changes = [endpoint_types]
+  }
+
+  depends_on = [google_project_service.compute]
+}
+
+resource "google_vpc_access_connector" "serverless" {
+  provider = google-beta
+
+  project = var.project_id
+  name    = "serverless-egress"
+  region  = var.region
+  network = "default"
+
+  ip_cidr_range  = "10.8.0.0/28"
+  min_throughput = 200
+  max_throughput = 300
+
+  depends_on = [google_project_service.vpc_access]
 }
 
 resource "google_artifact_registry_repository" "applications" {
@@ -174,12 +242,15 @@ module "iam_service_account_bindings" {
     app = {
       member = "serviceAccount:${module.iam_service_accounts.emails["app"]}"
       roles = [
-        "roles/storage.objectViewer",
+        "roles/storage.objectAdmin",
         "roles/artifactregistry.reader",
         "roles/secretmanager.secretAccessor",
         "roles/discoveryengine.viewer",
         "roles/logging.logWriter",
-        "roles/monitoring.metricWriter"
+        "roles/monitoring.metricWriter",
+        "roles/cloudsql.client",
+        "roles/cloudsql.instanceUser",
+        "roles/aiplatform.user"
       ]
     }
 
@@ -192,7 +263,9 @@ module "iam_service_account_bindings" {
         "roles/secretmanager.secretAccessor",
         "roles/pubsub.publisher",
         "roles/logging.logWriter",
-        "roles/monitoring.metricWriter"
+        "roles/monitoring.metricWriter",
+        "roles/cloudsql.client",
+        "roles/aiplatform.user"
       ]
     }
 
@@ -214,7 +287,10 @@ module "iam_service_account_bindings" {
         "roles/artifactregistry.reader",
         "roles/secretmanager.secretAccessor",
         "roles/logging.logWriter",
-        "roles/monitoring.metricWriter"
+        "roles/monitoring.metricWriter",
+        "roles/cloudsql.client",
+        "roles/cloudsql.instanceUser",
+        "roles/discoveryengine.viewer"
       ]
     }
 
@@ -255,9 +331,9 @@ module "vertex_search" {
   }
 
   project_id    = var.project_id
-  location      = var.vertex_search_location
-  data_store_id = var.vertex_search_data_store_id
-  display_name  = var.vertex_search_display_name
+  location      = var.vertex_ai_search.location
+  data_store_id = var.vertex_ai_search.data_store_id
+  display_name  = var.vertex_ai_search.display_name
 
   depends_on = [google_project_service.vertex_ai_search]
 }
@@ -321,10 +397,33 @@ locals {
 }
 
 locals {
+  deploy_console = trimspace(var.console_image) != ""
+  deploy_lb      = trimspace(var.fastapi_custom_domain) != ""
+
   enabled_run_jobs = {
     for job_key, job in var.run_jobs :
     job_key => job
     if coalesce(try(job.enabled, null), true)
+  }
+
+  run_job_dynamic_env_vars = {
+    ingest = {
+      I4G_VECTOR__VERTEX_AI_PROJECT    = var.vertex_ai_search.project_id
+      I4G_VECTOR__VERTEX_AI_LOCATION   = var.vertex_ai_search.location
+      I4G_VECTOR__VERTEX_AI_DATA_STORE = var.vertex_ai_search.data_store_id
+    }
+    sweeper = {
+      I4G_VECTOR__VERTEX_AI_PROJECT  = var.vertex_ai_search.project_id
+      I4G_VECTOR__VERTEX_AI_LOCATION = var.vertex_ai_search.location
+      I4G_LLM__VERTEX_AI_PROJECT     = var.vertex_ai_search.project_id
+      I4G_LLM__VERTEX_AI_LOCATION    = var.vertex_ai_search.location
+    }
+    intake = {
+      I4G_INTAKE__API_BASE = format("%s/intakes", trimsuffix(module.run_fastapi.uri, "/"))
+    }
+    account_list = {
+      I4G_STORAGE__REPORT_BUCKET = lookup(module.storage_buckets.bucket_names, "reports", "")
+    }
   }
 
   run_job_configs = {
@@ -357,14 +456,22 @@ module "run_fastapi" {
   project_id = var.project_id
   location   = var.region
 
+  min_instances = 1
+
   name            = "fastapi-gateway"
   service_account = module.iam_service_accounts.emails["app"]
   image           = var.fastapi_image
   env_vars = merge(
     var.fastapi_env_vars,
     {
-      I4G_STORAGE__EVIDENCE_BUCKET = lookup(module.storage_buckets.bucket_names, "evidence", "")
-      I4G_STORAGE__REPORT_BUCKET   = lookup(module.storage_buckets.bucket_names, "reports", "")
+      I4G_STORAGE__EVIDENCE_BUCKET     = lookup(module.storage_buckets.bucket_names, "evidence", "")
+      I4G_STORAGE__REPORT_BUCKET       = lookup(module.storage_buckets.bucket_names, "reports", "")
+      I4G_VECTOR__VERTEX_AI_PROJECT    = var.vertex_ai_search.project_id
+      I4G_VECTOR__VERTEX_AI_LOCATION   = var.vertex_ai_search.location
+      I4G_VECTOR__VERTEX_AI_DATA_STORE = var.vertex_ai_search.data_store_id
+      I4G_VERTEX_SEARCH_PROJECT        = var.vertex_ai_search.project_id
+      I4G_VERTEX_SEARCH_LOCATION       = var.vertex_ai_search.location
+      I4G_VERTEX_SEARCH_DATA_STORE     = var.vertex_ai_search.data_store_id
     }
   )
   secret_env_vars = var.fastapi_secret_env_vars
@@ -373,28 +480,16 @@ module "run_fastapi" {
     env     = "prod"
   }
 
-  ingress = "all"
+  ingress = "internal-and-cloud-load-balancing"
+
+  annotations = try(var.iap_clients["api"].client_id, "") != "" ? {
+    "run.googleapis.com/custom-audiences" = jsonencode([var.iap_clients["api"].client_id])
+  } : {}
 
   invoker_member  = ""
-  invoker_members = local.fastapi_invoker_members
+  invoker_members = concat(local.fastapi_invoker_members, ["allUsers"])
 
   depends_on = [module.iam_service_account_bindings, google_project_service.gemini_cloud_assist, google_project_service_identity.iap]
-}
-
-module "iap_fastapi" {
-  source = "../../../modules/iap/cloud_run_service"
-
-  project_id                   = var.project_id
-  region                       = var.region
-  service_name                 = module.run_fastapi.name
-  manage_client                = var.iap_manage_clients
-  brand_name                   = module.iap_project.brand_name
-  display_name                 = "FastAPI Gateway"
-  access_members               = local.fastapi_iap_access_members
-  secret_replication_locations = var.iap_secret_replication_locations
-  secret_id                    = "iap-client-fastapi"
-
-  depends_on = [module.run_fastapi]
 }
 
 module "run_console" {
@@ -402,20 +497,32 @@ module "run_console" {
   project_id = var.project_id
   location   = var.region
 
-  count = var.console_enabled ? 1 : 0
+  count = local.deploy_console ? 1 : 0
+
+  min_instances = 1
 
   name            = "i4g-console"
   service_account = module.iam_service_accounts.emails["app"]
   image           = var.console_image
   env_vars = merge(
     {
-      NEXT_PUBLIC_API_BASE_URL = trimspace(var.fastapi_custom_domain) != "" ? format("https://%s", var.fastapi_custom_domain) : module.run_fastapi.uri
-      I4G_API_URL              = trimspace(var.fastapi_custom_domain) != "" ? format("https://%s", var.fastapi_custom_domain) : module.run_fastapi.uri
-      HOSTNAME                 = "0.0.0.0"
+      NEXT_PUBLIC_API_BASE_URL     = trimspace(var.fastapi_custom_domain) != "" ? format("https://%s", var.fastapi_custom_domain) : module.run_fastapi.uri
+      I4G_API_URL                  = module.run_fastapi.uri
+      I4G_IAP_CLIENT_ID            = try(var.iap_clients["api"].client_id, "")
+      HOSTNAME                     = "0.0.0.0"
+      I4G_VERTEX_SEARCH_PROJECT    = var.vertex_ai_search.project_id
+      I4G_VERTEX_SEARCH_LOCATION   = var.vertex_ai_search.location
+      I4G_VERTEX_SEARCH_DATA_STORE = var.vertex_ai_search.data_store_id
     },
     var.console_env_vars
   )
   secret_env_vars = var.console_secret_env_vars
+
+  resource_limits = {
+    memory = "1Gi"
+    cpu    = "1000m"
+  }
+
   labels = {
     service = "console"
     env     = "prod"
@@ -423,7 +530,7 @@ module "run_console" {
 
   container_ports = [{ name = "http1", container_port = 8080 }]
 
-  ingress = ""
+  ingress = "internal-and-cloud-load-balancing"
 
   invoker_member  = ""
   invoker_members = local.console_invoker_members
@@ -431,46 +538,51 @@ module "run_console" {
   depends_on = [module.iam_service_account_bindings, module.run_fastapi, google_project_service_identity.iap]
 }
 
-module "domain_mapping_fastapi" {
-  source           = "../../../modules/run/domain_mapping"
-  project_id       = var.project_id
-  region           = var.region
-  service_name     = module.run_fastapi.name
-  domain           = var.fastapi_custom_domain
-  dns_managed_zone = var.dns_managed_zone
-  dns_project      = var.dns_managed_zone_project
+module "global_lb" {
+  source     = "../../../modules/lb/iap_https"
+  project_id = var.project_id
+  name       = "i4g-lb"
 
-  count = trimspace(var.fastapi_custom_domain) == "" ? 0 : 1
+  count = local.deploy_lb ? 1 : 0
+
+  backends = merge(
+    {
+      api = {
+        domain            = var.fastapi_custom_domain
+        service_name      = module.run_fastapi.name
+        region            = var.region
+        enable_iap        = try(var.iap_clients["api"].client_id, "") != ""
+        iap_client_id     = try(var.iap_clients["api"].client_id, "")
+        iap_client_secret = try(var.iap_clients["api"].client_secret, "")
+      }
+    },
+    local.deploy_console ? {
+      console = {
+        domain            = var.ui_custom_domain
+        service_name      = module.run_console[0].name
+        region            = var.region
+        enable_iap        = try(var.iap_clients["console"].client_id, "") != ""
+        iap_client_id     = try(var.iap_clients["console"].client_id, "")
+        iap_client_secret = try(var.iap_clients["console"].client_secret, "")
+      }
+    } : {}
+  )
 }
 
-module "domain_mapping_ui" {
-  source           = "../../../modules/run/domain_mapping"
-  project_id       = var.project_id
-  region           = var.region
-  service_name     = module.run_console[0].name
-  domain           = var.ui_custom_domain
-  dns_managed_zone = var.dns_managed_zone
-  dns_project      = var.dns_managed_zone_project
-
-  count = var.console_enabled && trimspace(var.ui_custom_domain) != "" ? 1 : 0
+resource "google_iap_web_backend_service_iam_binding" "console" {
+  count               = local.deploy_lb && local.deploy_console && try(var.iap_clients["console"].client_id, "") != "" ? 1 : 0
+  project             = var.project_id
+  web_backend_service = module.global_lb[0].backend_services["console"]
+  role                = "roles/iap.httpsResourceAccessor"
+  members             = local.i4g_analyst_invokers
 }
 
-module "iap_console" {
-  source = "../../../modules/iap/cloud_run_service"
-
-  project_id                   = var.project_id
-  region                       = var.region
-  service_name                 = module.run_console[0].name
-  manage_client                = var.iap_manage_clients
-  brand_name                   = module.iap_project.brand_name
-  display_name                 = "Analyst Console"
-  access_members               = local.i4g_analyst_invokers
-  secret_replication_locations = var.iap_secret_replication_locations
-  secret_id                    = "iap-client-console"
-
-  count = var.console_enabled ? 1 : 0
-
-  depends_on = [module.run_console]
+resource "google_iap_web_backend_service_iam_binding" "api" {
+  count               = local.deploy_lb && try(var.iap_clients["api"].client_id, "") != "" ? 1 : 0
+  project             = var.project_id
+  web_backend_service = module.global_lb[0].backend_services["api"]
+  role                = "roles/iap.httpsResourceAccessor"
+  members             = local.fastapi_iap_access_members
 }
 
 module "run_jobs" {
@@ -484,6 +596,7 @@ module "run_jobs" {
   service_account = each.value.runtime_service_account_email
   image           = each.value.image
   env_vars = merge(
+    lookup(local.run_job_dynamic_env_vars, each.key, {}),
     coalesce(try(each.value.env_vars, null), {}),
     {
       I4G_ENV                      = "prod"
@@ -552,4 +665,15 @@ resource "google_cloud_run_v2_job_iam_member" "scheduled_invokers" {
   member   = "serviceAccount:${each.value.scheduler_service_account_email}"
 
   depends_on = [module.run_jobs]
+}
+
+resource "google_project_organization_policy" "allow_public_invokers" {
+  project    = var.project_id
+  constraint = "iam.allowedPolicyMemberDomains"
+
+  list_policy {
+    allow {
+      all = true
+    }
+  }
 }

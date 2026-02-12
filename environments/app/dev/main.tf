@@ -101,6 +101,12 @@ resource "google_compute_router_nat" "serverless" {
     filter = "ALL"
   }
 
+  # endpoint_types drifts to ENDPOINT_TYPE_VM in the GCP API after creation;
+  # ignore to prevent perpetual replacement.
+  lifecycle {
+    ignore_changes = [endpoint_types]
+  }
+
   depends_on = [google_project_service.compute]
 }
 
@@ -442,11 +448,6 @@ module "run_fastapi" {
   service_account = module.iam_service_accounts.emails["app"]
   image           = var.fastapi_image
   env_vars = merge(
-    {
-      I4G_STORAGE__EVIDENCE__LOCAL_DIR = "/tmp/evidence"
-      I4G_LLM__PROVIDER                = "vertex_ai"
-      I4G_LLM__CHAT_MODEL              = "gemini-2.0-flash"
-    },
     var.fastapi_env_vars,
     {
       I4G_STORAGE__EVIDENCE_BUCKET     = lookup(module.storage_buckets.bucket_names, "evidence", "")
@@ -454,10 +455,9 @@ module "run_fastapi" {
       I4G_VECTOR__VERTEX_AI_PROJECT    = var.vertex_ai_search.project_id
       I4G_VECTOR__VERTEX_AI_LOCATION   = var.vertex_ai_search.location
       I4G_VECTOR__VERTEX_AI_DATA_STORE = var.vertex_ai_search.data_store_id
-      # Explicitly set Vertex Search env vars to avoid ambiguity
-      I4G_VERTEX_SEARCH_PROJECT    = var.vertex_ai_search.project_id
-      I4G_VERTEX_SEARCH_LOCATION   = var.vertex_ai_search.location
-      I4G_VERTEX_SEARCH_DATA_STORE = var.vertex_ai_search.data_store_id
+      I4G_VERTEX_SEARCH_PROJECT        = var.vertex_ai_search.project_id
+      I4G_VERTEX_SEARCH_LOCATION       = var.vertex_ai_search.location
+      I4G_VERTEX_SEARCH_DATA_STORE     = var.vertex_ai_search.data_store_id
     }
   )
   secret_env_vars = var.fastapi_secret_env_vars

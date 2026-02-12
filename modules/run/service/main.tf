@@ -32,7 +32,6 @@ locals {
   template_annotations = merge(
     var.annotations,
     local.autoscaling_annotations,
-    local.ingress_annotation,
     local.vpc_annotations,
     local.secret_annotations
   )
@@ -51,6 +50,10 @@ resource "google_cloud_run_service" "this" {
   location = var.location
 
   autogenerate_revision_name = var.autogenerate_revision_name
+
+  metadata {
+    annotations = local.ingress_annotation
+  }
 
   template {
     metadata {

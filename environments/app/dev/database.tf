@@ -1,37 +1,13 @@
-resource "google_sql_database_instance" "default" {
-  name             = "i4g-dev-db"
-  database_version = "POSTGRES_15"
-  region           = var.region
-  project          = var.project_id
+# Cloud SQL instance + database — shared module eliminates dev/prod copy-paste.
+#
+# State migration:
+#   terraform state mv google_sql_database_instance.default module.database.google_sql_database_instance.this
+#   terraform state mv google_sql_database.i4g_db            module.database.google_sql_database.this
+module "database" {
+  source = "../../../modules/database/cloudsql"
 
-  settings {
-    tier = "db-custom-1-3840"
-
-    disk_type       = "PD_SSD"
-    disk_size       = 10
-    disk_autoresize = true
-
-    availability_type = "ZONAL"
-
-    ip_configuration {
-      ipv4_enabled = true
-    }
-
-    backup_configuration {
-      enabled = false
-    }
-
-    database_flags {
-      name  = "cloudsql.iam_authentication"
-      value = "on"
-    }
-  }
-
-  deletion_protection = false
-}
-
-resource "google_sql_database" "i4g_db" {
-  name     = "i4g_db"
-  instance = google_sql_database_instance.default.name
-  project  = var.project_id
+  project_id    = var.project_id
+  region        = var.region
+  config        = var.database_config
+  database_name = "i4g_db"
 }

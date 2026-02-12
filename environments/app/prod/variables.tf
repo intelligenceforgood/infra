@@ -49,12 +49,6 @@ variable "iap_existing_brand_name" {
   default     = ""
 }
 
-variable "iap_manage_clients" {
-  type        = bool
-  description = "Set to true to create per-service OAuth clients and store their secrets."
-  default     = false
-}
-
 variable "iap_project_level_bindings" {
   type        = bool
   description = "When true, create project-level IAP accessor bindings for `i4g_analyst_members`."
@@ -77,12 +71,6 @@ variable "iap_allow_http_options" {
   type        = bool
   description = "Allow unauthenticated HTTP OPTIONS (CORS preflight) requests through IAP."
   default     = true
-}
-
-variable "iap_secret_replication_locations" {
-  type        = list(string)
-  description = "Secret Manager replica regions storing production OAuth client secrets."
-  default     = []
 }
 
 variable "github_repository" {
@@ -126,12 +114,6 @@ variable "fastapi_invoker_members" {
 variable "console_image" {
   type        = string
   description = "Container image URI for the Next.js console Cloud Run service."
-}
-
-variable "console_enabled" {
-  type        = bool
-  description = "Whether to deploy the console Cloud Run service and related resources."
-  default     = true
 }
 
 variable "console_env_vars" {
@@ -183,12 +165,6 @@ variable "dns_managed_zone_project" {
   type        = string
   description = "Optional project ID where the DNS managed zone is located (if different)."
   default     = ""
-}
-
-variable "vertex_search_location" {
-  type        = string
-  description = "Discovery location for Vertex AI Search resources."
-  default     = "global"
 }
 
 variable "storage_bucket_default_location" {
@@ -270,16 +246,14 @@ variable "run_jobs" {
   default = {}
 }
 
-variable "vertex_search_data_store_id" {
-  type        = string
-  description = "Identifier for the Vertex AI Search data store."
-  default     = "retrieval-prod"
-}
-
-variable "vertex_search_display_name" {
-  type        = string
-  description = "Display name for the Vertex AI Search data store."
-  default     = "Retrieval Production Data Store"
+variable "vertex_ai_search" {
+  description = "Configuration for Vertex AI Search."
+  type = object({
+    project_id    = string
+    location      = string
+    data_store_id = string
+    display_name  = string
+  })
 }
 
 variable "db_admin_group" {
@@ -290,4 +264,35 @@ variable "db_admin_group" {
 variable "db_analyst_group" {
   type        = string
   description = "Google Group email for database analysts."
+}
+
+variable "database_config" {
+  description = "Cloud SQL instance configuration."
+  type = object({
+    instance_name       = string
+    tier                = string
+    disk_size           = number
+    availability_type   = string
+    backup_enabled      = bool
+    backup_start_time   = optional(string, "02:00")
+    deletion_protection = bool
+  })
+}
+
+variable "iap_clients" {
+  description = "Pre-created IAP OAuth client IDs and secrets for each backend. Override in local-overrides.tfvars when ready."
+  type = map(object({
+    client_id     = string
+    client_secret = string
+  }))
+  default   = {}
+  sensitive = true
+
+  validation {
+    condition = alltrue([
+      for k, v in var.iap_clients :
+      v.client_id != "REPLACE_ME" && v.client_secret != "REPLACE_ME"
+    ])
+    error_message = "iap_clients entries must not use sentinel values. Provide real OAuth credentials or leave the map empty."
+  }
 }

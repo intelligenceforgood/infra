@@ -10,6 +10,15 @@ i4g_admin_members = [
 db_admin_group   = "gcp-i4g-admin@intelligenceforgood.org"
 db_analyst_group = "gcp-i4g-analyst@intelligenceforgood.org"
 
+database_config = {
+  instance_name       = "i4g-dev-db"
+  tier                = "db-custom-1-3840"
+  disk_size           = 10
+  availability_type   = "ZONAL"
+  backup_enabled      = false
+  deletion_protection = false
+}
+
 project_id            = "i4g-dev"
 pii_vault_project_id  = "i4g-pii-vault-dev"
 iap_support_email     = "jerry@intelligenceforgood.org"
@@ -19,12 +28,15 @@ fastapi_image         = "us-central1-docker.pkg.dev/i4g-dev/applications/fastapi
 fastapi_env_vars = {
   I4G_ENV                            = "dev"
   I4G_STORAGE__STRUCTURED_BACKEND    = "cloudsql"
+  I4G_STORAGE__EVIDENCE__LOCAL_DIR   = "/tmp/evidence"
   I4G_APP__CLOUDSQL__INSTANCE        = "i4g-dev:us-central1:i4g-dev-db"
   I4G_APP__CLOUDSQL__DATABASE        = "i4g_db"
   I4G_APP__CLOUDSQL__USER            = "sa-app@i4g-dev.iam"
   I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH = "true"
   I4G_VECTOR__BACKEND                = "vertex_ai"
   I4G_VECTOR__VERTEX_AI_BRANCH       = "default_branch"
+  I4G_LLM__PROVIDER                  = "vertex_ai"
+  I4G_LLM__CHAT_MODEL                = "gemini-2.0-flash"
   I4G_API__RATE_LIMIT_PER_MINUTE     = "1000"
   I4G_PII__BACKEND                   = "cloudsql"
   I4G_PII__CLOUDSQL__INSTANCE        = "i4g-pii-vault-dev:us-central1:i4g-vault-dev-db"
@@ -267,7 +279,7 @@ vertex_ai_search = {
   display_name  = "Retrieval PoC Data Store"
 }
 
-# Custom domains (leave blank if DNS is managed externally and not present in this project)
+# Custom domains
 fastapi_custom_domain    = "api.intelligenceforgood.org"
 ui_custom_domain         = "app.intelligenceforgood.org"
 dns_managed_zone         = ""

@@ -9,6 +9,16 @@ i4g_admin_members = [
 db_admin_group   = "gcp-i4g-admin@intelligenceforgood.org"
 db_analyst_group = "gcp-i4g-analyst@intelligenceforgood.org"
 
+database_config = {
+  instance_name       = "i4g-prod-db"
+  tier                = "db-custom-2-7680"
+  disk_size           = 50
+  availability_type   = "REGIONAL"
+  backup_enabled      = true
+  backup_start_time   = "02:00"
+  deletion_protection = true
+}
+
 project_id            = "i4g-prod"
 pii_vault_project_id  = "i4g-pii-vault-prod"
 iap_support_email     = "jerry@intelligenceforgood.org"
@@ -19,6 +29,7 @@ fastapi_env_vars = {
   I4G_ENV                            = "prod"
   I4G_RUNTIME__LOG_LEVEL             = "WARNING"
   I4G_STORAGE__STRUCTURED_BACKEND    = "cloudsql"
+  I4G_STORAGE__EVIDENCE__LOCAL_DIR   = "/tmp/evidence"
   I4G_APP__CLOUDSQL__INSTANCE        = "i4g-prod:us-central1:i4g-prod-db"
   I4G_APP__CLOUDSQL__DATABASE        = "i4g_db"
   I4G_APP__CLOUDSQL__USER            = "sa-app@i4g-prod.iam.gserviceaccount.com"
@@ -26,9 +37,6 @@ fastapi_env_vars = {
   I4G_VECTOR__BACKEND                = "vertex_ai"
   I4G_LLM__PROVIDER                  = "vertex_ai"
   I4G_LLM__CHAT_MODEL                = "gemini-2.5-flash"
-  I4G_VERTEX_SEARCH_PROJECT          = "i4g-prod"
-  I4G_VERTEX_SEARCH_LOCATION         = "global"
-  I4G_VERTEX_SEARCH_DATA_STORE       = "retrieval-prod"
   I4G_VERTEX_SEARCH_SERVING_CONFIG   = "default_search"
 }
 
@@ -43,15 +51,13 @@ fastapi_secret_env_vars = {
   }
 }
 
-console_image   = "us-central1-docker.pkg.dev/i4g-prod/applications/i4g-console:prod"
-console_enabled = false
+# Console image — set when the image is pushed to the prod registry.
+# When empty, the console service and its LB backend are skipped.
+console_image = ""
 
 console_env_vars = {
   NEXT_PUBLIC_USE_MOCK_DATA        = "false"
   I4G_API_KIND                     = "core"
-  I4G_VERTEX_SEARCH_PROJECT        = "i4g-prod"
-  I4G_VERTEX_SEARCH_LOCATION       = "global"
-  I4G_VERTEX_SEARCH_DATA_STORE     = "retrieval-prod"
   I4G_VERTEX_SEARCH_SERVING_CONFIG = "default_search"
 }
 
@@ -65,14 +71,31 @@ console_secret_env_vars = {
 console_invoker_member  = ""
 console_invoker_members = []
 
-vertex_search_data_store_id = "retrieval-prod"
-vertex_search_display_name  = "Retrieval Production Data Store"
+vertex_ai_search = {
+  project_id    = "i4g-prod"
+  location      = "global"
+  data_store_id = "retrieval-prod"
+  display_name  = "Retrieval Production Data Store"
+}
 
-# Custom domains (leave blank if DNS is managed externally and not present in this project)
+# Custom domains (enable when prod is ready for custom domain cutover)
 fastapi_custom_domain    = ""
 ui_custom_domain         = ""
 dns_managed_zone         = ""
 dns_managed_zone_project = ""
+
+# IAP OAuth clients — override in local-overrides.tfvars when ready.
+# Leave empty until IAP clients are created for prod.
+# iap_clients = {
+#   console = {
+#     client_id     = "..."
+#     client_secret = "..."
+#   }
+#   api = {
+#     client_id     = "..."
+#     client_secret = "..."
+#   }
+# }
 
 # IAP allowed domains
 iap_allowed_domains = ["intelligenceforgood.org"]
@@ -126,6 +149,7 @@ run_jobs = {
     service_account_key = "ingest"
     env_vars = {
       I4G_ENV                            = "prod"
+      I4G_STORAGE__STRUCTURED_BACKEND    = "cloudsql"
       I4G_APP__CLOUDSQL__INSTANCE        = "i4g-prod:us-central1:i4g-prod-db"
       I4G_APP__CLOUDSQL__DATABASE        = "i4g_db"
       I4G_APP__CLOUDSQL__USER            = "sa-ingest@i4g-prod.iam"

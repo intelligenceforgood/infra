@@ -39,27 +39,19 @@ output "run_jobs" {
   }
 }
 
-output "fastapi_domain_mapping" {
-  value = length(module.domain_mapping_fastapi) > 0 ? module.domain_mapping_fastapi[0].domain_mapping_name : null
-}
-
-output "ui_domain_mapping" {
-  value = length(module.domain_mapping_ui) > 0 ? module.domain_mapping_ui[0].domain_mapping_name : null
+output "serverless_egress_ip" {
+  description = "Static egress IP address used by serverless workloads."
+  value       = google_compute_address.serverless_egress.address
 }
 
 output "iap" {
-  description = "IAP brand and OAuth client metadata for Cloud Run services."
+  description = "IAP brand metadata."
   value = {
     brand_name = module.iap_project.brand_name
-    fastapi = {
-      client_id       = module.iap_fastapi.client_id
-      secret_id       = module.iap_fastapi.secret_id
-      secret_resource = module.iap_fastapi.secret_resource
-    }
-    console = {
-      client_id       = length(module.iap_console) > 0 ? module.iap_console[0].client_id : null
-      secret_id       = length(module.iap_console) > 0 ? module.iap_console[0].secret_id : null
-      secret_resource = length(module.iap_console) > 0 ? module.iap_console[0].secret_resource : null
-    }
   }
+}
+
+output "global_lb_ip" {
+  description = "Global IP address for the Load Balancer."
+  value       = length(module.global_lb) > 0 ? module.global_lb[0].ip_address : null
 }
