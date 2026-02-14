@@ -268,6 +268,30 @@ run_jobs = {
       I4G_ENV = "dev"
     }
   }
+
+  retention_purge = {
+    enabled             = true
+    name                = "retention-purge"
+    image               = "us-central1-docker.pkg.dev/i4g-dev/applications/ingest-job:dev" # Reusing ingest image
+    service_account_key = "ingest"
+    timeout_seconds     = 1800
+    parallelism         = 1
+    max_retries         = 0
+    args                = ["jobs", "retention-purge"]
+    schedule            = "0 3 * * *" # Daily at 03:00 UTC
+
+    env_vars = {
+      I4G_ENV                            = "dev"
+      I4G_STORAGE__STRUCTURED_BACKEND    = "cloudsql"
+      I4G_APP__CLOUDSQL__INSTANCE        = "i4g-dev:us-central1:i4g-dev-db"
+      I4G_APP__CLOUDSQL__DATABASE        = "i4g_db"
+      I4G_APP__CLOUDSQL__USER            = "sa-ingest@i4g-dev.iam"
+      I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH = "true"
+      I4G_STORAGE__RETENTION_DAYS        = "90"
+      I4G_STORAGE__RETENTION_GRACE_DAYS  = "30"
+      I4G_LLM__PROVIDER                  = "mock"
+    }
+  }
 }
 
 # Vertex AI Search – Override these in local-overrides.tfvars (gitignored).

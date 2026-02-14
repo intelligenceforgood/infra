@@ -255,4 +255,38 @@ run_jobs = {
       I4G_ENV = "prod"
     }
   }
+
+  retention_purge = {
+    enabled             = false
+    name                = "retention-purge"
+    image               = "us-central1-docker.pkg.dev/i4g-prod/applications/ingest-job:prod"
+    service_account_key = "ingest"
+    timeout_seconds     = 1800
+    parallelism         = 1
+    max_retries         = 0
+    args                = ["jobs", "retention-purge"]
+    schedule            = "0 3 * * *" # Daily at 03:00 UTC
+
+    env_vars = {
+      I4G_ENV                            = "prod"
+      I4G_STORAGE__STRUCTURED_BACKEND    = "cloudsql"
+      I4G_APP__CLOUDSQL__INSTANCE        = "i4g-prod:us-central1:i4g-prod-db"
+      I4G_APP__CLOUDSQL__DATABASE        = "i4g_db"
+      I4G_APP__CLOUDSQL__USER            = "sa-ingest@i4g-prod.iam"
+      I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH = "true"
+      I4G_STORAGE__RETENTION_DAYS        = "90"
+      I4G_STORAGE__RETENTION_GRACE_DAYS  = "30"
+      I4G_LLM__PROVIDER                  = "vertex_ai"
+    }
+    secret_env_vars = {
+      I4G_PII__PEPPER = {
+        secret  = "projects/i4g-pii-vault-prod/secrets/tokenization-pepper"
+        version = "latest"
+      }
+      I4G_CRYPTO__PII_KEY = {
+        secret  = "projects/i4g-pii-vault-prod/secrets/pii-tokenization-key"
+        version = "latest"
+      }
+    }
+  }
 }
