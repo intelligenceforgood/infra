@@ -472,6 +472,7 @@ module "run_fastapi" {
       I4G_VERTEX_SEARCH_PROJECT        = var.vertex_ai_search.project_id
       I4G_VERTEX_SEARCH_LOCATION       = var.vertex_ai_search.location
       I4G_VERTEX_SEARCH_DATA_STORE     = var.vertex_ai_search.data_store_id
+      I4G_IDENTITY__AUDIENCE           = try(var.iap_clients["api"].client_id, "")
     }
   )
   secret_env_vars = var.fastapi_secret_env_vars
