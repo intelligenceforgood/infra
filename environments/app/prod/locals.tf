@@ -35,6 +35,11 @@ locals {
       display_name = "Terraform Automation"
       description  = "Applies infrastructure as code changes"
     }
+    ssi = {
+      account_id   = "sa-ssi"
+      display_name = "Scam Site Investigator"
+      description  = "Runs SSI API service and investigation jobs"
+    }
   }
 
   github_wif = {

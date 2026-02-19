@@ -38,6 +38,8 @@ resource "google_cloud_run_v2_service" "this" {
   project  = var.project_id
   location = var.location
 
+  deletion_protection = var.deletion_protection
+
   ingress = local.effective_ingress
 
   template {

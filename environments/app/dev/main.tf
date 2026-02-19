@@ -312,6 +312,18 @@ module "iam_service_account_bindings" {
         "roles/run.developer"
       ]
     }
+
+    ssi = {
+      member = "serviceAccount:${module.iam_service_accounts.emails["ssi"]}"
+      roles = [
+        "roles/storage.objectAdmin",
+        "roles/artifactregistry.reader",
+        "roles/secretmanager.secretAccessor",
+        "roles/aiplatform.user",
+        "roles/logging.logWriter",
+        "roles/monitoring.metricWriter"
+      ]
+    }
   }
 }
 
@@ -498,6 +510,9 @@ locals {
     account_list = {
       I4G_STORAGE__REPORT_BUCKET = lookup(module.storage_buckets.bucket_names, "reports", "")
     }
+    ssi_investigate = {
+      SSI_EVIDENCE__GCS_BUCKET = lookup(module.storage_buckets.bucket_names, "ssi_evidence", "")
+    }
   }
 }
 
@@ -544,6 +559,39 @@ module "run_console" {
   invoker_members = local.console_invoker_members
 
   depends_on = [module.iam_service_account_bindings, module.run_fastapi, google_project_service_identity.iap]
+}
+
+module "run_ssi_api" {
+  source     = "../../../modules/run/service"
+  project_id = var.project_id
+  location   = var.region
+
+  min_instances = 0
+
+  name            = "ssi-api"
+  service_account = module.iam_service_accounts.emails["ssi"]
+  image           = var.ssi_api_image
+  env_vars        = var.ssi_api_env_vars
+  secret_env_vars = var.ssi_api_secret_env_vars
+
+  resource_limits = {
+    memory = "2Gi"
+    cpu    = "2000m"
+  }
+
+  labels = {
+    service = "ssi-api"
+    env     = "dev"
+  }
+
+  container_ports = [{ name = "http1", container_port = 8100 }]
+
+  ingress = "all"
+
+  invoker_member  = ""
+  invoker_members = var.ssi_api_invoker_members
+
+  depends_on = [module.iam_service_account_bindings]
 }
 
 module "global_lb" {

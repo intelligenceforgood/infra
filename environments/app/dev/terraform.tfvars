@@ -74,6 +74,23 @@ console_secret_env_vars = {
 console_invoker_member  = ""
 console_invoker_members = []
 
+# ── SSI (Scam Site Investigator) ─────────────────────────────────────────────
+ssi_api_image = "us-central1-docker.pkg.dev/i4g-dev/applications/ssi-api:dev"
+
+ssi_api_env_vars = {
+  SSI_ENV                       = "dev"
+  SSI_LLM__PROVIDER             = "gemini"
+  SSI_LLM__MODEL                = "gemini-2.0-flash"
+  SSI_LLM__GCP_PROJECT          = "i4g-dev"
+  SSI_LLM__GCP_LOCATION         = "us-central1"
+  SSI_EVIDENCE__STORAGE_BACKEND = "gcs"
+  SSI_API__PORT                 = "8100"
+}
+
+ssi_api_invoker_members = [
+  "allUsers",
+]
+
 storage_bucket_default_location = "US"
 storage_buckets = {
   evidence = {
@@ -130,6 +147,26 @@ storage_buckets = {
         condition = {
           with_state         = "ARCHIVED" # delete archived (noncurrent) versions
           num_newer_versions = 5
+        }
+      }
+    ]
+  }
+  ssi_evidence = {
+    name                        = "i4g-dev-ssi-evidence"
+    force_destroy               = true
+    uniform_bucket_level_access = true
+    public_access_prevention    = "enforced"
+    labels = {
+      env     = "dev"
+      service = "ssi"
+    }
+    lifecycle_rules = [
+      {
+        action = {
+          type = "Delete"
+        }
+        condition = {
+          age = 180
         }
       }
     ]
@@ -290,6 +327,26 @@ run_jobs = {
       I4G_STORAGE__RETENTION_DAYS        = "90"
       I4G_STORAGE__RETENTION_GRACE_DAYS  = "30"
       I4G_LLM__PROVIDER                  = "mock"
+    }
+  }
+
+  ssi_investigate = {
+    name                = "ssi-investigate"
+    image               = "us-central1-docker.pkg.dev/i4g-dev/applications/ssi-job:dev"
+    service_account_key = "ssi"
+    timeout_seconds     = 1800
+    max_retries         = 0
+    resource_limits = {
+      memory = "2Gi"
+      cpu    = "2000m"
+    }
+    env_vars = {
+      SSI_ENV                       = "dev"
+      SSI_LLM__PROVIDER             = "gemini"
+      SSI_LLM__MODEL                = "gemini-2.0-flash"
+      SSI_LLM__GCP_PROJECT          = "i4g-dev"
+      SSI_LLM__GCP_LOCATION         = "us-central1"
+      SSI_EVIDENCE__STORAGE_BACKEND = "gcs"
     }
   }
 }

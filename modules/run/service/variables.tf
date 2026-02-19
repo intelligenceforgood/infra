@@ -153,3 +153,9 @@ variable "vpc_connector_egress_settings" {
   description = "Egress settings when a VPC connector is used."
   default     = "ALL_TRAFFIC"
 }
+
+variable "deletion_protection" {
+  type        = bool
+  description = "Whether to enable deletion protection on the Cloud Run service."
+  default     = false
+}

@@ -71,6 +71,21 @@ console_secret_env_vars = {
 console_invoker_member  = ""
 console_invoker_members = []
 
+# ── SSI (Scam Site Investigator) ─────────────────────────────────────────────
+ssi_api_enabled = false # Enable when SSI images are pushed to prod registry
+
+ssi_api_env_vars = {
+  SSI_ENV                       = "prod"
+  SSI_LLM__PROVIDER             = "gemini"
+  SSI_LLM__MODEL                = "gemini-2.0-flash"
+  SSI_LLM__GCP_PROJECT          = "i4g-prod"
+  SSI_LLM__GCP_LOCATION         = "us-central1"
+  SSI_EVIDENCE__STORAGE_BACKEND = "gcs"
+  SSI_API__PORT                 = "8100"
+}
+
+ssi_api_invoker_members = []
+
 vertex_ai_search = {
   project_id    = "i4g-prod"
   location      = "global"
@@ -138,6 +153,23 @@ storage_buckets = {
     retention_policy = {
       retention_period = 60 * 60 * 24 * 365
     }
+  }
+  ssi_evidence = {
+    name = "i4g-prod-ssi-evidence"
+    labels = {
+      env     = "prod"
+      service = "ssi"
+    }
+    lifecycle_rules = [
+      {
+        action = {
+          type = "Delete"
+        }
+        condition = {
+          age = 365
+        }
+      }
+    ]
   }
 }
 
@@ -287,6 +319,27 @@ run_jobs = {
         secret  = "projects/i4g-pii-vault-prod/secrets/pii-tokenization-key"
         version = "latest"
       }
+    }
+  }
+
+  ssi_investigate = {
+    enabled             = false
+    name                = "ssi-investigate"
+    image               = "us-central1-docker.pkg.dev/i4g-prod/applications/ssi-job:prod"
+    service_account_key = "ssi"
+    timeout_seconds     = 1800
+    max_retries         = 0
+    resource_limits = {
+      memory = "2Gi"
+      cpu    = "2000m"
+    }
+    env_vars = {
+      SSI_ENV                       = "prod"
+      SSI_LLM__PROVIDER             = "gemini"
+      SSI_LLM__MODEL                = "gemini-2.0-flash"
+      SSI_LLM__GCP_PROJECT          = "i4g-prod"
+      SSI_LLM__GCP_LOCATION         = "us-central1"
+      SSI_EVIDENCE__STORAGE_BACKEND = "gcs"
     }
   }
 }

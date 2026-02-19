@@ -173,7 +173,40 @@ variable "storage_bucket_default_location" {
   default     = "US"
 }
 
+# ── SSI (Scam Site Investigator) ─────────────────────────────────────────────
 
+variable "ssi_api_enabled" {
+  type        = bool
+  description = "Whether to deploy the SSI API Cloud Run service."
+  default     = false
+}
+
+variable "ssi_api_image" {
+  type        = string
+  description = "Container image URI for the SSI API Cloud Run service."
+  default     = "us-central1-docker.pkg.dev/i4g-prod/applications/ssi-api:prod"
+}
+
+variable "ssi_api_env_vars" {
+  type        = map(string)
+  description = "Environment variables injected into the SSI API service container."
+  default     = {}
+}
+
+variable "ssi_api_secret_env_vars" {
+  description = "Secret-backed environment variables for the SSI API service."
+  type = map(object({
+    secret  = string
+    version = optional(string)
+  }))
+  default = {}
+}
+
+variable "ssi_api_invoker_members" {
+  type        = list(string)
+  description = "Principals granted Cloud Run invoker on the SSI API service."
+  default     = []
+}
 
 variable "storage_buckets" {
   description = "Map of storage bucket configurations keyed by logical name."
