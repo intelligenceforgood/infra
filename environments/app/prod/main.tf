@@ -524,6 +524,7 @@ module "run_console" {
     {
       NEXT_PUBLIC_API_BASE_URL     = trimspace(var.fastapi_custom_domain) != "" ? format("https://%s", var.fastapi_custom_domain) : module.run_fastapi.uri
       I4G_API_URL                  = module.run_fastapi.uri
+      SSI_API_URL                  = var.ssi_api_enabled ? module.run_ssi_api[0].uri : ""
       I4G_IAP_CLIENT_ID            = try(var.iap_clients["api"].client_id, "")
       HOSTNAME                     = "0.0.0.0"
       I4G_VERTEX_SEARCH_PROJECT    = var.vertex_ai_search.project_id

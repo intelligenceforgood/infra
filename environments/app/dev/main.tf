@@ -530,6 +530,7 @@ module "run_console" {
     {
       NEXT_PUBLIC_API_BASE_URL     = trimspace(var.fastapi_custom_domain) != "" ? format("https://%s", var.fastapi_custom_domain) : module.run_fastapi.uri
       I4G_API_URL                  = module.run_fastapi.uri
+      SSI_API_URL                  = module.run_ssi_api.uri
       I4G_IAP_CLIENT_ID            = try(var.iap_clients["api"].client_id, "")
       HOSTNAME                     = "0.0.0.0"
       I4G_VERTEX_SEARCH_PROJECT    = var.vertex_ai_search.project_id
@@ -558,7 +559,7 @@ module "run_console" {
   invoker_member  = ""
   invoker_members = local.console_invoker_members
 
-  depends_on = [module.iam_service_account_bindings, module.run_fastapi, google_project_service_identity.iap]
+  depends_on = [module.iam_service_account_bindings, module.run_fastapi, module.run_ssi_api, google_project_service_identity.iap]
 }
 
 module "run_ssi_api" {
