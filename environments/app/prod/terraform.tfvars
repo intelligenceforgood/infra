@@ -75,13 +75,41 @@ console_invoker_members = []
 ssi_api_enabled = false # Enable when SSI images are pushed to prod registry
 
 ssi_api_env_vars = {
-  SSI_ENV                       = "prod"
-  SSI_LLM__PROVIDER             = "gemini"
-  SSI_LLM__MODEL                = "gemini-2.0-flash"
-  SSI_LLM__GCP_PROJECT          = "i4g-prod"
-  SSI_LLM__GCP_LOCATION         = "us-central1"
-  SSI_EVIDENCE__STORAGE_BACKEND = "gcs"
-  SSI_API__PORT                 = "8100"
+  SSI_ENV                                = "prod"
+  SSI_LLM__PROVIDER                      = "gemini"
+  SSI_LLM__MODEL                         = "gemini-2.0-flash"
+  SSI_LLM__GCP_PROJECT                   = "i4g-prod"
+  SSI_LLM__GCP_LOCATION                  = "us-central1"
+  SSI_EVIDENCE__STORAGE_BACKEND          = "gcs"
+  SSI_EVIDENCE__GCS_PREFIX               = "investigations"
+  SSI_API__PORT                          = "8100"
+  SSI_API__REQUIRE_AUTH                  = "true"
+  SSI_BROWSER__SANDBOX                   = "false"
+  SSI_ZEN_BROWSER__CHROME_BINARY         = "/usr/bin/chromium"
+  SSI_PROXY__ENABLED                     = "true"
+  SSI_MONITORING__WEBSOCKET_ENABLED      = "true"
+  SSI_COST__BUDGET_PER_INVESTIGATION_USD = "2.0"
+  SSI_INTEGRATION__CORE_API_URL          = ""
+  SSI_INTEGRATION__PUSH_TO_CORE          = "false"
+}
+
+ssi_api_secret_env_vars = {
+  SSI_PROXY__HOST = {
+    secret  = "projects/i4g-prod/secrets/ssi-proxy-credentials"
+    version = "latest"
+  }
+  SSI_OSINT__VIRUSTOTAL_API_KEY = {
+    secret  = "projects/i4g-prod/secrets/ssi-virustotal-api-key"
+    version = "latest"
+  }
+  SSI_OSINT__URLSCAN_API_KEY = {
+    secret  = "projects/i4g-prod/secrets/ssi-urlscan-api-key"
+    version = "latest"
+  }
+  SSI_OSINT__IPINFO_TOKEN = {
+    secret  = "projects/i4g-prod/secrets/ssi-ipinfo-token"
+    version = "latest"
+  }
 }
 
 ssi_api_invoker_members = []
@@ -155,7 +183,9 @@ storage_buckets = {
     }
   }
   ssi_evidence = {
-    name = "i4g-prod-ssi-evidence"
+    name                        = "i4g-prod-ssi-evidence"
+    uniform_bucket_level_access = true
+    public_access_prevention    = "enforced"
     labels = {
       env     = "prod"
       service = "ssi"
@@ -334,12 +364,38 @@ run_jobs = {
       cpu    = "2000m"
     }
     env_vars = {
-      SSI_ENV                       = "prod"
-      SSI_LLM__PROVIDER             = "gemini"
-      SSI_LLM__MODEL                = "gemini-2.0-flash"
-      SSI_LLM__GCP_PROJECT          = "i4g-prod"
-      SSI_LLM__GCP_LOCATION         = "us-central1"
-      SSI_EVIDENCE__STORAGE_BACKEND = "gcs"
+      SSI_ENV                                = "prod"
+      SSI_LLM__PROVIDER                      = "gemini"
+      SSI_LLM__MODEL                         = "gemini-2.0-flash"
+      SSI_LLM__GCP_PROJECT                   = "i4g-prod"
+      SSI_LLM__GCP_LOCATION                  = "us-central1"
+      SSI_EVIDENCE__STORAGE_BACKEND          = "gcs"
+      SSI_EVIDENCE__GCS_PREFIX               = "investigations"
+      SSI_BROWSER__SANDBOX                   = "false"
+      SSI_ZEN_BROWSER__CHROME_BINARY         = "/usr/bin/chromium"
+      SSI_PROXY__ENABLED                     = "true"
+      SSI_COST__BUDGET_PER_INVESTIGATION_USD = "2.0"
+      SSI_INTEGRATION__CORE_API_URL          = ""
+      SSI_INTEGRATION__PUSH_TO_CORE          = "false"
+      SSI_JOB__SCAN_TYPE                     = "full"
+    }
+    secret_env_vars = {
+      SSI_PROXY__HOST = {
+        secret  = "projects/i4g-prod/secrets/ssi-proxy-credentials"
+        version = "latest"
+      }
+      SSI_OSINT__VIRUSTOTAL_API_KEY = {
+        secret  = "projects/i4g-prod/secrets/ssi-virustotal-api-key"
+        version = "latest"
+      }
+      SSI_OSINT__URLSCAN_API_KEY = {
+        secret  = "projects/i4g-prod/secrets/ssi-urlscan-api-key"
+        version = "latest"
+      }
+      SSI_OSINT__IPINFO_TOKEN = {
+        secret  = "projects/i4g-prod/secrets/ssi-ipinfo-token"
+        version = "latest"
+      }
     }
   }
 }

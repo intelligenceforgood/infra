@@ -46,6 +46,36 @@ resource "google_project_service" "secret_manager" {
   disable_on_destroy = false
 }
 
+# ── SSI Secret Manager Secrets ───────────────────────────────────────────────
+# Secrets are created here; values must be populated manually via Console or
+# `gcloud secrets versions add`.
+
+module "ssi_secrets" {
+  source     = "../../../modules/security/secret_manager"
+  project_id = var.project_id
+
+  secrets = {
+    proxy_credentials = {
+      secret_id = "ssi-proxy-credentials"
+      labels    = { service = "ssi", env = "dev" }
+    }
+    virustotal_api_key = {
+      secret_id = "ssi-virustotal-api-key"
+      labels    = { service = "ssi", env = "dev" }
+    }
+    urlscan_api_key = {
+      secret_id = "ssi-urlscan-api-key"
+      labels    = { service = "ssi", env = "dev" }
+    }
+    ipinfo_token = {
+      secret_id = "ssi-ipinfo-token"
+      labels    = { service = "ssi", env = "dev" }
+    }
+  }
+
+  depends_on = [google_project_service.secret_manager]
+}
+
 
 
 resource "google_project_service" "iap" {
@@ -530,7 +560,7 @@ module "run_console" {
     {
       NEXT_PUBLIC_API_BASE_URL     = trimspace(var.fastapi_custom_domain) != "" ? format("https://%s", var.fastapi_custom_domain) : module.run_fastapi.uri
       I4G_API_URL                  = module.run_fastapi.uri
-      SSI_API_URL                  = module.run_ssi_api.uri
+      SSI_API_URL                  = var.ssi_api_enabled ? module.run_ssi_api[0].uri : ""
       I4G_IAP_CLIENT_ID            = try(var.iap_clients["api"].client_id, "")
       HOSTNAME                     = "0.0.0.0"
       I4G_VERTEX_SEARCH_PROJECT    = var.vertex_ai_search.project_id
@@ -559,7 +589,7 @@ module "run_console" {
   invoker_member  = ""
   invoker_members = local.console_invoker_members
 
-  depends_on = [module.iam_service_account_bindings, module.run_fastapi, module.run_ssi_api, google_project_service_identity.iap]
+  depends_on = [module.iam_service_account_bindings, module.run_fastapi, google_project_service_identity.iap]
 }
 
 module "run_ssi_api" {
@@ -567,12 +597,19 @@ module "run_ssi_api" {
   project_id = var.project_id
   location   = var.region
 
+  count = var.ssi_api_enabled ? 1 : 0
+
   min_instances = 0
 
   name            = "ssi-api"
   service_account = module.iam_service_accounts.emails["ssi"]
   image           = var.ssi_api_image
-  env_vars        = var.ssi_api_env_vars
+  env_vars = merge(
+    var.ssi_api_env_vars,
+    {
+      SSI_EVIDENCE__GCS_BUCKET = lookup(module.storage_buckets.bucket_names, "ssi_evidence", "")
+    }
+  )
   secret_env_vars = var.ssi_api_secret_env_vars
 
   resource_limits = {

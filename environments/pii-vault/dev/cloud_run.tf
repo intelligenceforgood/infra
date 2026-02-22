@@ -14,14 +14,14 @@ resource "google_project_iam_member" "vault_sql_client" {
 # Grant Secret Access
 resource "google_secret_manager_secret_iam_member" "vault_secret_access" {
   project   = var.project_id
-  secret_id = module.tokenization_secret.secret_name
+  secret_id = module.tokenization_secrets.secret_ids["pii_key"]
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.vault_sa.email}"
 }
 
 resource "google_secret_manager_secret_iam_member" "vault_pepper_access" {
   project   = var.project_id
-  secret_id = module.tokenization_pepper.secret_name
+  secret_id = module.tokenization_secrets.secret_ids["pepper"]
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.vault_sa.email}"
 }
@@ -60,11 +60,11 @@ module "vault_service" {
 
   secret_env_vars = {
     "I4G_PII__PEPPER" = {
-      secret  = module.tokenization_pepper.secret_name
+      secret  = module.tokenization_secrets.secret_names["pepper"]
       version = "latest"
     }
     "I4G_CRYPTO__PII_KEY" = {
-      secret  = module.tokenization_secret.secret_name
+      secret  = module.tokenization_secrets.secret_names["pii_key"]
       version = "latest"
     }
   }

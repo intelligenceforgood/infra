@@ -46,6 +46,36 @@ resource "google_project_service" "secret_manager" {
   disable_on_destroy = false
 }
 
+# ── SSI Secret Manager Secrets ───────────────────────────────────────────────
+# Secrets are created here; values must be populated manually via Console or
+# `gcloud secrets versions add`.
+
+module "ssi_secrets" {
+  source     = "../../../modules/security/secret_manager"
+  project_id = var.project_id
+
+  secrets = {
+    proxy_credentials = {
+      secret_id = "ssi-proxy-credentials"
+      labels    = { service = "ssi", env = "prod" }
+    }
+    virustotal_api_key = {
+      secret_id = "ssi-virustotal-api-key"
+      labels    = { service = "ssi", env = "prod" }
+    }
+    urlscan_api_key = {
+      secret_id = "ssi-urlscan-api-key"
+      labels    = { service = "ssi", env = "prod" }
+    }
+    ipinfo_token = {
+      secret_id = "ssi-ipinfo-token"
+      labels    = { service = "ssi", env = "prod" }
+    }
+  }
+
+  depends_on = [google_project_service.secret_manager]
+}
+
 
 
 resource "google_project_service" "iap" {
@@ -567,7 +597,12 @@ module "run_ssi_api" {
   name            = "ssi-api"
   service_account = module.iam_service_accounts.emails["ssi"]
   image           = var.ssi_api_image
-  env_vars        = var.ssi_api_env_vars
+  env_vars = merge(
+    var.ssi_api_env_vars,
+    {
+      SSI_EVIDENCE__GCS_BUCKET = lookup(module.storage_buckets.bucket_names, "ssi_evidence", "")
+    }
+  )
   secret_env_vars = var.ssi_api_secret_env_vars
 
   resource_limits = {

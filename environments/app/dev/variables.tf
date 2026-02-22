@@ -142,6 +142,12 @@ variable "storage_bucket_default_location" {
 
 # ── SSI (Scam Site Investigator) ─────────────────────────────────────────────
 
+variable "ssi_api_enabled" {
+  type        = bool
+  description = "Whether to deploy the SSI API Cloud Run service."
+  default     = true
+}
+
 variable "ssi_api_image" {
   type        = string
   description = "Container image URI for the SSI API Cloud Run service."

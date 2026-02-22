@@ -1,15 +1,13 @@
 variable "project_id" {
   type        = string
-  description = "Project ID to create the secret in."
+  description = "Project ID to create the secrets in."
 }
 
-variable "region" {
-  type        = string
-  description = "Replication region for user-managed replicas."
-  default     = "us-central1"
-}
-
-variable "secret_id" {
-  type        = string
-  description = "Secret id (e.g., 'pii-sample-secret')"
+variable "secrets" {
+  description = "Map of secrets to create. Each key is a logical name; value contains secret_id and labels."
+  type = map(object({
+    secret_id = string
+    labels    = optional(map(string), {})
+  }))
+  default = {}
 }

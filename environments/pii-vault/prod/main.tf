@@ -43,16 +43,18 @@ resource "google_kms_crypto_key" "vault_key" {
   rotation_period = "7776000s"
 }
 
-module "tokenization_secret" {
+module "tokenization_secrets" {
   source     = "../../../modules/security/secret_manager"
   project_id = var.project_id
-  region     = var.region
-  secret_id  = "pii-tokenization-key"
-}
 
-module "tokenization_pepper" {
-  source     = "../../../modules/security/secret_manager"
-  project_id = var.project_id
-  region     = var.region
-  secret_id  = "tokenization-pepper"
+  secrets = {
+    pii_key = {
+      secret_id = "pii-tokenization-key"
+      labels    = { service = "vault", env = "prod" }
+    }
+    pepper = {
+      secret_id = "tokenization-pepper"
+      labels    = { service = "vault", env = "prod" }
+    }
+  }
 }
