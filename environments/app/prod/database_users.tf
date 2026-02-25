@@ -35,5 +35,9 @@ module "database_users" {
       email = module.iam_service_accounts.emails["report"]
       roles = ["roles/cloudsql.client", "roles/cloudsql.instanceUser"]
     }
+    ssi = {
+      email = module.iam_service_accounts.emails["ssi"]
+      roles = ["roles/cloudsql.client", "roles/cloudsql.instanceUser"]
+    }
   }
 }

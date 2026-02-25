@@ -22,7 +22,7 @@ echo "Granting 'postgres' role to service accounts in $ENV..."
 echo "You will be prompted for the 'postgres' user password."
 
 # Service accounts that need to create tables
-SAS=("sa-app" "sa-ingest" "sa-intake")
+SAS=("sa-app" "sa-ingest" "sa-intake" "sa-report" "sa-ssi")
 
 SQL_COMMANDS=""
 for SA in "${SAS[@]}"; do

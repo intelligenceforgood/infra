@@ -353,7 +353,9 @@ module "iam_service_account_bindings" {
         "roles/secretmanager.secretAccessor",
         "roles/aiplatform.user",
         "roles/logging.logWriter",
-        "roles/monitoring.metricWriter"
+        "roles/monitoring.metricWriter",
+        "roles/cloudsql.client",
+        "roles/cloudsql.instanceUser"
       ]
     }
   }
@@ -427,9 +429,13 @@ locals {
     local.iap_service_agent_member
   ]
 
+  # SSI needs to call core directly (bypassing IAP) for service-to-service auth
+  ssi_service_account_member = format("serviceAccount:%s", module.iam_service_accounts.emails["ssi"])
+
   fastapi_invoker_members = distinct(concat(
     local.default_runtime_invokers,
-    local.fastapi_requested_invokers
+    local.fastapi_requested_invokers,
+    [local.ssi_service_account_member]
   ))
 
   console_invoker_members = distinct(concat(
@@ -467,7 +473,10 @@ locals {
       I4G_STORAGE__REPORT_BUCKET = lookup(module.storage_buckets.bucket_names, "reports", "")
     }
     ssi_investigate = {
-      SSI_EVIDENCE__GCS_BUCKET = lookup(module.storage_buckets.bucket_names, "ssi_evidence", "")
+      SSI_EVIDENCE__GCS_BUCKET              = lookup(module.storage_buckets.bucket_names, "ssi_evidence", "")
+      SSI_INTEGRATION__CORE_API_URL         = trimspace(var.fastapi_custom_domain) != "" ? format("https://%s", var.fastapi_custom_domain) : module.run_fastapi.uri
+      SSI_INTEGRATION__IAP_AUDIENCE         = try(var.iap_clients["api"].client_id, "")
+      SSI_STORAGE__CLOUDSQL_ENABLE_IAM_AUTH = "true"
     }
   }
 
@@ -600,7 +609,10 @@ module "run_ssi_api" {
   env_vars = merge(
     var.ssi_api_env_vars,
     {
-      SSI_EVIDENCE__GCS_BUCKET = lookup(module.storage_buckets.bucket_names, "ssi_evidence", "")
+      SSI_EVIDENCE__GCS_BUCKET              = lookup(module.storage_buckets.bucket_names, "ssi_evidence", "")
+      SSI_INTEGRATION__CORE_API_URL         = trimspace(var.fastapi_custom_domain) != "" ? format("https://%s", var.fastapi_custom_domain) : module.run_fastapi.uri
+      SSI_INTEGRATION__IAP_AUDIENCE         = try(var.iap_clients["api"].client_id, "")
+      SSI_STORAGE__CLOUDSQL_ENABLE_IAM_AUTH = "true"
     }
   )
   secret_env_vars = var.ssi_api_secret_env_vars
@@ -622,7 +634,7 @@ module "run_ssi_api" {
   invoker_member  = ""
   invoker_members = var.ssi_api_invoker_members
 
-  depends_on = [module.iam_service_account_bindings]
+  depends_on = [module.iam_service_account_bindings, module.run_fastapi]
 }
 
 module "global_lb" {

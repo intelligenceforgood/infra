@@ -89,8 +89,11 @@ ssi_api_env_vars = {
   SSI_PROXY__ENABLED                     = "true"
   SSI_MONITORING__WEBSOCKET_ENABLED      = "true"
   SSI_COST__BUDGET_PER_INVESTIGATION_USD = "2.0"
-  SSI_INTEGRATION__CORE_API_URL          = ""
   SSI_INTEGRATION__PUSH_TO_CORE          = "false"
+  SSI_STORAGE__BACKEND                   = "cloudsql"
+  SSI_STORAGE__CLOUDSQL_INSTANCE         = "i4g-prod:us-central1:i4g-prod-db"
+  SSI_STORAGE__CLOUDSQL_DATABASE         = "i4g_db"
+  SSI_STORAGE__CLOUDSQL_USER             = "sa-ssi@i4g-prod.iam"
 }
 
 ssi_api_secret_env_vars = {
@@ -375,7 +378,6 @@ run_jobs = {
       SSI_ZEN_BROWSER__CHROME_BINARY         = "/usr/bin/chromium"
       SSI_PROXY__ENABLED                     = "true"
       SSI_COST__BUDGET_PER_INVESTIGATION_USD = "2.0"
-      SSI_INTEGRATION__CORE_API_URL          = ""
       SSI_INTEGRATION__PUSH_TO_CORE          = "false"
       SSI_JOB__SCAN_TYPE                     = "full"
     }

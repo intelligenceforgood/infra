@@ -159,3 +159,9 @@ variable "deletion_protection" {
   description = "Whether to enable deletion protection on the Cloud Run service."
   default     = false
 }
+
+variable "cloud_sql_instances" {
+  type        = list(string)
+  description = "Cloud SQL instance connection names to mount via the built-in proxy (e.g. project:region:instance). Leave empty to skip."
+  default     = []
+}

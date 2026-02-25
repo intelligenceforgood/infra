@@ -93,11 +93,18 @@ ssi_api_env_vars = {
   SSI_PROXY__ENABLED                     = "true"
   SSI_MONITORING__WEBSOCKET_ENABLED      = "true"
   SSI_COST__BUDGET_PER_INVESTIGATION_USD = "2.0"
-  SSI_INTEGRATION__CORE_API_URL          = "https://api.intelligenceforgood.org"
-  SSI_INTEGRATION__PUSH_TO_CORE          = "false"
+  SSI_INTEGRATION__PUSH_TO_CORE          = "true"
+  SSI_STORAGE__BACKEND                   = "cloudsql"
+  SSI_STORAGE__CLOUDSQL_INSTANCE         = "i4g-dev:us-central1:i4g-dev-db"
+  SSI_STORAGE__CLOUDSQL_DATABASE         = "i4g_db"
+  SSI_STORAGE__CLOUDSQL_USER             = "sa-ssi@i4g-dev.iam"
 }
 
 ssi_api_secret_env_vars = {
+  SSI_INTEGRATION__CORE_API_KEY = {
+    secret  = "projects/i4g-dev/secrets/api-key"
+    version = "latest"
+  }
   SSI_PROXY__HOST = {
     secret  = "projects/i4g-dev/secrets/ssi-proxy-credentials"
     version = "latest"
@@ -381,11 +388,18 @@ run_jobs = {
       SSI_ZEN_BROWSER__CHROME_BINARY         = "/usr/bin/chromium"
       SSI_PROXY__ENABLED                     = "true"
       SSI_COST__BUDGET_PER_INVESTIGATION_USD = "2.0"
-      SSI_INTEGRATION__CORE_API_URL          = "https://api.intelligenceforgood.org"
       SSI_INTEGRATION__PUSH_TO_CORE          = "false"
       SSI_JOB__SCAN_TYPE                     = "full"
+      SSI_STORAGE__BACKEND                   = "cloudsql"
+      SSI_STORAGE__CLOUDSQL_INSTANCE         = "i4g-dev:us-central1:i4g-dev-db"
+      SSI_STORAGE__CLOUDSQL_DATABASE         = "i4g_db"
+      SSI_STORAGE__CLOUDSQL_USER             = "sa-ssi@i4g-dev.iam"
     }
     secret_env_vars = {
+      SSI_INTEGRATION__CORE_API_KEY = {
+        secret  = "projects/i4g-dev/secrets/api-key"
+        version = "latest"
+      }
       SSI_PROXY__HOST = {
         secret  = "projects/i4g-dev/secrets/ssi-proxy-credentials"
         version = "latest"
