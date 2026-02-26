@@ -389,6 +389,7 @@ module "storage_buckets" {
 
 locals {
   run_job_vpc_connector_overrides = {
+    ssi_investigate = google_vpc_access_connector.serverless.id
   }
 }
 
@@ -497,15 +498,16 @@ module "run_fastapi" {
   env_vars = merge(
     var.fastapi_env_vars,
     {
-      I4G_STORAGE__EVIDENCE_BUCKET     = lookup(module.storage_buckets.bucket_names, "evidence", "")
-      I4G_STORAGE__REPORT_BUCKET       = lookup(module.storage_buckets.bucket_names, "reports", "")
-      I4G_VECTOR__VERTEX_AI_PROJECT    = var.vertex_ai_search.project_id
-      I4G_VECTOR__VERTEX_AI_LOCATION   = var.vertex_ai_search.location
-      I4G_VECTOR__VERTEX_AI_DATA_STORE = var.vertex_ai_search.data_store_id
-      I4G_VERTEX_SEARCH_PROJECT        = var.vertex_ai_search.project_id
-      I4G_VERTEX_SEARCH_LOCATION       = var.vertex_ai_search.location
-      I4G_VERTEX_SEARCH_DATA_STORE     = var.vertex_ai_search.data_store_id
-      I4G_IDENTITY__AUDIENCE           = try(var.iap_clients["api"].client_id, "")
+      I4G_STORAGE__EVIDENCE_BUCKET       = lookup(module.storage_buckets.bucket_names, "evidence", "")
+      I4G_STORAGE__REPORT_BUCKET         = lookup(module.storage_buckets.bucket_names, "reports", "")
+      I4G_VECTOR__VERTEX_AI_PROJECT      = var.vertex_ai_search.project_id
+      I4G_VECTOR__VERTEX_AI_LOCATION     = var.vertex_ai_search.location
+      I4G_VECTOR__VERTEX_AI_DATA_STORE   = var.vertex_ai_search.data_store_id
+      I4G_VERTEX_SEARCH_PROJECT          = var.vertex_ai_search.project_id
+      I4G_VERTEX_SEARCH_LOCATION         = var.vertex_ai_search.location
+      I4G_VERTEX_SEARCH_DATA_STORE       = var.vertex_ai_search.data_store_id
+      I4G_IDENTITY__AUDIENCE             = try(var.iap_clients["api"].client_id, "")
+      I4G_IDENTITY__IAP_BACKEND_AUDIENCE = format("/projects/%s/global/backendServices/%s", data.google_project.current.number, module.global_lb.backend_service_ids["api"])
     }
   )
   secret_env_vars = var.fastapi_secret_env_vars
@@ -637,6 +639,9 @@ module "run_ssi_api" {
 
   ingress = "all"
 
+  vpc_connector                 = google_vpc_access_connector.serverless.id
+  vpc_connector_egress_settings = "ALL_TRAFFIC"
+
   invoker_member  = ""
   invoker_members = var.ssi_api_invoker_members
 
@@ -651,7 +656,7 @@ module "global_lb" {
   backends = {
     console = {
       domain            = var.ui_custom_domain
-      service_name      = module.run_console.name
+      service_name      = "i4g-console" # literal to break cycle with run_console
       region            = var.region
       enable_iap        = true
       iap_client_id     = try(var.iap_clients["console"].client_id, "")
@@ -659,7 +664,7 @@ module "global_lb" {
     }
     api = {
       domain            = var.fastapi_custom_domain
-      service_name      = module.run_fastapi.name
+      service_name      = "fastapi-gateway" # literal to break cycle with run_fastapi
       region            = var.region
       enable_iap        = true
       iap_client_id     = try(var.iap_clients["api"].client_id, "")
