@@ -141,39 +141,8 @@ variable "storage_bucket_default_location" {
 }
 
 # ── SSI (Scam Site Investigator) ─────────────────────────────────────────────
-
-variable "ssi_api_enabled" {
-  type        = bool
-  description = "Whether to deploy the SSI API Cloud Run service."
-  default     = true
-}
-
-variable "ssi_api_image" {
-  type        = string
-  description = "Container image URI for the SSI API Cloud Run service."
-  default     = "us-central1-docker.pkg.dev/i4g-dev/applications/ssi-api:dev"
-}
-
-variable "ssi_api_env_vars" {
-  type        = map(string)
-  description = "Environment variables injected into the SSI API service container."
-  default     = {}
-}
-
-variable "ssi_api_secret_env_vars" {
-  description = "Secret-backed environment variables for the SSI API service."
-  type = map(object({
-    secret  = string
-    version = optional(string)
-  }))
-  default = {}
-}
-
-variable "ssi_api_invoker_members" {
-  type        = list(string)
-  description = "Principals granted Cloud Run invoker on the SSI API service."
-  default     = []
-}
+# NOTE: ssi_api_* variables removed in Phase F — SSI API consolidated into
+# fastapi-gateway. The sa-ssi service account and SSI Job variables remain.
 
 
 variable "console_image" {
