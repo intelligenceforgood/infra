@@ -29,6 +29,8 @@ fastapi_env_vars = {
   I4G_ENV                            = "dev"
   I4G_STORAGE__STRUCTURED_BACKEND    = "cloudsql"
   I4G_STORAGE__EVIDENCE__LOCAL_DIR   = "/tmp/evidence"
+  I4G_STORAGE__SSI_EVIDENCE_BUCKET   = "i4g-dev-ssi-evidence"
+  I4G_STORAGE__SSI_EVIDENCE_PREFIX   = "investigations"
   I4G_APP__CLOUDSQL__INSTANCE        = "i4g-dev:us-central1:i4g-dev-db"
   I4G_APP__CLOUDSQL__DATABASE        = "i4g_db"
   I4G_APP__CLOUDSQL__USER            = "sa-app@i4g-dev.iam"
@@ -46,6 +48,10 @@ fastapi_env_vars = {
 }
 
 fastapi_secret_env_vars = {
+  I4G_API__KEY = {
+    secret  = "projects/i4g-dev/secrets/api-key"
+    version = "latest"
+  }
   I4G_PII__PEPPER = {
     secret  = "projects/i4g-pii-vault-dev/secrets/tokenization-pepper"
     version = "latest"
@@ -62,6 +68,7 @@ console_env_vars = {
   NEXT_PUBLIC_USE_MOCK_DATA        = "false"
   I4G_API_KIND                     = "core"
   I4G_VERTEX_SEARCH_SERVING_CONFIG = "default_search"
+  SSI_API_URL                      = ""
 }
 
 console_secret_env_vars = {

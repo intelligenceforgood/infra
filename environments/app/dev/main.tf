@@ -261,6 +261,15 @@ resource "google_service_account_iam_member" "app_token_creators" {
   member             = each.value
 }
 
+# sa-app must be able to sign its own blobs so that Cloud Run can generate
+# GCS signed URLs using the IAM signBlob API (Compute Engine credentials
+# on Cloud Run do not carry a private key).
+resource "google_service_account_iam_member" "app_self_token_creator" {
+  service_account_id = "projects/${var.project_id}/serviceAccounts/${module.iam_service_accounts.emails["app"]}"
+  role               = "roles/iam.serviceAccountTokenCreator"
+  member             = "serviceAccount:${module.iam_service_accounts.emails["app"]}"
+}
+
 
 module "iam_service_account_bindings" {
   source     = "../../../modules/iam/service_account_bindings"
@@ -271,6 +280,7 @@ module "iam_service_account_bindings" {
       member = "serviceAccount:${module.iam_service_accounts.emails["app"]}"
       roles = [
         "roles/storage.objectAdmin",
+        "roles/run.developer",
         "roles/artifactregistry.reader",
         "roles/secretmanager.secretAccessor",
         "roles/discoveryengine.viewer",

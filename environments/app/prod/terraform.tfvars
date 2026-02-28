@@ -41,6 +41,10 @@ fastapi_env_vars = {
 }
 
 fastapi_secret_env_vars = {
+  I4G_API__KEY = {
+    secret  = "projects/i4g-prod/secrets/api-key"
+    version = "latest"
+  }
   I4G_PII__PEPPER = {
     secret  = "projects/i4g-pii-vault-prod/secrets/tokenization-pepper"
     version = "latest"
