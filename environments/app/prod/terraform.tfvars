@@ -75,52 +75,6 @@ console_secret_env_vars = {
 console_invoker_member  = ""
 console_invoker_members = []
 
-# ── SSI (Scam Site Investigator) ─────────────────────────────────────────────
-ssi_api_enabled = false # Enable when SSI images are pushed to prod registry
-
-ssi_api_env_vars = {
-  SSI_ENV                                = "prod"
-  SSI_LLM__PROVIDER                      = "gemini"
-  SSI_LLM__MODEL                         = "gemini-2.0-flash"
-  SSI_LLM__GCP_PROJECT                   = "i4g-prod"
-  SSI_LLM__GCP_LOCATION                  = "us-central1"
-  SSI_EVIDENCE__STORAGE_BACKEND          = "gcs"
-  SSI_EVIDENCE__GCS_PREFIX               = "investigations"
-  SSI_API__PORT                          = "8100"
-  SSI_API__REQUIRE_AUTH                  = "true"
-  SSI_BROWSER__SANDBOX                   = "false"
-  SSI_ZEN_BROWSER__CHROME_BINARY         = "/usr/bin/chromium"
-  SSI_PROXY__ENABLED                     = "true"
-  SSI_MONITORING__WEBSOCKET_ENABLED      = "true"
-  SSI_COST__BUDGET_PER_INVESTIGATION_USD = "2.0"
-  SSI_INTEGRATION__PUSH_TO_CORE          = "false"
-  SSI_STORAGE__BACKEND                   = "cloudsql"
-  SSI_STORAGE__CLOUDSQL_INSTANCE         = "i4g-prod:us-central1:i4g-prod-db"
-  SSI_STORAGE__CLOUDSQL_DATABASE         = "i4g_db"
-  SSI_STORAGE__CLOUDSQL_USER             = "sa-ssi@i4g-prod.iam"
-}
-
-ssi_api_secret_env_vars = {
-  SSI_PROXY__HOST = {
-    secret  = "projects/i4g-prod/secrets/ssi-proxy-credentials"
-    version = "latest"
-  }
-  SSI_OSINT__VIRUSTOTAL_API_KEY = {
-    secret  = "projects/i4g-prod/secrets/ssi-virustotal-api-key"
-    version = "latest"
-  }
-  SSI_OSINT__URLSCAN_API_KEY = {
-    secret  = "projects/i4g-prod/secrets/ssi-urlscan-api-key"
-    version = "latest"
-  }
-  SSI_OSINT__IPINFO_TOKEN = {
-    secret  = "projects/i4g-prod/secrets/ssi-ipinfo-token"
-    version = "latest"
-  }
-}
-
-ssi_api_invoker_members = []
-
 vertex_ai_search = {
   project_id    = "i4g-prod"
   location      = "global"

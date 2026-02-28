@@ -141,9 +141,8 @@ variable "storage_bucket_default_location" {
 }
 
 # ── SSI (Scam Site Investigator) ─────────────────────────────────────────────
-# NOTE: ssi_api_* variables removed in Phase F — SSI API consolidated into
-# fastapi-gateway. The sa-ssi service account and SSI Job variables remain.
-
+# SSI API consolidated into fastapi-gateway.
+# The sa-ssi service account and SSI Job variables remain.
 
 variable "console_image" {
   type        = string

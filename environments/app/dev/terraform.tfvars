@@ -68,7 +68,6 @@ console_env_vars = {
   NEXT_PUBLIC_USE_MOCK_DATA        = "false"
   I4G_API_KIND                     = "core"
   I4G_VERTEX_SEARCH_SERVING_CONFIG = "default_search"
-  SSI_API_URL                      = ""
 }
 
 console_secret_env_vars = {
@@ -80,10 +79,6 @@ console_secret_env_vars = {
 
 console_invoker_member  = ""
 console_invoker_members = []
-
-# ── SSI (Scam Site Investigator) ─────────────────────────────────────────────
-# NOTE: ssi_api_* variables removed — SSI API consolidated into fastapi-gateway.
-# The ssi-investigate Cloud Run Job config is in the `run_jobs` block below.
 
 storage_bucket_default_location = "US"
 storage_buckets = {

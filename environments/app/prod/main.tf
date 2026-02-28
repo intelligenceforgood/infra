@@ -573,7 +573,6 @@ module "run_console" {
     {
       NEXT_PUBLIC_API_BASE_URL     = trimspace(var.fastapi_custom_domain) != "" ? format("https://%s", var.fastapi_custom_domain) : module.run_fastapi.uri
       I4G_API_URL                  = module.run_fastapi.uri
-      SSI_API_URL                  = var.ssi_api_enabled ? module.run_ssi_api[0].uri : ""
       I4G_IAP_CLIENT_ID            = try(var.iap_clients["api"].client_id, "")
       HOSTNAME                     = "0.0.0.0"
       I4G_VERTEX_SEARCH_PROJECT    = var.vertex_ai_search.project_id
@@ -602,49 +601,6 @@ module "run_console" {
   invoker_members = local.console_invoker_members
 
   depends_on = [module.iam_service_account_bindings, module.run_fastapi, google_project_service_identity.iap]
-}
-
-module "run_ssi_api" {
-  source     = "../../../modules/run/service"
-  project_id = var.project_id
-  location   = var.region
-
-  count = var.ssi_api_enabled ? 1 : 0
-
-  min_instances = 0
-
-  name            = "ssi-api"
-  service_account = module.iam_service_accounts.emails["ssi"]
-  image           = var.ssi_api_image
-  env_vars = merge(
-    var.ssi_api_env_vars,
-    {
-      SSI_EVIDENCE__GCS_BUCKET              = lookup(module.storage_buckets.bucket_names, "ssi_evidence", "")
-      SSI_INTEGRATION__CORE_API_URL         = trimspace(var.fastapi_custom_domain) != "" ? format("https://%s", var.fastapi_custom_domain) : module.run_fastapi.uri
-      SSI_INTEGRATION__IAP_AUDIENCE         = try(var.iap_clients["api"].client_id, "")
-      SSI_STORAGE__CLOUDSQL_ENABLE_IAM_AUTH = "true"
-    }
-  )
-  secret_env_vars = var.ssi_api_secret_env_vars
-
-  resource_limits = {
-    memory = "2Gi"
-    cpu    = "2000m"
-  }
-
-  labels = {
-    service = "ssi-api"
-    env     = "prod"
-  }
-
-  container_ports = [{ name = "http1", container_port = 8100 }]
-
-  ingress = "all"
-
-  invoker_member  = ""
-  invoker_members = var.ssi_api_invoker_members
-
-  depends_on = [module.iam_service_account_bindings, module.run_fastapi]
 }
 
 module "global_lb" {

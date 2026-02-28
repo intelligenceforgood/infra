@@ -38,7 +38,7 @@ locals {
     ssi = {
       account_id   = "sa-ssi"
       display_name = "Scam Site Investigator"
-      description  = "Runs SSI API service and investigation jobs"
+      description  = "Runs SSI investigation jobs"
     }
   }
 

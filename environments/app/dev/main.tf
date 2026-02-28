@@ -610,9 +610,6 @@ module "run_console" {
   depends_on = [module.iam_service_account_bindings, module.run_fastapi, google_project_service_identity.iap]
 }
 
-# NOTE: module "run_ssi_api" removed in Phase F — SSI API consolidated into fastapi-gateway.
-# The sa-ssi service account is retained for the ssi-investigate Cloud Run Job.
-
 module "global_lb" {
   source     = "../../../modules/lb/iap_https"
   project_id = var.project_id
