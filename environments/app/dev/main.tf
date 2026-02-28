@@ -411,13 +411,13 @@ locals {
 
   report_service_account_member = format("serviceAccount:%s", module.iam_service_accounts.emails["report"])
   app_service_account_member    = format("serviceAccount:%s", module.iam_service_accounts.emails["app"])
-  ssi_service_account_member    = format("serviceAccount:%s", module.iam_service_accounts.emails["ssi"])
 
+  # sa-ssi removed from IAP access — SSI Job no longer calls gateway through the LB.
+  # It uses direct internal API calls or SA auth to the task-update endpoint.
   fastapi_iap_access_members = distinct(concat(
     local.i4g_analyst_invokers,
     [local.report_service_account_member],
     [local.app_service_account_member],
-    [local.ssi_service_account_member]
   ))
 
   fastapi_requested_invokers = [
@@ -449,7 +449,6 @@ locals {
   fastapi_invoker_members = distinct(concat(
     local.default_runtime_invokers,
     local.fastapi_requested_invokers,
-    [local.ssi_service_account_member]
   ))
 
   console_invoker_members = distinct(concat(
@@ -580,7 +579,6 @@ module "run_console" {
     {
       NEXT_PUBLIC_API_BASE_URL     = trimspace(var.fastapi_custom_domain) != "" ? format("https://%s", var.fastapi_custom_domain) : module.run_fastapi.uri
       I4G_API_URL                  = module.run_fastapi.uri
-      SSI_API_URL                  = var.ssi_api_enabled ? module.run_ssi_api[0].uri : ""
       I4G_IAP_CLIENT_ID            = try(var.iap_clients["api"].client_id, "")
       HOSTNAME                     = "0.0.0.0"
       I4G_VERTEX_SEARCH_PROJECT    = var.vertex_ai_search.project_id
@@ -612,51 +610,8 @@ module "run_console" {
   depends_on = [module.iam_service_account_bindings, module.run_fastapi, google_project_service_identity.iap]
 }
 
-module "run_ssi_api" {
-  source     = "../../../modules/run/service"
-  project_id = var.project_id
-  location   = var.region
-
-  count = var.ssi_api_enabled ? 1 : 0
-
-  min_instances = 0
-
-  name            = "ssi-api"
-  service_account = module.iam_service_accounts.emails["ssi"]
-  image           = var.ssi_api_image
-  env_vars = merge(
-    var.ssi_api_env_vars,
-    {
-      SSI_EVIDENCE__GCS_BUCKET              = lookup(module.storage_buckets.bucket_names, "ssi_evidence", "")
-      SSI_INTEGRATION__CORE_API_URL         = trimspace(var.fastapi_custom_domain) != "" ? format("https://%s", var.fastapi_custom_domain) : module.run_fastapi.uri
-      SSI_INTEGRATION__IAP_AUDIENCE         = try(var.iap_clients["api"].client_id, "")
-      SSI_STORAGE__CLOUDSQL_ENABLE_IAM_AUTH = "true"
-    }
-  )
-  secret_env_vars = var.ssi_api_secret_env_vars
-
-  resource_limits = {
-    memory = "2Gi"
-    cpu    = "2000m"
-  }
-
-  labels = {
-    service = "ssi-api"
-    env     = "dev"
-  }
-
-  container_ports = [{ name = "http1", container_port = 8100 }]
-
-  ingress = "all"
-
-  vpc_connector                 = google_vpc_access_connector.serverless.id
-  vpc_connector_egress_settings = "ALL_TRAFFIC"
-
-  invoker_member  = ""
-  invoker_members = var.ssi_api_invoker_members
-
-  depends_on = [module.iam_service_account_bindings, module.run_fastapi]
-}
+# NOTE: module "run_ssi_api" removed in Phase F — SSI API consolidated into fastapi-gateway.
+# The sa-ssi service account is retained for the ssi-investigate Cloud Run Job.
 
 module "global_lb" {
   source     = "../../../modules/lb/iap_https"
