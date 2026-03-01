@@ -336,7 +336,7 @@ run_jobs = {
       SSI_ZEN_BROWSER__CHROME_BINARY         = "/usr/bin/chromium"
       SSI_PROXY__ENABLED                     = "true"
       SSI_COST__BUDGET_PER_INVESTIGATION_USD = "2.0"
-      SSI_INTEGRATION__PUSH_TO_CORE          = "false"
+      SSI_JOB__PUSH_TO_CORE                  = "true"
       SSI_JOB__SCAN_TYPE                     = "full"
     }
     secret_env_vars = {
