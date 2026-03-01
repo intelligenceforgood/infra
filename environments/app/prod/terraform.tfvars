@@ -359,3 +359,8 @@ run_jobs = {
     }
   }
 }
+
+# ── SSI Cloud Run Service (Phase 3.0) ───────────────────────────────────────
+# Disabled in prod. Set ssi_service_enabled = true when ready to migrate.
+ssi_service_enabled = false
+ssi_service_image   = "us-central1-docker.pkg.dev/i4g-prod/applications/ssi-svc:prod"

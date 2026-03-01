@@ -111,6 +111,37 @@ variable "fastapi_invoker_members" {
   default     = []
 }
 
+# ── SSI (Scam Site Investigator) ─────────────────────────────────────────────
+# SSI Cloud Run Service variables (Phase 3.0 Job-to-Service Migration).
+# Set ssi_service_enabled = true to deploy SSI as a persistent service.
+
+variable "ssi_service_image" {
+  type        = string
+  description = "Container image URI for the SSI Cloud Run Service."
+  default     = ""
+}
+
+variable "ssi_service_env_vars" {
+  type        = map(string)
+  description = "Environment variables injected into the SSI Cloud Run Service container."
+  default     = {}
+}
+
+variable "ssi_service_secret_env_vars" {
+  description = "Secret-backed environment variables for the SSI Cloud Run Service."
+  type = map(object({
+    secret  = string
+    version = optional(string)
+  }))
+  default = {}
+}
+
+variable "ssi_service_enabled" {
+  type        = bool
+  description = "Whether to deploy the SSI Cloud Run Service (service mode). Set to false to keep using the Cloud Run Job path."
+  default     = false
+}
+
 variable "console_image" {
   type        = string
   description = "Container image URI for the Next.js console Cloud Run service."

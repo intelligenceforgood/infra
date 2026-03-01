@@ -537,7 +537,12 @@ module "run_fastapi" {
       I4G_VERTEX_SEARCH_LOCATION       = var.vertex_ai_search.location
       I4G_VERTEX_SEARCH_DATA_STORE     = var.vertex_ai_search.data_store_id
       I4G_IDENTITY__AUDIENCE           = try(var.iap_clients["api"].client_id, "")
-    }
+    },
+    # SSI service mode env vars — injected only when the service is deployed.
+    var.ssi_service_enabled ? {
+      I4G_SSI_JOB__MODE        = "service"
+      I4G_SSI_JOB__SERVICE_URL = module.run_ssi_service[0].uri
+    } : {}
   )
   secret_env_vars = var.fastapi_secret_env_vars
   labels = {
@@ -601,6 +606,78 @@ module "run_console" {
   invoker_members = local.console_invoker_members
 
   depends_on = [module.iam_service_account_bindings, module.run_fastapi, google_project_service_identity.iap]
+}
+
+# ── SSI Cloud Run Service ────────────────────────────────────────────────────
+# Phase 3.0: Deploy SSI as a persistent Cloud Run Service so core can trigger
+# investigations via HTTP POST instead of the Cloud Run Jobs API.
+# Gated behind var.ssi_service_enabled (default: false) for safe rollout.
+# Revert to Job mode by setting I4G_SSI_JOB__MODE=job in fastapi env vars.
+
+module "run_ssi_service" {
+  count = var.ssi_service_enabled ? 1 : 0
+
+  source     = "../../../modules/run/service"
+  project_id = var.project_id
+  location   = var.region
+
+  name            = "ssi-svc"
+  service_account = module.iam_service_accounts.emails["ssi"]
+  image           = var.ssi_service_image
+
+  # Inline the ssi_investigate dynamic env vars instead of referencing
+  # local.run_job_dynamic_env_vars — that local depends on module.run_fastapi.uri,
+  # which would create a cycle (run_fastapi → run_ssi_service → run_fastapi).
+  # Use var.fastapi_custom_domain directly to avoid the cycle.
+  env_vars = merge(
+    {
+      SSI_EVIDENCE__GCS_BUCKET              = lookup(module.storage_buckets.bucket_names, "ssi_evidence", "")
+      SSI_INTEGRATION__CORE_API_URL         = trimspace(var.fastapi_custom_domain) != "" ? format("https://%s", var.fastapi_custom_domain) : ""
+      SSI_INTEGRATION__IAP_AUDIENCE         = try(var.iap_clients["api"].client_id, "")
+      SSI_STORAGE__CLOUDSQL_ENABLE_IAM_AUTH = "true"
+    },
+    var.ssi_service_env_vars
+  )
+  secret_env_vars = var.ssi_service_secret_env_vars
+
+  resource_limits = {
+    memory = "2Gi"
+    cpu    = "2000m"
+  }
+
+  # CPU must stay allocated for background investigation tasks after 202.
+  annotations = {
+    "run.googleapis.com/cpu-throttling" = "false"
+  }
+
+  min_instances         = 0
+  max_instances         = 3
+  container_concurrency = 5
+  timeout_seconds       = 600
+
+  # Access control is enforced by IAM (roles/run.invoker → sa-app only).
+  # fastapi-gateway has no VPC connector so ingress must be "all"; Cloud Run
+  # rejects any request without a valid sa-app OIDC token.
+  ingress = "all"
+
+  # sa-app is the sole invoker (core triggers SSI via HTTP POST).
+  invoker_members = [
+    format("serviceAccount:%s", module.iam_service_accounts.emails["app"])
+  ]
+
+  vpc_connector                 = google_vpc_access_connector.serverless.id
+  vpc_connector_egress_settings = "ALL_TRAFFIC"
+
+  cloud_sql_instances = [
+    lookup(var.ssi_service_env_vars, "SSI_STORAGE__CLOUDSQL_INSTANCE", "")
+  ]
+
+  labels = {
+    service = "ssi"
+    env     = "prod"
+  }
+
+  depends_on = [module.iam_service_account_bindings]
 }
 
 module "global_lb" {

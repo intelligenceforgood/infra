@@ -39,6 +39,14 @@ output "run_jobs" {
   }
 }
 
+output "ssi_service" {
+  description = "Metadata for the SSI Cloud Run Service (if enabled)."
+  value = var.ssi_service_enabled ? {
+    name = module.run_ssi_service[0].name
+    url  = module.run_ssi_service[0].uri
+  } : null
+}
+
 output "serverless_egress_ip" {
   description = "Static egress IP address used by serverless workloads."
   value       = google_compute_address.serverless_egress.address
