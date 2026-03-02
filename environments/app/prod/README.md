@@ -4,10 +4,10 @@ This directory provisions the production (`i4g-prod`) stack using the shared Ter
 
 ## Components
 
-- Core service accounts (`sa-app` shared by FastAPI and the analyst console, `sa-ingest`, `sa-report`, `sa-vault`, `sa-infra`) plus least-privilege IAM bindings.
+- Core service accounts (`sa-app` shared by Core API and the analyst console, `sa-ingest`, `sa-report`, `sa-vault`, `sa-infra`) plus least-privilege IAM bindings.
 - GitHub Actions Workload Identity Federation mapped to `sa-infra` so CI can plan/apply without JSON keys.
-- Cloud Run services for FastAPI and the analyst console. Identity-Aware Proxy (IAP) protects each
-	surface (brand, OAuth clients, IAM bindings) so analysts must authenticate via Google.
+- Cloud Run services for Core API and the analyst console. Identity-Aware Proxy (IAP) protects each
+  surface (brand, OAuth clients, IAM bindings) so analysts must authenticate via Google.
 - Vertex AI Search data store (`retrieval-prod`) for production retrieval workflows.
 
 ## Required Variables
@@ -15,22 +15,22 @@ This directory provisions the production (`i4g-prod`) stack using the shared Ter
 Populate these inputs before planning/applying:
 
 - `i4g_analyst_members` — principals (users or Google Groups such as
-	`group:analysts@example.com`) that should access the analyst-facing Cloud Run services via IAP. Add Google Groups
-	here to avoid editing Terraform when team membership changes.
+  `group:analysts@example.com`) that should access the analyst-facing Cloud Run services via IAP. Add Google Groups
+  here to avoid editing Terraform when team membership changes.
 - `i4g_admin_members` — Workspace groups or users that should be granted `roles/owner` on the project (e.g., `group:gcp-i4g-admin@intelligenceforgood.org`) for break-glass administration.
 - `project_id` — GCP project ID (e.g., `i4g-prod`).
 - `iap_support_email` — verified Google account email that owns the production OAuth consent screen.
-- `iap_application_title` *(optional)* — display title on the consent screen (defaults to `i4g Analyst Surfaces`).
-- `iap_manage_brand` *(optional)* — set to `true` only if the project is attached to a Google Cloud organization and
-	Terraform should create/manage the brand; otherwise leave `false` and manage the brand manually if needed.
-- `iap_existing_brand_name` *(optional)* — fully qualified brand resource name to reuse when Terraform is not managing
-	it.
-- `iap_manage_clients` *(optional)* — set to `true` to create per-service OAuth clients + Secret Manager secrets; leave
-	`false` to manage only IAP IAM bindings.
-- `iap_secret_replication_locations` *(optional)* — Secret Manager replica regions for the OAuth client secrets (defaults to the service region).
-- `fastapi_image` — Artifact Registry image tag for the FastAPI service (`us-central1-docker.pkg.dev/i4g-prod/applications/fastapi:prod`).
-- `fastapi_env_vars` *(optional)* — override or extend the default map (Firestone/Cloud Storage buckets, log level, etc.).
-- `fastapi_invoker_member`, `fastapi_invoker_members` *(optional)* — set explicit principals if additional service accounts need direct `roles/run.invoker`. The Terraform module automatically grants the shared runtime service account plus the IAP service agent.
+- `iap_application_title` _(optional)_ — display title on the consent screen (defaults to `i4g Analyst Surfaces`).
+- `iap_manage_brand` _(optional)_ — set to `true` only if the project is attached to a Google Cloud organization and
+  Terraform should create/manage the brand; otherwise leave `false` and manage the brand manually if needed.
+- `iap_existing_brand_name` _(optional)_ — fully qualified brand resource name to reuse when Terraform is not managing
+  it.
+- `iap_manage_clients` _(optional)_ — set to `true` to create per-service OAuth clients + Secret Manager secrets; leave
+  `false` to manage only IAP IAM bindings.
+- `iap_secret_replication_locations` _(optional)_ — Secret Manager replica regions for the OAuth client secrets (defaults to the service region).
+- `core_svc_image` — Artifact Registry image tag for the Core API service (`us-central1-docker.pkg.dev/i4g-prod/applications/core-svc:prod`).
+- `core_svc_env_vars` _(optional)_ — override or extend the default map (Firestone/Cloud Storage buckets, log level, etc.).
+- `core_svc_invoker_member`, `core_svc_invoker_members` _(optional)_ — set explicit principals if additional service accounts need direct `roles/run.invoker`. The Terraform module automatically grants the shared runtime service account plus the IAP service agent.
 
 ## Usage
 

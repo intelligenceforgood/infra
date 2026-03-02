@@ -114,8 +114,14 @@ variable "max_instances" {
 
 variable "annotations" {
   type        = map(string)
-  description = "Additional template annotations."
+  description = "Additional revision template annotations (e.g. cpu-throttling)."
   default     = {}
+}
+
+variable "custom_audiences" {
+  type        = list(string)
+  description = "Custom audiences for the Cloud Run service (e.g. IAP client IDs). Maps to the native v2 custom_audiences field."
+  default     = []
 }
 
 variable "labels" {

@@ -23,9 +23,9 @@ project_id            = "i4g-prod"
 pii_vault_project_id  = "i4g-pii-vault-prod"
 iap_support_email     = "jerry@intelligenceforgood.org"
 iap_application_title = "i4g Analyst Surfaces (Prod)"
-fastapi_image         = "us-central1-docker.pkg.dev/i4g-prod/applications/fastapi:prod"
+core_svc_image         = "us-central1-docker.pkg.dev/i4g-prod/applications/core-svc:prod"
 
-fastapi_env_vars = {
+core_svc_env_vars = {
   I4G_ENV                            = "prod"
   I4G_RUNTIME__LOG_LEVEL             = "WARNING"
   I4G_STORAGE__STRUCTURED_BACKEND    = "cloudsql"
@@ -40,7 +40,7 @@ fastapi_env_vars = {
   I4G_VERTEX_SEARCH_SERVING_CONFIG   = "default_search"
 }
 
-fastapi_secret_env_vars = {
+core_svc_secret_env_vars = {
   I4G_API__KEY = {
     secret  = "projects/i4g-prod/secrets/api-key"
     version = "latest"
@@ -83,7 +83,7 @@ vertex_ai_search = {
 }
 
 # Custom domains (enable when prod is ready for custom domain cutover)
-fastapi_custom_domain    = ""
+core_svc_custom_domain    = ""
 ui_custom_domain         = ""
 dns_managed_zone         = ""
 dns_managed_zone_project = ""

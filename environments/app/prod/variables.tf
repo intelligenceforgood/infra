@@ -79,19 +79,19 @@ variable "github_repository" {
   default     = "intelligenceforgood/core"
 }
 
-variable "fastapi_image" {
+variable "core_svc_image" {
   type        = string
-  description = "Container image URI for the FastAPI Cloud Run service."
+  description = "Container image URI for the Core API Cloud Run service."
 }
 
-variable "fastapi_env_vars" {
+variable "core_svc_env_vars" {
   type        = map(string)
-  description = "Environment variables injected into the FastAPI service container."
+  description = "Environment variables injected into the Core API service container."
   default     = {}
 }
 
-variable "fastapi_secret_env_vars" {
-  description = "Secret-backed environment variables for the FastAPI service."
+variable "core_svc_secret_env_vars" {
+  description = "Secret-backed environment variables for the Core API service."
   type = map(object({
     secret  = string
     version = optional(string)
@@ -99,15 +99,15 @@ variable "fastapi_secret_env_vars" {
   default = {}
 }
 
-variable "fastapi_invoker_member" {
+variable "core_svc_invoker_member" {
   type        = string
-  description = "Principal granted Cloud Run invoker on the FastAPI service (leave blank to use defaults)."
+  description = "Principal granted Cloud Run invoker on the Core API service (leave blank to use defaults)."
   default     = ""
 }
 
-variable "fastapi_invoker_members" {
+variable "core_svc_invoker_members" {
   type        = list(string)
-  description = "Additional principals granted Cloud Run invoker on the FastAPI service."
+  description = "Additional principals granted Cloud Run invoker on the Core API service."
   default     = []
 }
 
@@ -173,9 +173,9 @@ variable "console_invoker_members" {
   default     = []
 }
 
-variable "fastapi_custom_domain" {
+variable "core_svc_custom_domain" {
   type        = string
-  description = "Optional custom domain to map to the FastAPI service (e.g., api.intelligenceforgood.org)."
+  description = "Optional custom domain to map to the Core API service (e.g., api.intelligenceforgood.org)."
   default     = ""
 }
 

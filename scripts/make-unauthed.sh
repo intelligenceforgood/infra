@@ -2,7 +2,7 @@
 set -euo pipefail
 PROJECT="i4g-dev"
 REGION="us-central1"
-SERVICES=("i4g-console" "fastapi-gateway")
+SERVICES=("i4g-console" "core-svc")
 
 echo "Making services public (allow unauthenticated invoker) in project ${PROJECT} region ${REGION}"
 for svc in "${SERVICES[@]}"; do

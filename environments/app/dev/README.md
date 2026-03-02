@@ -4,11 +4,11 @@ This folder composes reusable modules to stand up the core stack in the
 `i4g-dev` project. Key components currently wired in:
 
 - Core service accounts plus scoped IAM bindings for the shared application
-  runtime service account (`sa-app` powering FastAPI and the analyst console), ingestion jobs, report generation,
+  runtime service account (`sa-app` powering Core API and the analyst console), ingestion jobs, report generation,
   vault, and automation.
 - Workload Identity Federation pool/provider granting GitHub Actions access to
   the `sa-infra` automation account.
-- Cloud Run service module (`run_fastapi`) deploying the API
+- Cloud Run service module (`run_core_svc`) deploying the API
   gateway once container images are published to Artifact Registry.
   - Note: For dev projects outside an Organization this repo expects you to
     manage the OAuth consent screen (brand) and OAuth clients manually. The
@@ -31,18 +31,18 @@ Set the following before running `terraform plan`/`apply`:
   want Terraform to create/manage the brand; otherwise leave `false` and manage the brand manually (or skip).
 - `iap_existing_brand_name` _(optional)_ — fully qualified brand resource name to reuse when Terraform is not creating
   one.
-- `fastapi_image` — Container image URI (Artifact Registry or GCR) for the
-  FastAPI service, such as `us-central1-docker.pkg.dev/i4g-dev/applications/fastapi:dev`.
-- `fastapi_env_vars` _(optional)_ — Map of environment variables injected into
+- `core_svc_image` — Container image URI (Artifact Registry or GCR) for the
+  Core API service, such as `us-central1-docker.pkg.dev/i4g-dev/applications/core-svc:dev`.
+- `core_svc_env_vars` _(optional)_ — Map of environment variables injected into
   the container. Recommended values:
   - `I4G_ENV = dev`
   - `I4G_STORAGE__STRUCTURED_BACKEND = cloudsql`
   - `I4G_RUNTIME__LOG_LEVEL = INFO`
-- `fastapi_invoker_member` _(optional)_ — Principal with `roles/run.invoker` on
+- `core_svc_invoker_member` _(optional)_ — Principal with `roles/run.invoker` on
   the service (the module automatically grants the shared runtime service account
   plus the IAP service agent; provide extra service accounts only when necessary).
-- `fastapi_invoker_members` _(optional)_ — Additional principals that should be
-  granted the invoker role on FastAPI.
+- `core_svc_invoker_members` _(optional)_ — Additional principals that should be
+  granted the invoker role on Core API.
   Example `terraform.tfvars` fragment:
 
 ```hcl
@@ -55,23 +55,23 @@ i4g_admin_members = [
 ]
 
 project_id             = "i4g-dev"
-fastapi_image          = "us-central1-docker.pkg.dev/i4g-dev/applications/fastapi:dev"
-fastapi_env_vars = {
+core_svc_image          = "us-central1-docker.pkg.dev/i4g-dev/applications/core-svc:dev"
+core_svc_env_vars = {
   I4G_ENV                          = "dev"
   I4G_RUNTIME__LOG_LEVEL           = "INFO"
   I4G_STORAGE__STRUCTURED_BACKEND  = "cloudsql"
 }
-fastapi_invoker_members = [
+core_svc_invoker_members = [
   "serviceAccount:custom-ui@i4g-dev.iam.gserviceaccount.com"
 ]
 ```
 
 ## Deployment Flow
 
-1. Build and push the FastAPI container (see `core/docker/fastapi.Dockerfile`).
+1. Build and push the Core API container (see `core/docker/core-svc.Dockerfile`).
 2. Run `terraform init` (one time) and `terraform plan -var-file=terraform.tfvars`.
 3. Apply with `terraform apply -var-file=terraform.tfvars` once the plan looks good.
-4. Capture the service URLs from `terraform output fastapi_service`.
+4. Capture the service URLs from `terraform output core_svc_service`.
 
 Future enhancements will add additional Cloud Run services, jobs, Scheduler
 triggers, and Secret Manager wiring—compose them here by instantiating the

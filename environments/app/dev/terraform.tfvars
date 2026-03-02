@@ -23,9 +23,9 @@ project_id            = "i4g-dev"
 pii_vault_project_id  = "i4g-pii-vault-dev"
 iap_support_email     = "jerry@intelligenceforgood.org"
 iap_application_title = "i4g Analyst Surfaces (Dev)"
-fastapi_image         = "us-central1-docker.pkg.dev/i4g-dev/applications/fastapi:dev"
+core_svc_image         = "us-central1-docker.pkg.dev/i4g-dev/applications/core-svc:dev"
 
-fastapi_env_vars = {
+core_svc_env_vars = {
   I4G_ENV                            = "dev"
   I4G_STORAGE__STRUCTURED_BACKEND    = "cloudsql"
   I4G_STORAGE__EVIDENCE__LOCAL_DIR   = "/tmp/evidence"
@@ -47,7 +47,7 @@ fastapi_env_vars = {
   I4G_PII__CLOUDSQL__ENABLE_IAM_AUTH = "true"
 }
 
-fastapi_secret_env_vars = {
+core_svc_secret_env_vars = {
   I4G_API__KEY = {
     secret  = "projects/i4g-dev/secrets/api-key"
     version = "latest"
@@ -333,7 +333,7 @@ vertex_ai_search = {
 }
 
 # Custom domains
-fastapi_custom_domain    = "api.intelligenceforgood.org"
+core_svc_custom_domain    = "api.intelligenceforgood.org"
 ui_custom_domain         = "app.intelligenceforgood.org"
 dns_managed_zone         = ""
 dns_managed_zone_project = ""

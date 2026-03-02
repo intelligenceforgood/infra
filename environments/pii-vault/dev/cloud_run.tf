@@ -42,7 +42,7 @@ module "vault_service" {
   name            = "i4g-vault"
   location        = var.region
   service_account = google_service_account.vault_sa.email
-  image           = "us-central1-docker.pkg.dev/i4g-dev/applications/fastapi:dev"
+  image           = "us-central1-docker.pkg.dev/i4g-dev/applications/core-svc:dev"
 
   env_vars = {
     "I4G_ENV"                            = "dev"

@@ -2,7 +2,7 @@
 
 Reusable module for provisioning a Cloud Run v2 service with optional autoscaling,
 VPC connector, environment variables, and invoker bindings. Intended for
-application services like the FastAPI API gateway.
+application services like the Core API gateway.
 
 > **Migration note:** This module uses `google_cloud_run_v2_service`. If upgrading
 > from the v1 `google_cloud_run_service`, run `terraform state mv` to map existing
@@ -42,10 +42,10 @@ application services like the FastAPI API gateway.
 ## Example
 
 ```hcl
-module "fastapi_service" {
+module "core_api_service" {
   source            = "../../modules/run/service"
   project_id        = var.project_id
-  name              = "fastapi-dev"
+  name              = "core-svc"
   location          = "us-central1"
   service_account   = module.iam_service_accounts.emails["app"]
   image             = "us-docker.pkg.dev/cloudrun/container/hello"
@@ -58,7 +58,7 @@ module "fastapi_service" {
 ```
 
 ```
-terraform output fastapi_service
+terraform output core_svc_service
 ```
 
 Once ready for private access, set `invoker_member` to an authenticated principal (e.g., `serviceAccount:sa-app@...`) or manage access through IAP.

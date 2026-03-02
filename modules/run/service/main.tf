@@ -39,6 +39,7 @@ resource "google_cloud_run_v2_service" "this" {
   location = var.location
 
   deletion_protection = var.deletion_protection
+  custom_audiences    = length(var.custom_audiences) > 0 ? var.custom_audiences : null
 
   ingress = local.effective_ingress
 

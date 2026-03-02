@@ -8,11 +8,11 @@ output "github_workload_identity_pool" {
   value       = module.github_wif.pool_name
 }
 
-output "fastapi_service" {
-  description = "Metadata for the FastAPI Cloud Run service."
+output "core_svc_service" {
+  description = "Metadata for the Core API Cloud Run service."
   value = {
-    name = module.run_fastapi.name
-    url  = module.run_fastapi.uri
+    name = module.run_core_svc.name
+    url  = module.run_core_svc.uri
   }
 }
 

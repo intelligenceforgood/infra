@@ -4,7 +4,7 @@
 # Usage:
 #  ./bootstrap/create_iap_oauth.sh <project> <client-name> <redirect-uri> <secret-id>
 # Example:
-#  ./bootstrap/create_iap_oauth.sh i4g-dev iap-fastapi "https://api.intelligenceforgood.org/_gcpgtoken" iap-client-fastapi
+#  ./bootstrap/create_iap_oauth.sh i4g-dev iap-core-svc "https://api.intelligenceforgood.org/_gcpgtoken" iap-client-core-svc
 
 set -euo pipefail
 

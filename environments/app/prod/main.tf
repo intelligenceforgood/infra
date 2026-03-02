@@ -407,15 +407,15 @@ locals {
 
   report_service_account_member = format("serviceAccount:%s", module.iam_service_accounts.emails["report"])
 
-  fastapi_iap_access_members = distinct(concat(
+  core_svc_iap_access_members = distinct(concat(
     local.i4g_analyst_invokers,
     [local.report_service_account_member]
   ))
 
-  fastapi_requested_invokers = [
+  core_svc_requested_invokers = [
     for member in concat(
-      var.fastapi_invoker_member == "" ? [] : [var.fastapi_invoker_member],
-      var.fastapi_invoker_members
+      var.core_svc_invoker_member == "" ? [] : [var.core_svc_invoker_member],
+      var.core_svc_invoker_members
     ) : trimspace(member)
     if trimspace(member) != ""
   ]
@@ -442,9 +442,9 @@ locals {
   # SSI needs to call core directly (bypassing IAP) for service-to-service auth
   ssi_service_account_member = format("serviceAccount:%s", module.iam_service_accounts.emails["ssi"])
 
-  fastapi_invoker_members = distinct(concat(
+  core_svc_invoker_members = distinct(concat(
     local.default_runtime_invokers,
-    local.fastapi_requested_invokers,
+    local.core_svc_requested_invokers,
     [local.ssi_service_account_member]
   ))
 
@@ -456,7 +456,7 @@ locals {
 
 locals {
   deploy_console = trimspace(var.console_image) != ""
-  deploy_lb      = trimspace(var.fastapi_custom_domain) != ""
+  deploy_lb      = trimspace(var.core_svc_custom_domain) != ""
 
   enabled_run_jobs = {
     for job_key, job in var.run_jobs :
@@ -477,7 +477,7 @@ locals {
       I4G_LLM__VERTEX_AI_LOCATION    = var.vertex_ai_search.location
     }
     intake = {
-      I4G_INTAKE__API_BASE = format("%s/intakes", trimsuffix(module.run_fastapi.uri, "/"))
+      I4G_INTAKE__API_BASE = format("%s/intakes", trimsuffix(module.run_core_svc.uri, "/"))
     }
     account_list = {
       I4G_STORAGE__REPORT_BUCKET = lookup(module.storage_buckets.bucket_names, "reports", "")
@@ -509,18 +509,18 @@ locals {
   ])
 }
 
-module "run_fastapi" {
+module "run_core_svc" {
   source     = "../../../modules/run/service"
   project_id = var.project_id
   location   = var.region
 
   min_instances = 1
 
-  name            = "fastapi-gateway"
+  name            = "core-svc"
   service_account = module.iam_service_accounts.emails["app"]
-  image           = var.fastapi_image
+  image           = var.core_svc_image
   env_vars = merge(
-    var.fastapi_env_vars,
+    var.core_svc_env_vars,
     {
       I4G_STORAGE__EVIDENCE_BUCKET     = lookup(module.storage_buckets.bucket_names, "evidence", "")
       I4G_STORAGE__REPORT_BUCKET       = lookup(module.storage_buckets.bucket_names, "reports", "")
@@ -537,20 +537,18 @@ module "run_fastapi" {
       I4G_SSI__SERVICE_URL = module.run_ssi_service[0].uri
     } : {}
   )
-  secret_env_vars = var.fastapi_secret_env_vars
+  secret_env_vars = var.core_svc_secret_env_vars
   labels = {
-    service = "fastapi"
+    service = "core-svc"
     env     = "prod"
   }
 
   ingress = "internal-and-cloud-load-balancing"
 
-  annotations = try(var.iap_clients["api"].client_id, "") != "" ? {
-    "run.googleapis.com/custom-audiences" = jsonencode([var.iap_clients["api"].client_id])
-  } : {}
+  custom_audiences = try(var.iap_clients["api"].client_id, "") != "" ? [var.iap_clients["api"].client_id] : []
 
   invoker_member  = ""
-  invoker_members = local.fastapi_invoker_members
+  invoker_members = local.core_svc_invoker_members
 
   depends_on = [module.iam_service_account_bindings, google_project_service.gemini_cloud_assist, google_project_service_identity.iap]
 }
@@ -569,8 +567,8 @@ module "run_console" {
   image           = var.console_image
   env_vars = merge(
     {
-      NEXT_PUBLIC_API_BASE_URL     = trimspace(var.fastapi_custom_domain) != "" ? format("https://%s", var.fastapi_custom_domain) : module.run_fastapi.uri
-      I4G_API_URL                  = module.run_fastapi.uri
+      NEXT_PUBLIC_API_BASE_URL     = trimspace(var.core_svc_custom_domain) != "" ? format("https://%s", var.core_svc_custom_domain) : module.run_core_svc.uri
+      I4G_API_URL                  = module.run_core_svc.uri
       I4G_IAP_CLIENT_ID            = try(var.iap_clients["api"].client_id, "")
       HOSTNAME                     = "0.0.0.0"
       I4G_VERTEX_SEARCH_PROJECT    = var.vertex_ai_search.project_id
@@ -598,7 +596,7 @@ module "run_console" {
   invoker_member  = ""
   invoker_members = local.console_invoker_members
 
-  depends_on = [module.iam_service_account_bindings, module.run_fastapi, google_project_service_identity.iap]
+  depends_on = [module.iam_service_account_bindings, module.run_core_svc, google_project_service_identity.iap]
 }
 
 # ── SSI Cloud Run Service ────────────────────────────────────────────────────
@@ -616,12 +614,12 @@ module "run_ssi_service" {
   service_account = module.iam_service_accounts.emails["ssi"]
   image           = var.ssi_service_image
 
-  # SSI service env vars — uses var.fastapi_custom_domain directly to avoid
-  # a dependency cycle (run_fastapi → run_ssi_service → run_fastapi).
+  # SSI service env vars — uses var.core_svc_custom_domain directly to avoid
+  # a dependency cycle (run_core_svc → run_ssi_service → run_core_svc).
   env_vars = merge(
     {
       SSI_EVIDENCE__GCS_BUCKET              = lookup(module.storage_buckets.bucket_names, "ssi_evidence", "")
-      SSI_INTEGRATION__CORE_API_URL         = trimspace(var.fastapi_custom_domain) != "" ? format("https://%s", var.fastapi_custom_domain) : ""
+      SSI_INTEGRATION__CORE_API_URL         = trimspace(var.core_svc_custom_domain) != "" ? format("https://%s", var.core_svc_custom_domain) : ""
       SSI_INTEGRATION__IAP_AUDIENCE         = try(var.iap_clients["api"].client_id, "")
       SSI_STORAGE__CLOUDSQL_ENABLE_IAM_AUTH = "true"
     },
@@ -645,7 +643,7 @@ module "run_ssi_service" {
   timeout_seconds       = 600
 
   # Access control is enforced by IAM (roles/run.invoker → sa-app only).
-  # fastapi-gateway has no VPC connector so ingress must be "all"; Cloud Run
+  # core-svc has no VPC connector so ingress must be "all"; Cloud Run
   # rejects any request without a valid sa-app OIDC token.
   ingress = "all"
 
@@ -679,8 +677,8 @@ module "global_lb" {
   backends = merge(
     {
       api = {
-        domain            = var.fastapi_custom_domain
-        service_name      = module.run_fastapi.name
+        domain            = var.core_svc_custom_domain
+        service_name      = module.run_core_svc.name
         region            = var.region
         enable_iap        = try(var.iap_clients["api"].client_id, "") != ""
         iap_client_id     = try(var.iap_clients["api"].client_id, "")
@@ -713,7 +711,7 @@ resource "google_iap_web_backend_service_iam_binding" "api" {
   project             = var.project_id
   web_backend_service = module.global_lb[0].backend_services["api"]
   role                = "roles/iap.httpsResourceAccessor"
-  members             = local.fastapi_iap_access_members
+  members             = local.core_svc_iap_access_members
 }
 
 module "run_jobs" {

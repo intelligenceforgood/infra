@@ -24,7 +24,7 @@ flowchart TD
     end
 
     IAP --> CON[Cloud Run: i4g-console<br/>PORT=8080]:::run
-    IAP --> API[Cloud Run: fastapi-gateway<br/>PORT=8080]:::run
+    IAP --> API[Cloud Run: core-svc<br/>PORT=8080]:::run
 
     subgraph IAM
         G[Google Group<br/>i4g-analyst@...]:::iam
@@ -138,7 +138,7 @@ gcloud secrets create $SECRET_ID --replication-policy="automatic" --project=$PRO
 printf "$CLIENT_SECRET" | gcloud secrets versions add $SECRET_ID --data-file=- --project=$PROJECT_ID
 ```
 
-3.  Repeat this process if you have a separate client for the API (e.g., `iap-client-fastapi`).
+3.  Repeat this process if you have a separate client for the API (e.g., `iap-client-core-svc`).
 
 ---
 
