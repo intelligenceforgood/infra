@@ -141,8 +141,7 @@ variable "storage_bucket_default_location" {
 }
 
 # ── SSI (Scam Site Investigator) ─────────────────────────────────────────────
-# SSI API consolidated into fastapi-gateway.
-# The sa-ssi service account and SSI Job variables remain.
+# SSI runs as a Cloud Run Service (service-only; Cloud Run Job removed in 3.0.12).
 
 variable "ssi_service_image" {
   type        = string
@@ -167,8 +166,8 @@ variable "ssi_service_secret_env_vars" {
 
 variable "ssi_service_enabled" {
   type        = bool
-  description = "Whether to deploy the SSI Cloud Run Service (service mode). Set to false to keep using the Cloud Run Job path."
-  default     = false
+  description = "Whether to deploy the SSI Cloud Run Service."
+  default     = true
 }
 
 variable "console_image" {

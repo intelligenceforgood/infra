@@ -319,58 +319,8 @@ run_jobs = {
     }
   }
 
-  ssi_investigate = {
-    name                = "ssi-investigate"
-    image               = "us-central1-docker.pkg.dev/i4g-dev/applications/ssi-job:dev"
-    service_account_key = "ssi"
-    timeout_seconds     = 1800
-    max_retries         = 0
-    resource_limits = {
-      memory = "2Gi"
-      cpu    = "2000m"
-    }
-    env_vars = {
-      SSI_ENV                                = "dev"
-      SSI_LLM__PROVIDER                      = "gemini"
-      SSI_LLM__MODEL                         = "gemini-2.0-flash"
-      SSI_LLM__GCP_PROJECT                   = "i4g-dev"
-      SSI_LLM__GCP_LOCATION                  = "us-central1"
-      SSI_EVIDENCE__STORAGE_BACKEND          = "gcs"
-      SSI_EVIDENCE__GCS_PREFIX               = "investigations"
-      SSI_BROWSER__SANDBOX                   = "false"
-      SSI_ZEN_BROWSER__CHROME_BINARY         = "/usr/bin/chromium"
-      SSI_PROXY__ENABLED                     = "true"
-      SSI_COST__BUDGET_PER_INVESTIGATION_USD = "2.0"
-      SSI_JOB__PUSH_TO_CORE                  = "true"
-      SSI_JOB__SCAN_TYPE                     = "full"
-      SSI_STORAGE__BACKEND                   = "cloudsql"
-      SSI_STORAGE__CLOUDSQL_INSTANCE         = "i4g-dev:us-central1:i4g-dev-db"
-      SSI_STORAGE__CLOUDSQL_DATABASE         = "i4g_db"
-      SSI_STORAGE__CLOUDSQL_USER             = "sa-ssi@i4g-dev.iam"
-    }
-    secret_env_vars = {
-      SSI_INTEGRATION__CORE_API_KEY = {
-        secret  = "projects/i4g-dev/secrets/api-key"
-        version = "latest"
-      }
-      SSI_PROXY__HOST = {
-        secret  = "projects/i4g-dev/secrets/ssi-proxy-credentials"
-        version = "latest"
-      }
-      SSI_OSINT__VIRUSTOTAL_API_KEY = {
-        secret  = "projects/i4g-dev/secrets/ssi-virustotal-api-key"
-        version = "latest"
-      }
-      SSI_OSINT__URLSCAN_API_KEY = {
-        secret  = "projects/i4g-dev/secrets/ssi-urlscan-api-key"
-        version = "latest"
-      }
-      SSI_OSINT__IPINFO_TOKEN = {
-        secret  = "projects/i4g-dev/secrets/ssi-ipinfo-token"
-        version = "latest"
-      }
-    }
-  }
+  # ssi_investigate Cloud Run Job removed in 3.0.12 — SSI is now service-only.
+  # See ssi_service_* variables and module.run_ssi_service for the replacement.
 }
 
 # Vertex AI Search – Override these in local-overrides.tfvars (gitignored).
@@ -404,10 +354,7 @@ iap_clients = {
   }
 }
 
-# ── SSI Cloud Run Service (Phase 3.0) ───────────────────────────────────────
-# Set ssi_service_enabled = true to deploy SSI as a persistent Cloud Run
-# Service. Then set I4G_SSI_JOB__MODE=service and I4G_SSI_JOB__SERVICE_URL
-# in fastapi_env_vars to route investigations through the service.
+# ── SSI Cloud Run Service ───────────────────────────────────────────────────────
 ssi_service_enabled = true
 ssi_service_image   = "us-central1-docker.pkg.dev/i4g-dev/applications/ssi-svc:dev"
 
@@ -423,8 +370,7 @@ ssi_service_env_vars = {
   SSI_ZEN_BROWSER__CHROME_BINARY         = "/usr/bin/chromium"
   SSI_PROXY__ENABLED                     = "true"
   SSI_COST__BUDGET_PER_INVESTIGATION_USD = "2.0"
-  SSI_JOB__PUSH_TO_CORE                  = "true"
-  SSI_JOB__SCAN_TYPE                     = "full"
+  SSI_INTEGRATION__PUSH_TO_CORE          = "true"
   SSI_STORAGE__BACKEND                   = "cloudsql"
   SSI_STORAGE__CLOUDSQL_INSTANCE         = "i4g-dev:us-central1:i4g-dev-db"
   SSI_STORAGE__CLOUDSQL_DATABASE         = "i4g_db"

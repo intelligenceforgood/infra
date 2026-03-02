@@ -112,8 +112,7 @@ variable "fastapi_invoker_members" {
 }
 
 # ── SSI (Scam Site Investigator) ─────────────────────────────────────────────
-# SSI Cloud Run Service variables (Phase 3.0 Job-to-Service Migration).
-# Set ssi_service_enabled = true to deploy SSI as a persistent service.
+# SSI runs as a Cloud Run Service (Cloud Run Job removed in 3.0.12).
 
 variable "ssi_service_image" {
   type        = string
@@ -138,8 +137,8 @@ variable "ssi_service_secret_env_vars" {
 
 variable "ssi_service_enabled" {
   type        = bool
-  description = "Whether to deploy the SSI Cloud Run Service (service mode). Set to false to keep using the Cloud Run Job path."
-  default     = false
+  description = "Whether to deploy the SSI Cloud Run Service."
+  default     = true
 }
 
 variable "console_image" {

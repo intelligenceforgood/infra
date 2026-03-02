@@ -398,9 +398,7 @@ module "storage_buckets" {
 }
 
 locals {
-  run_job_vpc_connector_overrides = {
-    ssi_investigate = google_vpc_access_connector.serverless.id
-  }
+  run_job_vpc_connector_overrides = {}
 }
 
 locals {
@@ -412,8 +410,8 @@ locals {
   report_service_account_member = format("serviceAccount:%s", module.iam_service_accounts.emails["report"])
   app_service_account_member    = format("serviceAccount:%s", module.iam_service_accounts.emails["app"])
 
-  # sa-ssi removed from IAP access — SSI Job no longer calls gateway through the LB.
-  # It uses direct internal API calls or SA auth to the task-update endpoint.
+  # sa-ssi removed from IAP access — SSI Service uses direct internal API
+  # calls or SA auth to the task-update endpoint.
   fastapi_iap_access_members = distinct(concat(
     local.i4g_analyst_invokers,
     [local.report_service_account_member],
@@ -518,10 +516,9 @@ module "run_fastapi" {
       I4G_IDENTITY__AUDIENCE             = try(var.iap_clients["api"].client_id, "")
       I4G_IDENTITY__IAP_BACKEND_AUDIENCE = format("/projects/%s/global/backendServices/%s", data.google_project.current.number, module.global_lb.backend_service_ids["api"])
     },
-    # SSI service mode env vars — injected only when the service is deployed.
+    # SSI service env vars — SSI Cloud Run Service is the sole trigger path.
     var.ssi_service_enabled ? {
-      I4G_SSI_JOB__MODE        = "service"
-      I4G_SSI_JOB__SERVICE_URL = module.run_ssi_service[0].uri
+      I4G_SSI__SERVICE_URL = module.run_ssi_service[0].uri
     } : {}
   )
   secret_env_vars = var.fastapi_secret_env_vars
@@ -560,12 +557,6 @@ locals {
     }
     account_list = {
       I4G_STORAGE__REPORT_BUCKET = lookup(module.storage_buckets.bucket_names, "reports", "")
-    }
-    ssi_investigate = {
-      SSI_EVIDENCE__GCS_BUCKET              = lookup(module.storage_buckets.bucket_names, "ssi_evidence", "")
-      SSI_INTEGRATION__CORE_API_URL         = trimspace(var.fastapi_custom_domain) != "" ? format("https://%s", var.fastapi_custom_domain) : module.run_fastapi.uri
-      SSI_INTEGRATION__IAP_AUDIENCE         = try(var.iap_clients["api"].client_id, "")
-      SSI_STORAGE__CLOUDSQL_ENABLE_IAM_AUTH = "true"
     }
   }
 }
@@ -617,9 +608,8 @@ module "run_console" {
 
 # ── SSI Cloud Run Service ────────────────────────────────────────────────────
 # Phase 3.0: Deploy SSI as a persistent Cloud Run Service so core can trigger
-# investigations via HTTP POST instead of the Cloud Run Jobs API.
-# Gated behind var.ssi_service_enabled (default: false) for safe rollout.
-# Revert to Job mode by setting I4G_SSI_JOB__MODE=job in fastapi env vars.
+# SSI Cloud Run Service — the sole investigation trigger path.
+# Gated behind var.ssi_service_enabled (default: true).
 
 module "run_ssi_service" {
   count = var.ssi_service_enabled ? 1 : 0
@@ -632,10 +622,8 @@ module "run_ssi_service" {
   service_account = module.iam_service_accounts.emails["ssi"]
   image           = var.ssi_service_image
 
-  # Inline the ssi_investigate dynamic env vars instead of referencing
-  # local.run_job_dynamic_env_vars — that local depends on module.run_fastapi.uri,
-  # which would create a cycle (run_fastapi → run_ssi_service → run_fastapi).
-  # Use var.fastapi_custom_domain directly to avoid the cycle.
+  # SSI service env vars — uses var.fastapi_custom_domain directly to avoid
+  # a dependency cycle (run_fastapi → run_ssi_service → run_fastapi).
   env_vars = merge(
     {
       SSI_EVIDENCE__GCS_BUCKET              = lookup(module.storage_buckets.bucket_names, "ssi_evidence", "")
