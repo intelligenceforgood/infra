@@ -208,6 +208,12 @@ variable "core_svc_custom_domain" {
   default     = ""
 }
 
+variable "core_svc_events_url" {
+  type        = string
+  description = "Direct Cloud Run URL for core-svc (e.g. https://core-svc-xxx-uc.a.run.app). Used by ssi-svc to push investigation events bypassing the IAP load-balancer. sa-ssi must hold roles/run.invoker on core-svc."
+  default     = ""
+}
+
 variable "ui_custom_domain" {
   type        = string
   description = "Optional custom domain to map to the UI service (e.g., app.intelligenceforgood.org)."

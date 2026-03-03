@@ -444,9 +444,14 @@ locals {
     local.iap_service_agent_member
   ]
 
+  ssi_service_account_member = format("serviceAccount:%s", module.iam_service_accounts.emails["ssi"])
+
   core_svc_invoker_members = distinct(concat(
     local.default_runtime_invokers,
     local.core_svc_requested_invokers,
+    # Phase 3B: ssi-svc pushes investigation events directly to core-svc
+    # (bypassing IAP), so sa-ssi needs roles/run.invoker on core-svc.
+    [local.ssi_service_account_member],
   ))
 
   console_invoker_members = distinct(concat(
@@ -531,6 +536,11 @@ module "run_core_svc" {
 
   custom_audiences = [try(var.iap_clients["api"].client_id, "")]
 
+  # Increase request timeout to 3600s so that long-lived SSE streams
+  # (live investigation monitor at /events/ssi/{id}/stream) are not
+  # killed at the Cloud Run default of 300s.
+  timeout_seconds = 3600
+
   invoker_member  = ""
   invoker_members = local.core_svc_invoker_members
 
@@ -598,6 +608,10 @@ module "run_console" {
 
   ingress = "internal-and-cloud-load-balancing"
 
+  # Increase request timeout to match LB backend timeout (3600s) so that
+  # long-lived SSE streams (live investigation monitor) are not cut at 300s.
+  timeout_seconds = 3600
+
   invoker_member  = ""
   invoker_members = local.console_invoker_members
 
@@ -624,9 +638,14 @@ module "run_ssi_service" {
   # a dependency cycle (run_core_svc → run_ssi_service → run_core_svc).
   env_vars = merge(
     {
-      SSI_EVIDENCE__GCS_BUCKET              = lookup(module.storage_buckets.bucket_names, "ssi_evidence", "")
-      SSI_INTEGRATION__CORE_API_URL         = trimspace(var.core_svc_custom_domain) != "" ? format("https://%s", var.core_svc_custom_domain) : ""
-      SSI_INTEGRATION__IAP_AUDIENCE         = try(var.iap_clients["api"].client_id, "")
+      SSI_EVIDENCE__GCS_BUCKET             = lookup(module.storage_buckets.bucket_names, "ssi_evidence", "")
+      SSI_INTEGRATION__CORE_API_URL        = trimspace(var.core_svc_custom_domain) != "" ? format("https://%s", var.core_svc_custom_domain) : ""
+      SSI_INTEGRATION__IAP_AUDIENCE        = try(var.iap_clients["api"].client_id, "")
+      SSI_INTEGRATION__PUSH_EVENTS_TO_CORE = "true"
+      # Direct Cloud Run URL for core-svc — bypasses IAP LB for service-to-service
+      # event push.  sa-ssi must hold roles/run.invoker on core-svc.
+      # Use the known stable URL; avoids a Terraform dependency cycle with run_core_svc.
+      SSI_INTEGRATION__CORE_EVENTS_URL      = var.core_svc_events_url
       SSI_STORAGE__CLOUDSQL_ENABLE_IAM_AUTH = "true"
     },
     var.ssi_service_env_vars
@@ -643,7 +662,7 @@ module "run_ssi_service" {
     "run.googleapis.com/cpu-throttling" = "false"
   }
 
-  min_instances         = 0
+  min_instances         = 1
   max_instances         = 3
   container_concurrency = 5
   timeout_seconds       = 600

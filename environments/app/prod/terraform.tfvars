@@ -23,7 +23,7 @@ project_id            = "i4g-prod"
 pii_vault_project_id  = "i4g-pii-vault-prod"
 iap_support_email     = "jerry@intelligenceforgood.org"
 iap_application_title = "i4g Analyst Surfaces (Prod)"
-core_svc_image         = "us-central1-docker.pkg.dev/i4g-prod/applications/core-svc:prod"
+core_svc_image        = "us-central1-docker.pkg.dev/i4g-prod/applications/core-svc:prod"
 
 core_svc_env_vars = {
   I4G_ENV                            = "prod"
@@ -83,7 +83,10 @@ vertex_ai_search = {
 }
 
 # Custom domains (enable when prod is ready for custom domain cutover)
-core_svc_custom_domain    = ""
+core_svc_custom_domain = "api.intelligenceforgood.org"
+# Direct Cloud Run URL — bypasses IAP for service-to-service event push (Phase 3B).
+# sa-ssi already holds roles/run.invoker on core-svc (granted 2025-03-04).
+core_svc_events_url      = "https://core-svc-5wtm4m22da-uc.a.run.app"
 ui_custom_domain         = ""
 dns_managed_zone         = ""
 dns_managed_zone_project = ""

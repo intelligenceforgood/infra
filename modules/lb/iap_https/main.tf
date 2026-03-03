@@ -43,11 +43,12 @@ resource "google_compute_region_network_endpoint_group" "default" {
 resource "google_compute_backend_service" "default" {
   for_each = var.backends
 
-  project     = var.project_id
-  name        = "${var.name}-backend-${each.key}"
-  protocol    = "HTTPS"
-  port_name   = "http"
-  timeout_sec = 30
+  project   = var.project_id
+  name      = "${var.name}-backend-${each.key}"
+  protocol  = "HTTPS"
+  port_name = "http"
+  # Note: timeout_sec is NOT supported for Serverless NEG backends (Cloud Run).
+  # SSE stream duration is controlled by timeout_seconds on the Cloud Run service.
 
   backend {
     group = google_compute_region_network_endpoint_group.default[each.key].id
