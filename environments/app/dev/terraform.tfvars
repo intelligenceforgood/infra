@@ -37,8 +37,8 @@ core_svc_env_vars = {
   I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH = "true"
   I4G_VECTOR__BACKEND                = "vertex_ai"
   I4G_VECTOR__VERTEX_AI_BRANCH       = "default_branch"
-  I4G_LLM__PROVIDER                  = "vertex_ai"
-  I4G_LLM__CHAT_MODEL                = "gemini-2.0-flash"
+  I4G_LLM__PROVIDER                  = "gemini"
+  I4G_LLM__CHAT_MODEL                = "gemini-2.5-flash"
   I4G_API__RATE_LIMIT_PER_MINUTE     = "1000"
   I4G_PII__BACKEND                   = "cloudsql"
   I4G_PII__CLOUDSQL__INSTANCE        = "i4g-pii-vault-dev:us-central1:i4g-vault-dev-db"
@@ -264,7 +264,7 @@ run_jobs = {
       I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH = "true"
       # Vertex AI for Classifier
       I4G_VECTOR__BACKEND = "vertex_ai"
-      I4G_LLM__PROVIDER   = "vertex_ai"
+      I4G_LLM__PROVIDER   = "gemini"
       I4G_LLM__CHAT_MODEL = "gemini-2.5-flash"
     }
   }
@@ -364,7 +364,7 @@ ssi_service_image   = "us-central1-docker.pkg.dev/i4g-dev/applications/ssi-svc:d
 ssi_service_env_vars = {
   SSI_ENV                                = "dev"
   SSI_LLM__PROVIDER                      = "gemini"
-  SSI_LLM__MODEL                         = "gemini-2.0-flash"
+  SSI_LLM__MODEL                         = "gemini-2.5-flash"
   SSI_LLM__GCP_PROJECT                   = "i4g-dev"
   SSI_LLM__GCP_LOCATION                  = "us-central1"
   SSI_EVIDENCE__STORAGE_BACKEND          = "gcs"

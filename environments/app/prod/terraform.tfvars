@@ -35,7 +35,7 @@ core_svc_env_vars = {
   I4G_APP__CLOUDSQL__USER            = "sa-app@i4g-prod.iam"
   I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH = "true"
   I4G_VECTOR__BACKEND                = "vertex_ai"
-  I4G_LLM__PROVIDER                  = "vertex_ai"
+  I4G_LLM__PROVIDER                  = "gemini"
   I4G_LLM__CHAT_MODEL                = "gemini-2.5-flash"
   I4G_VERTEX_SEARCH_SERVING_CONFIG   = "default_search"
 }
@@ -249,7 +249,7 @@ run_jobs = {
       I4G_APP__CLOUDSQL__USER            = "sa-ingest@i4g-prod.iam"
       I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH = "true"
       I4G_VECTOR__BACKEND                = "vertex_ai"
-      I4G_LLM__PROVIDER                  = "vertex_ai"
+      I4G_LLM__PROVIDER                  = "gemini"
       I4G_LLM__CHAT_MODEL                = "gemini-2.5-flash"
     }
   }
@@ -268,7 +268,7 @@ run_jobs = {
       I4G_ACCOUNT_JOB__INCLUDE_SOURCES = "true"
       I4G_RUNTIME__LOG_LEVEL           = "INFO"
       I4G_ACCOUNT_LIST__ENABLE_VECTOR  = "false"
-      I4G_LLM__PROVIDER                = "vertex_ai"
+      I4G_LLM__PROVIDER                = "gemini"
     }
   }
 
@@ -302,7 +302,7 @@ run_jobs = {
       I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH = "true"
       I4G_STORAGE__RETENTION_DAYS        = "90"
       I4G_STORAGE__RETENTION_GRACE_DAYS  = "30"
-      I4G_LLM__PROVIDER                  = "vertex_ai"
+      I4G_LLM__PROVIDER                  = "gemini"
     }
     secret_env_vars = {
       I4G_PII__PEPPER = {
@@ -327,7 +327,7 @@ ssi_service_image   = "us-central1-docker.pkg.dev/i4g-prod/applications/ssi-svc:
 ssi_service_env_vars = {
   SSI_ENV                                = "prod"
   SSI_LLM__PROVIDER                      = "gemini"
-  SSI_LLM__MODEL                         = "gemini-2.0-flash"
+  SSI_LLM__MODEL                         = "gemini-2.5-flash"
   SSI_LLM__GCP_PROJECT                   = "i4g-prod"
   SSI_LLM__GCP_LOCATION                  = "us-central1"
   SSI_EVIDENCE__STORAGE_BACKEND          = "gcs"
