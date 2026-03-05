@@ -38,6 +38,7 @@ core_svc_env_vars = {
   I4G_LLM__PROVIDER                  = "gemini"
   I4G_LLM__CHAT_MODEL                = "gemini-2.5-flash"
   I4G_VERTEX_SEARCH_SERVING_CONFIG   = "default_search"
+  I4G_FEEDBACK__SHEET_ID             = "1o8iSyLtFbSxdqEtT-L7OQvSqKTealP1H8f0VZzZKTw8"
 }
 
 core_svc_secret_env_vars = {
@@ -61,6 +62,7 @@ console_image = ""
 
 console_env_vars = {
   NEXT_PUBLIC_USE_MOCK_DATA        = "false"
+  NEXT_PUBLIC_FEEDBACK_ENABLED     = "true"
   I4G_API_KIND                     = "core"
   I4G_VERTEX_SEARCH_SERVING_CONFIG = "default_search"
 }

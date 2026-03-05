@@ -45,6 +45,7 @@ core_svc_env_vars = {
   I4G_PII__CLOUDSQL__DATABASE        = "vault_db"
   I4G_PII__CLOUDSQL__USER            = "sa-app@i4g-dev.iam"
   I4G_PII__CLOUDSQL__ENABLE_IAM_AUTH = "true"
+  I4G_FEEDBACK__SHEET_ID             = "1o8iSyLtFbSxdqEtT-L7OQvSqKTealP1H8f0VZzZKTw8"
 }
 
 core_svc_secret_env_vars = {
@@ -66,6 +67,7 @@ console_image = "us-central1-docker.pkg.dev/i4g-dev/applications/i4g-console:dev
 
 console_env_vars = {
   NEXT_PUBLIC_USE_MOCK_DATA        = "false"
+  NEXT_PUBLIC_FEEDBACK_ENABLED     = "true"
   I4G_API_KIND                     = "core"
   I4G_VERTEX_SEARCH_SERVING_CONFIG = "default_search"
 }

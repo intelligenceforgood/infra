@@ -46,6 +46,12 @@ resource "google_project_service" "secret_manager" {
   disable_on_destroy = false
 }
 
+resource "google_project_service" "sheets" {
+  project            = var.project_id
+  service            = "sheets.googleapis.com"
+  disable_on_destroy = false
+}
+
 # ── SSI Secret Manager Secrets ───────────────────────────────────────────────
 # Secrets are created here; values must be populated manually via Console or
 # `gcloud secrets versions add`.
