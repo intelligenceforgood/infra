@@ -323,6 +323,41 @@ run_jobs = {
 
   # ssi_investigate Cloud Run Job removed in 3.0.12 — SSI is now service-only.
   # See ssi_service_* variables and module.run_ssi_service for the replacement.
+
+  ecx_poller = {
+    enabled             = true
+    name                = "ssi-ecx-poller"
+    image               = "us-central1-docker.pkg.dev/i4g-dev/applications/ssi-svc:dev"
+    service_account_key = "ssi"
+    timeout_seconds     = 300
+    parallelism         = 1
+    max_retries         = 1
+    args                = ["ecx", "poll"]
+    schedule            = "*/15 * * * *" # Every 15 minutes
+
+    env_vars = {
+      SSI_ENV                               = "dev"
+      SSI_ECX__ENABLED                      = "true"
+      SSI_ECX__POLLING_ENABLED              = "true"
+      SSI_ECX__POLLING_MODULES              = "phish"
+      SSI_ECX__POLLING_CONFIDENCE_THRESHOLD = "50"
+      SSI_ECX__POLLING_AUTO_INVESTIGATE     = "false"
+      SSI_ECX__BASE_URL                     = "https://api.ecrimex.net/api/v1"
+      SSI_STORAGE__BACKEND                  = "cloudsql"
+      SSI_STORAGE__CLOUDSQL_INSTANCE        = "i4g-dev:us-central1:i4g-dev-db"
+      SSI_STORAGE__CLOUDSQL_DATABASE        = "i4g_db"
+      SSI_STORAGE__CLOUDSQL_USER            = "sa-ssi@i4g-dev.iam"
+      SSI_STORAGE__CLOUDSQL_ENABLE_IAM_AUTH = "true"
+      SSI_LLM__PROVIDER                     = "mock"
+    }
+
+    secret_env_vars = {
+      SSI_ECX__API_KEY = {
+        secret  = "projects/i4g-dev/secrets/ssi-ecx-api-key"
+        version = "latest"
+      }
+    }
+  }
 }
 
 # Vertex AI Search – Override these in local-overrides.tfvars (gitignored).

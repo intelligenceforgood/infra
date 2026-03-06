@@ -404,7 +404,9 @@ module "storage_buckets" {
 }
 
 locals {
-  run_job_vpc_connector_overrides = {}
+  run_job_vpc_connector_overrides = {
+    ecx_poller = google_vpc_access_connector.serverless.id
+  }
 }
 
 locals {
