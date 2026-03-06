@@ -365,6 +365,7 @@ ssi_service_image   = "us-central1-docker.pkg.dev/i4g-dev/applications/ssi-svc:d
 
 ssi_service_env_vars = {
   SSI_ENV                                = "dev"
+  SSI_ECX__BASE_URL                      = "https://api.ecrimex.net/api/v1"
   SSI_LLM__PROVIDER                      = "gemini"
   SSI_LLM__MODEL                         = "gemini-2.5-flash"
   SSI_LLM__GCP_PROJECT                   = "i4g-dev"
