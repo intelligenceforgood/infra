@@ -77,6 +77,10 @@ module "ssi_secrets" {
       secret_id = "ssi-ipinfo-token"
       labels    = { service = "ssi", env = "dev" }
     }
+    ecx_api_key = {
+      secret_id = "ssi-ecx-api-key"
+      labels    = { service = "ssi", env = "dev" }
+    }
   }
 
   depends_on = [google_project_service.secret_manager]

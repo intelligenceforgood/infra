@@ -367,4 +367,8 @@ ssi_service_secret_env_vars = {
     secret  = "projects/i4g-prod/secrets/ssi-ipinfo-token"
     version = "latest"
   }
+  SSI_ECX__API_KEY = {
+    secret  = "projects/i4g-prod/secrets/ssi-ecx-api-key"
+    version = "latest"
+  }
 }
