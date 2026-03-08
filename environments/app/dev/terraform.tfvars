@@ -69,6 +69,7 @@ console_env_vars = {
   NEXT_PUBLIC_USE_MOCK_DATA        = "false"
   NEXT_PUBLIC_FEEDBACK_ENABLED     = "true"
   I4G_API_KIND                     = "core"
+  I4G_API_URL                      = "https://api.dev.intelligenceforgood.org"
   I4G_VERTEX_SEARCH_SERVING_CONFIG = "default_search"
 }
 
@@ -370,11 +371,11 @@ vertex_ai_search = {
 }
 
 # Custom domains
-core_svc_custom_domain = "api.intelligenceforgood.org"
+core_svc_custom_domain = "api.dev.intelligenceforgood.org"
 # Direct Cloud Run URL — bypasses IAP for service-to-service event push (Phase 3B).
 # sa-ssi already holds roles/run.invoker on core-svc (granted 2025-03-04).
 core_svc_events_url      = "https://core-svc-y5jge5w2cq-uc.a.run.app"
-ui_custom_domain         = "app.intelligenceforgood.org"
+ui_custom_domain         = "app.dev.intelligenceforgood.org"
 dns_managed_zone         = ""
 dns_managed_zone_project = ""
 
@@ -412,11 +413,13 @@ ssi_service_env_vars = {
   SSI_PROXY__ENABLED                     = "true"
   SSI_COST__BUDGET_PER_INVESTIGATION_USD = "2.0"
   SSI_INTEGRATION__PUSH_TO_CORE          = "true"
-  SSI_STORAGE__BACKEND                   = "cloudsql"
-  SSI_STORAGE__CLOUDSQL_INSTANCE         = "i4g-dev:us-central1:i4g-dev-db"
-  SSI_STORAGE__CLOUDSQL_DATABASE         = "i4g_db"
-  SSI_STORAGE__CLOUDSQL_USER             = "sa-ssi@i4g-dev.iam"
-  SSI_STORAGE__CLOUDSQL_ENABLE_IAM_AUTH  = "true"
+  # Direct Cloud Run URL — bypasses IAP (sa-ssi is not in IAP access list for core-svc).
+  SSI_INTEGRATION__CORE_API_URL         = "https://core-svc-y5jge5w2cq-uc.a.run.app"
+  SSI_STORAGE__BACKEND                  = "cloudsql"
+  SSI_STORAGE__CLOUDSQL_INSTANCE        = "i4g-dev:us-central1:i4g-dev-db"
+  SSI_STORAGE__CLOUDSQL_DATABASE        = "i4g_db"
+  SSI_STORAGE__CLOUDSQL_USER            = "sa-ssi@i4g-dev.iam"
+  SSI_STORAGE__CLOUDSQL_ENABLE_IAM_AUTH = "true"
 }
 
 ssi_service_secret_env_vars = {

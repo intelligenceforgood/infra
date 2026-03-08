@@ -204,7 +204,7 @@ variable "console_invoker_members" {
 
 variable "core_svc_custom_domain" {
   type        = string
-  description = "Optional custom domain to map to the Core API service (e.g., api.intelligenceforgood.org)."
+  description = "Optional custom domain to map to the Core API service (e.g., api.dev.intelligenceforgood.org)."
   default     = ""
 }
 
@@ -216,7 +216,7 @@ variable "core_svc_events_url" {
 
 variable "ui_custom_domain" {
   type        = string
-  description = "Optional custom domain to map to the UI service (e.g., app.intelligenceforgood.org)."
+  description = "Optional custom domain to map to the UI service (e.g., app.dev.intelligenceforgood.org)."
   default     = ""
 }
 
