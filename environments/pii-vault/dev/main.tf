@@ -1,73 +1,34 @@
-resource "google_project_service" "storage" {
-  project            = var.project_id
-  service            = "storage.googleapis.com"
-  disable_on_destroy = false
-}
+# ---------------------------------------------------------------------------
+# PII-Vault / Dev - Thin Wrapper
+#
+# All infrastructure logic lives in stacks/pii-vault/. This file only calls
+# the stack module with environment-specific values passed through from tfvars.
+# ---------------------------------------------------------------------------
 
-resource "google_project_service" "secretmanager" {
-  project            = var.project_id
-  service            = "secretmanager.googleapis.com"
-  disable_on_destroy = false
-}
+module "pii_vault" {
+  source      = "../../../stacks/pii-vault"
+  environment = "dev"
 
-resource "google_project_service" "cloudkms" {
-  project            = var.project_id
-  service            = "cloudkms.googleapis.com"
-  disable_on_destroy = false
-}
-
-resource "google_project_service" "sqladmin" {
-  project            = var.project_id
-  service            = "sqladmin.googleapis.com"
-  disable_on_destroy = false
-}
-
-resource "google_project_service" "run" {
-  project            = var.project_id
-  service            = "run.googleapis.com"
-  disable_on_destroy = false
-}
-
-resource "google_storage_bucket" "vault_objects" {
-  project                     = var.project_id
-  name                        = "i4g-vault-objects-${var.project_id}"
-  location                    = var.region
-  force_destroy               = true
-  uniform_bucket_level_access = true
-  versioning { enabled = true }
-  lifecycle_rule {
-    action { type = "Delete" }
-    condition { age = 365 }
-  }
-
-  depends_on = [google_project_service.storage]
-}
-
-module "kms" {
-  source        = "../../../modules/security/kms"
-  project_id    = var.project_id
-  region        = var.region
-  key_ring_name = "i4g-vault-ring"
-}
-
-resource "google_kms_crypto_key" "vault_key" {
-  name            = "i4g-vault-encrypt"
-  key_ring        = module.kms.key_ring_self_link
-  rotation_period = "7776000s" # 90 days
-}
-
-module "tokenization_secrets" {
-  source     = "../../../modules/security/secret_manager"
   project_id = var.project_id
+  region     = var.region
 
-  secrets = {
-    pii_key = {
-      secret_id = "pii-tokenization-key"
-      labels    = { service = "vault", env = "dev" }
-    }
-    pepper = {
-      secret_id = "tokenization-pepper"
-      labels    = { service = "vault", env = "dev" }
-    }
-  }
+  # -- IAM groups & app SAs ------------------------------------------------
+  iam_db_groups        = var.iam_db_groups
+  app_service_accounts = var.app_service_accounts
+
+  # -- Database (hardcoded values from the original inline config) ----------
+  database_instance_name       = "i4g-vault-dev-db"
+  database_tier                = "db-f1-micro"
+  database_disk_size           = 10
+  database_availability_type   = "ZONAL"
+  database_backup_enabled      = false
+  database_deletion_protection = false
+
+  # -- Storage -------------------------------------------------------------
+  bucket_force_destroy = true
+  bucket_lifecycle_age = 365
+
+  # -- Vault Service -------------------------------------------------------
+  deploy_vault_service = true
+  vault_service_image  = "us-central1-docker.pkg.dev/i4g-dev/applications/core-svc:dev"
 }

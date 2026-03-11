@@ -1,66 +1,35 @@
-resource "google_project_service" "storage" {
-  project            = var.project_id
-  service            = "storage.googleapis.com"
-  disable_on_destroy = false
-}
+# ---------------------------------------------------------------------------
+# PII-Vault / Prod - Thin Wrapper
+#
+# All infrastructure logic lives in stacks/pii-vault/. This file only calls
+# the stack module with environment-specific values passed through from tfvars.
+# ---------------------------------------------------------------------------
 
-resource "google_project_service" "secretmanager" {
-  project            = var.project_id
-  service            = "secretmanager.googleapis.com"
-  disable_on_destroy = false
-}
+module "pii_vault" {
+  source      = "../../../stacks/pii-vault"
+  environment = "prod"
 
-resource "google_project_service" "cloudkms" {
-  project            = var.project_id
-  service            = "cloudkms.googleapis.com"
-  disable_on_destroy = false
-}
-
-resource "google_project_service" "sqladmin" {
-  project            = var.project_id
-  service            = "sqladmin.googleapis.com"
-  disable_on_destroy = false
-}
-
-resource "google_storage_bucket" "vault_objects" {
-  project                     = var.project_id
-  name                        = "i4g-vault-objects-${var.project_id}"
-  location                    = var.region
-  force_destroy               = false
-  uniform_bucket_level_access = true
-  versioning { enabled = true }
-  lifecycle_rule {
-    action { type = "Delete" }
-    condition { age = 1825 }
-  }
-  depends_on = [google_project_service.storage]
-}
-
-module "kms" {
-  source        = "../../../modules/security/kms"
-  project_id    = var.project_id
-  region        = var.region
-  key_ring_name = "i4g-vault-ring"
-}
-
-resource "google_kms_crypto_key" "vault_key" {
-  name            = "i4g-vault-encrypt"
-  key_ring        = module.kms.key_ring_self_link
-  rotation_period = "7776000s"
-}
-
-module "tokenization_secrets" {
-  source     = "../../../modules/security/secret_manager"
   project_id = var.project_id
+  region     = var.region
 
-  secrets = {
-    pii_key = {
-      secret_id = "pii-tokenization-key"
-      labels    = { service = "vault", env = "prod" }
-    }
-    pepper = {
-      secret_id = "tokenization-pepper"
-      labels    = { service = "vault", env = "prod" }
-    }
-  }
+  # -- IAM groups & app SAs ------------------------------------------------
+  iam_db_groups        = var.iam_db_groups
+  app_service_accounts = var.app_service_accounts
+
+  # -- Database (hardcoded values from the original inline config) ----------
+  database_instance_name       = "i4g-vault-prod-db"
+  database_tier                = "db-custom-2-7680"
+  database_disk_size           = 20
+  database_availability_type   = "REGIONAL"
+  database_backup_enabled      = true
+  database_backup_start_time   = "02:00"
+  database_pitr_enabled        = true
+  database_deletion_protection = true
+
+  # -- Storage -------------------------------------------------------------
+  bucket_force_destroy = false
+  bucket_lifecycle_age = 365
+
+  # -- Vault Service -------------------------------------------------------
+  deploy_vault_service = false
 }
