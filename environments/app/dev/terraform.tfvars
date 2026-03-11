@@ -427,10 +427,7 @@ ssi_service_secret_env_vars = {
     secret  = "projects/i4g-dev/secrets/api-key"
     version = "latest"
   }
-  SSI_PROXY__HOST = {
-    secret  = "projects/i4g-dev/secrets/ssi-proxy-credentials"
-    version = "latest"
-  }
+
   SSI_OSINT__VIRUSTOTAL_API_KEY = {
     secret  = "projects/i4g-dev/secrets/ssi-virustotal-api-key"
     version = "latest"

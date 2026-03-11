@@ -8,3 +8,15 @@ variable "region" {
   description = "Primary region for regional resources."
   default     = "us-central1"
 }
+
+variable "iam_db_groups" {
+  type        = list(string)
+  description = "List of IAM group emails to grant database access."
+  default     = []
+}
+
+variable "app_service_accounts" {
+  type        = list(string)
+  description = "App-project SA emails that need database user entries on the vault Cloud SQL instance. IAM roles (cloudsql.client, cloudsql.instanceUser) are managed in app/prod via the pii_vault_access module."
+  default     = []
+}

@@ -74,3 +74,9 @@ variable "body" {
   description = "JSON payload sent in the POST request body."
   default     = "{}"
 }
+
+variable "paused" {
+  type        = bool
+  description = "Whether the Cloud Scheduler job should be paused."
+  default     = false
+}

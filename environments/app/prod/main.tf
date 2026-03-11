@@ -409,6 +409,13 @@ module "storage_buckets" {
   buckets          = var.storage_buckets
 }
 
+module "monitoring" {
+  source     = "../../../modules/monitoring"
+  project_id = var.project_id
+
+  notification_email = var.notification_email
+}
+
 locals {
   i4g_analyst_invokers = [
     for member in var.i4g_analyst_members : trimspace(member)
@@ -416,10 +423,12 @@ locals {
   ]
 
   report_service_account_member = format("serviceAccount:%s", module.iam_service_accounts.emails["report"])
+  app_service_account_member    = format("serviceAccount:%s", module.iam_service_accounts.emails["app"])
 
   core_svc_iap_access_members = distinct(concat(
     local.i4g_analyst_invokers,
-    [local.report_service_account_member]
+    [local.report_service_account_member],
+    [local.app_service_account_member],
   ))
 
   core_svc_requested_invokers = [
@@ -465,8 +474,9 @@ locals {
 }
 
 locals {
-  deploy_console = trimspace(var.console_image) != ""
-  deploy_lb      = trimspace(var.core_svc_custom_domain) != ""
+  deploy_console    = trimspace(var.console_image) != ""
+  deploy_lb         = trimspace(var.core_svc_custom_domain) != ""
+  deploy_console_lb = local.deploy_console && trimspace(var.ui_custom_domain) != ""
 
   enabled_run_jobs = {
     for job_key, job in var.run_jobs :
@@ -583,7 +593,7 @@ module "run_console" {
   env_vars = merge(
     {
       NEXT_PUBLIC_API_BASE_URL     = trimspace(var.core_svc_custom_domain) != "" ? format("https://%s", var.core_svc_custom_domain) : module.run_core_svc.uri
-      I4G_API_URL                  = module.run_core_svc.uri
+      I4G_API_URL                  = trimspace(var.core_svc_custom_domain) != "" ? format("https://%s", var.core_svc_custom_domain) : module.run_core_svc.uri
       I4G_IAP_CLIENT_ID            = try(var.iap_clients["api"].client_id, "")
       HOSTNAME                     = "0.0.0.0"
       I4G_VERTEX_SEARCH_PROJECT    = var.vertex_ai_search.project_id
@@ -708,7 +718,7 @@ module "global_lb" {
         iap_client_secret = try(var.iap_clients["api"].client_secret, "")
       }
     },
-    local.deploy_console ? {
+    local.deploy_console_lb ? {
       console = {
         domain            = var.ui_custom_domain
         service_name      = module.run_console[0].name
@@ -722,7 +732,7 @@ module "global_lb" {
 }
 
 resource "google_iap_web_backend_service_iam_binding" "console" {
-  count               = local.deploy_lb && local.deploy_console && try(var.iap_clients["console"].client_id, "") != "" ? 1 : 0
+  count               = local.deploy_lb && local.deploy_console_lb && try(var.iap_clients["console"].client_id, "") != "" ? 1 : 0
   project             = var.project_id
   web_backend_service = module.global_lb[0].backend_services["console"]
   role                = "roles/iap.httpsResourceAccessor"
@@ -793,6 +803,8 @@ module "run_job_schedulers" {
   audience                 = each.value.scheduler_audience != null ? each.value.scheduler_audience : ""
   headers                  = coalesce(try(each.value.scheduler_headers, null), {})
   body                     = coalesce(try(each.value.scheduler_body, null), "{}")
+  paused                   = coalesce(try(each.value.scheduler_paused, null), false)
+  oauth_scopes             = each.value.scheduler_oauth_scopes != null ? each.value.scheduler_oauth_scopes : ["https://www.googleapis.com/auth/cloud-platform"]
 
   depends_on = [module.run_jobs]
 }

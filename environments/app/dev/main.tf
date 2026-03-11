@@ -594,7 +594,7 @@ module "run_console" {
   env_vars = merge(
     {
       NEXT_PUBLIC_API_BASE_URL     = trimspace(var.core_svc_custom_domain) != "" ? format("https://%s", var.core_svc_custom_domain) : module.run_core_svc.uri
-      I4G_API_URL                  = module.run_core_svc.uri
+      I4G_API_URL                  = trimspace(var.core_svc_custom_domain) != "" ? format("https://%s", var.core_svc_custom_domain) : module.run_core_svc.uri
       I4G_IAP_CLIENT_ID            = try(var.iap_clients["api"].client_id, "")
       HOSTNAME                     = "0.0.0.0"
       I4G_VERTEX_SEARCH_PROJECT    = var.vertex_ai_search.project_id
@@ -817,6 +817,7 @@ module "run_job_schedulers" {
   headers                  = coalesce(try(each.value.scheduler_headers, null), {})
   oauth_scopes             = each.value.scheduler_oauth_scopes != null ? each.value.scheduler_oauth_scopes : ["https://www.googleapis.com/auth/cloud-platform"]
   body                     = coalesce(try(each.value.scheduler_body, null), "{}")
+  paused                   = coalesce(try(each.value.scheduler_paused, null), false)
 
   depends_on = [module.run_jobs]
 }

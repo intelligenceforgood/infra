@@ -16,6 +16,7 @@ resource "google_cloud_scheduler_job" "this" {
   schedule    = var.schedule
   time_zone   = var.time_zone
   description = var.description
+  paused      = var.paused
 
   attempt_deadline = format("%ss", var.attempt_deadline_seconds)
 

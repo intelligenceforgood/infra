@@ -298,6 +298,7 @@ variable "run_jobs" {
     scheduler_headers                  = optional(map(string))
     scheduler_audience                 = optional(string)
     scheduler_oauth_scopes             = optional(list(string))
+    scheduler_paused                   = optional(bool)
   }))
   default = {}
 }

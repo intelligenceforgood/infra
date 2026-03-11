@@ -7,34 +7,6 @@
  *  - Alert policies for PII access, ingestion failures, and dossier jobs
  */
 
-variable "project_id" {
-  description = "GCP project ID."
-  type        = string
-}
-
-variable "notification_email" {
-  description = "Email address for alert notifications."
-  type        = string
-}
-
-variable "detokenization_threshold" {
-  description = "Max detokenization alert events per hour before firing."
-  type        = number
-  default     = 5
-}
-
-variable "ingestion_alert_threshold" {
-  description = "Number of ingestion failure alert events per hour before firing."
-  type        = number
-  default     = 1
-}
-
-variable "dossier_alert_threshold" {
-  description = "Number of dossier stuck/failure events per hour before firing."
-  type        = number
-  default     = 1
-}
-
 # ---------------------------------------------------------------------------
 # Notification channel
 # ---------------------------------------------------------------------------
@@ -105,7 +77,7 @@ resource "google_monitoring_alert_policy" "pii_access" {
     display_name = "PII access threshold exceeded"
 
     condition_threshold {
-      filter          = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.pii_access_alert.name}\""
+      filter          = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.pii_access_alert.name}\" AND resource.type=one_of(\"cloud_run_revision\",\"cloud_run_job\")"
       comparison      = "COMPARISON_GT"
       threshold_value = var.detokenization_threshold
       duration        = "0s"
@@ -134,7 +106,7 @@ resource "google_monitoring_alert_policy" "ingestion_failure" {
     display_name = "Ingestion error rate exceeded"
 
     condition_threshold {
-      filter          = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.ingestion_failure_alert.name}\""
+      filter          = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.ingestion_failure_alert.name}\" AND resource.type=one_of(\"cloud_run_revision\",\"cloud_run_job\")"
       comparison      = "COMPARISON_GT"
       threshold_value = var.ingestion_alert_threshold
       duration        = "0s"
@@ -163,7 +135,7 @@ resource "google_monitoring_alert_policy" "dossier_stuck" {
     display_name = "Dossier stuck or failed"
 
     condition_threshold {
-      filter          = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.dossier_alert.name}\""
+      filter          = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.dossier_alert.name}\" AND resource.type=one_of(\"cloud_run_revision\",\"cloud_run_job\")"
       comparison      = "COMPARISON_GT"
       threshold_value = var.dossier_alert_threshold
       duration        = "0s"

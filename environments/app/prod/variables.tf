@@ -276,6 +276,7 @@ variable "run_jobs" {
     scheduler_headers                  = optional(map(string))
     scheduler_audience                 = optional(string)
     scheduler_oauth_scopes             = optional(list(string))
+    scheduler_paused                   = optional(bool)
   }))
   default = {}
 }
@@ -329,4 +330,10 @@ variable "iap_clients" {
     ])
     error_message = "iap_clients entries must not use sentinel values. Provide real OAuth credentials or leave the map empty."
   }
+}
+
+variable "notification_email" {
+  type        = string
+  description = "Email address for operational alert notifications."
+  default     = "jerry@intelligenceforgood.org"
 }

@@ -58,12 +58,13 @@ core_svc_secret_env_vars = {
 
 # Console image — set when the image is pushed to the prod registry.
 # When empty, the console service and its LB backend are skipped.
-console_image = ""
+console_image = "us-central1-docker.pkg.dev/i4g-prod/applications/i4g-console:prod"
 
 console_env_vars = {
   NEXT_PUBLIC_USE_MOCK_DATA        = "false"
   NEXT_PUBLIC_FEEDBACK_ENABLED     = "true"
   I4G_API_KIND                     = "core"
+  I4G_API_URL                      = "https://api.intelligenceforgood.org"
   I4G_VERTEX_SEARCH_SERVING_CONFIG = "default_search"
 }
 
@@ -89,22 +90,22 @@ core_svc_custom_domain = "api.intelligenceforgood.org"
 # Direct Cloud Run URL — bypasses IAP for service-to-service event push (Phase 3B).
 # sa-ssi already holds roles/run.invoker on core-svc (granted 2025-03-04).
 core_svc_events_url      = "https://core-svc-5wtm4m22da-uc.a.run.app"
-ui_custom_domain         = ""
+ui_custom_domain         = "app.intelligenceforgood.org"
 dns_managed_zone         = ""
 dns_managed_zone_project = ""
 
 # IAP OAuth clients — override in local-overrides.tfvars when ready.
 # Leave empty until IAP clients are created for prod.
-# iap_clients = {
-#   console = {
-#     client_id     = "..."
-#     client_secret = "..."
-#   }
-#   api = {
-#     client_id     = "..."
-#     client_secret = "..."
-#   }
-# }
+iap_clients = {
+  console = {
+    client_id     = "..."
+    client_secret = "..."
+  }
+  api = {
+    client_id     = "..."
+    client_secret = "..."
+  }
+}
 
 # IAP allowed domains
 iap_allowed_domains = ["intelligenceforgood.org"]
@@ -171,10 +172,12 @@ storage_buckets = {
 
 run_jobs = {
   ingest = {
-    enabled             = false
+    enabled             = true
     name                = "ingest-bootstrap"
     image               = "us-central1-docker.pkg.dev/i4g-prod/applications/ingest-job:prod"
     service_account_key = "ingest"
+    timeout_seconds     = 3600
+    max_retries         = 0
     env_vars = {
       I4G_ENV                            = "prod"
       I4G_STORAGE__STRUCTURED_BACKEND    = "cloudsql"
@@ -182,6 +185,12 @@ run_jobs = {
       I4G_APP__CLOUDSQL__DATABASE        = "i4g_db"
       I4G_APP__CLOUDSQL__USER            = "sa-ingest@i4g-prod.iam"
       I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH = "true"
+      I4G_VECTOR__BACKEND                = "vertex_ai"
+      I4G_PII__BACKEND                   = "cloudsql"
+      I4G_PII__CLOUDSQL__INSTANCE        = "i4g-pii-vault-prod:us-central1:i4g-vault-prod-db"
+      I4G_PII__CLOUDSQL__DATABASE        = "vault_db"
+      I4G_PII__CLOUDSQL__USER            = "sa-ingest@i4g-prod.iam"
+      I4G_PII__CLOUDSQL__ENABLE_IAM_AUTH = "true"
     }
     secret_env_vars = {
       I4G_PII__PEPPER = {
@@ -196,16 +205,26 @@ run_jobs = {
   }
 
   intake = {
-    enabled             = false
+    enabled             = true
     name                = "process-intakes"
     image               = "us-central1-docker.pkg.dev/i4g-prod/applications/intake-job:prod"
     service_account_key = "intake"
+    max_retries         = 0
     env_vars = {
       I4G_ENV                            = "prod"
+      I4G_INGEST__ENABLE_VECTOR          = "false"
+      I4G_RUNTIME__FALLBACK_DIR          = "/tmp/i4g"
+      I4G_STORAGE__STRUCTURED_BACKEND    = "cloudsql"
       I4G_APP__CLOUDSQL__INSTANCE        = "i4g-prod:us-central1:i4g-prod-db"
       I4G_APP__CLOUDSQL__DATABASE        = "i4g_db"
       I4G_APP__CLOUDSQL__USER            = "sa-intake@i4g-prod.iam"
       I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH = "true"
+    }
+    secret_env_vars = {
+      I4G_API__KEY = {
+        secret  = "projects/i4g-prod/secrets/api-key"
+        version = "latest"
+      }
     }
   }
 
@@ -233,7 +252,7 @@ run_jobs = {
     }
   }
   sweeper = {
-    enabled             = false
+    enabled             = true
     name                = "classification-sweeper"
     image               = "us-central1-docker.pkg.dev/i4g-prod/applications/ingest-job:prod"
     service_account_key = "ingest"
@@ -242,6 +261,7 @@ run_jobs = {
     max_retries         = 0
     args                = ["jobs", "sweeper"]
     schedule            = "*/5 * * * *"
+    scheduler_paused    = true
 
     env_vars = {
       I4G_ENV                            = "prod"
@@ -257,7 +277,7 @@ run_jobs = {
   }
 
   account_list = {
-    enabled             = false
+    enabled             = true
     name                = "account-list"
     image               = "us-central1-docker.pkg.dev/i4g-prod/applications/account-job:prod"
     service_account_key = "report"
@@ -275,7 +295,7 @@ run_jobs = {
   }
 
   dossier_queue = {
-    enabled             = false
+    enabled             = true
     name                = "dossier-queue"
     image               = "us-central1-docker.pkg.dev/i4g-prod/applications/dossier-job:prod"
     service_account_key = "report"
@@ -285,7 +305,7 @@ run_jobs = {
   }
 
   retention_purge = {
-    enabled             = false
+    enabled             = true
     name                = "retention-purge"
     image               = "us-central1-docker.pkg.dev/i4g-prod/applications/ingest-job:prod"
     service_account_key = "ingest"
@@ -294,6 +314,7 @@ run_jobs = {
     max_retries         = 0
     args                = ["jobs", "retention-purge"]
     schedule            = "0 3 * * *" # Daily at 03:00 UTC
+    scheduler_paused    = true
 
     env_vars = {
       I4G_ENV                            = "prod"
@@ -318,6 +339,42 @@ run_jobs = {
     }
   }
 
+  ecx_poller = {
+    enabled             = false # SSI disabled in prod; enable when ssi_service_enabled = true
+    name                = "ssi-ecx-poller"
+    image               = "us-central1-docker.pkg.dev/i4g-prod/applications/ssi-svc:prod"
+    service_account_key = "ssi"
+    timeout_seconds     = 300
+    parallelism         = 1
+    max_retries         = 1
+    args                = ["ecx", "poll"]
+    schedule            = "*/15 * * * *"
+    scheduler_paused    = true
+
+    env_vars = {
+      SSI_ENV                               = "prod"
+      SSI_ECX__ENABLED                      = "true"
+      SSI_ECX__POLLING_ENABLED              = "true"
+      SSI_ECX__POLLING_MODULES              = "phish"
+      SSI_ECX__POLLING_CONFIDENCE_THRESHOLD = "50"
+      SSI_ECX__POLLING_AUTO_INVESTIGATE     = "false"
+      SSI_ECX__BASE_URL                     = "https://api.ecrimex.net/api/v1"
+      SSI_STORAGE__BACKEND                  = "cloudsql"
+      SSI_STORAGE__CLOUDSQL_INSTANCE        = "i4g-prod:us-central1:i4g-prod-db"
+      SSI_STORAGE__CLOUDSQL_DATABASE        = "i4g_db"
+      SSI_STORAGE__CLOUDSQL_USER            = "sa-ssi@i4g-prod.iam"
+      SSI_STORAGE__CLOUDSQL_ENABLE_IAM_AUTH = "true"
+      SSI_LLM__PROVIDER                     = "mock"
+    }
+
+    secret_env_vars = {
+      SSI_ECX__API_KEY = {
+        secret  = "projects/i4g-prod/secrets/ssi-ecx-api-key"
+        version = "latest"
+      }
+    }
+  }
+
   # ssi_investigate Cloud Run Job removed in 3.0.12 — SSI is now service-only.
   # See ssi_service_* variables and module.run_ssi_service for the replacement.
 }
@@ -337,6 +394,7 @@ ssi_service_env_vars = {
   SSI_BROWSER__SANDBOX                   = "false"
   SSI_ZEN_BROWSER__CHROME_BINARY         = "/usr/bin/chromium"
   SSI_PROXY__ENABLED                     = "true"
+  SSI_PROXY__USERNAME                    = "spoeevz5nw"
   SSI_COST__BUDGET_PER_INVESTIGATION_USD = "2.0"
   SSI_INTEGRATION__PUSH_TO_CORE          = "true"
   SSI_STORAGE__BACKEND                   = "cloudsql"
@@ -351,7 +409,7 @@ ssi_service_secret_env_vars = {
     secret  = "projects/i4g-prod/secrets/api-key"
     version = "latest"
   }
-  SSI_PROXY__HOST = {
+  SSI_PROXY__PASSWORD = {
     secret  = "projects/i4g-prod/secrets/ssi-proxy-credentials"
     version = "latest"
   }
