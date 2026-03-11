@@ -10,41 +10,38 @@ This Terraform package defines all shared infrastructure for the i4g platform on
 
 ## Repository Layout
 
-- `bootstrap/` – one-time helpers (state bucket creation, API enablement).
-- `environments/app/` – root modules for the application stack (`dev`, `prod`).
-  Additional stacks (e.g., `pii-vault`) can live alongside `app/` using the same layout.
+```
+bootstrap/        – One-time helpers: state bucket creation, API enablement.
+stacks/
+  app/            – Unified app stack: Cloud Run services, WIF, IAM, storage,
+                    Cloud SQL, jobs, monitoring, and load balancer. All logic
+                    for dev and prod lives here, parameterised by var.environment.
+  pii-vault/      – Unified PII vault stack: Cloud SQL, Cloud KMS, Secret Manager,
+                    and optional vault Cloud Run service. Logic shared across envs.
+environments/
+  app/
+    dev/          – Thin wrapper: backend.tf, providers.tf, variables.tf,
+                    main.tf (calls stacks/app), outputs.tf, terraform.tfvars
+    prod/         – Same thin-wrapper layout as dev.
+  pii-vault/
+    dev/          – Thin wrapper for the vault stack (dev).
+    prod/         – Thin wrapper for the vault stack (prod).
+modules/          – Reusable building blocks (Cloud Run services/jobs, Cloud SQL,
+                    IAM, KMS, LB, scheduler, secret_manager, etc.).
+.github/
+  workflows/      – Terraform plan/apply automation via Workload Identity Federation.
+```
 
-## Additional stacks
-
-- To add a new stack (for example, a PII vault), create `environments/<stack>/<env>` entries such as:
-  - `environments/pii-vault/dev`
-  - `environments/pii-vault/prod`
-
-  Each folder should include a `backend.tf`, `providers.tf`, `variables.tf`, and `main.tf` or module
-  references that compose the required platform resources. The `bootstrap/create_state_bucket.sh`
-  helper accepts arbitrary environment strings (e.g., `pii-vault-dev`) so state buckets like `tfstate-i4g-pii-vault-dev`
-  are automatically created when bootstrapping a new stack.
-
-  Example commands for the vault stack:
-
-  ```bash
-  # Initialize and plan vault dev
-  cd infra/environments/pii-vault/dev
-  terraform init
-  terraform plan -var "project_id=i4g-pii-vault-dev" -var "github_repository=intelligenceforgood/core"
-
-  # Initialize and plan vault prod
-  cd ../prod
-  terraform init
-  terraform plan -var "project_id=i4g-pii-vault-prod" -var "github_repository=intelligenceforgood/core"
-  ```
+**Key principle:** All infrastructure logic lives in `stacks/`. The `environments/` directories are
+thin wrappers that supply only a GCS backend configuration, provider pins, environment-specific
+`terraform.tfvars` values, and a single `module "app"` (or `module "pii_vault"`) call. Do not add
+resource blocks or `locals` to the environment wrappers — add them to the relevant stack instead.
 
 ### Naming conventions
 
-- Stack/project naming example: `i4g-app-dev`, `i4g-app-prod`, `i4g-pii-vault-dev`, `i4g-pii-vault-prod`.
-- The bootstrap helper uses the `ENVIRONMENT` parameter to generate a state bucket name: `tfstate-i4g-<ENVIRONMENT>`.
-- Keep the `i4g` prefix to group state buckets under a single project umbrella while separating stacks by the rest of the suffix.
-  If you prefer a different naming pattern, update the bootstrap script and backend prefixes accordingly.
+- Stack/project naming: `i4g-app-dev`, `i4g-app-prod`, `i4g-pii-vault-dev`, `i4g-pii-vault-prod`.
+- The bootstrap helper uses the `ENVIRONMENT` parameter to generate a state bucket name:
+  `tfstate-i4g-<ENVIRONMENT>` (e.g., `tfstate-i4g-dev`, `tfstate-i4g-pii-vault-dev`).
 - `modules/` – reusable building blocks (Cloud Run services/jobs, IAM, buckets, scheduler, etc.).
 - `.github/workflows/` – Terraform plan/apply automation that authenticates via Workload Identity Federation.
 

@@ -133,6 +133,11 @@ Terraform receives the OAuth client credentials through a single `iap_clients` v
     cd infra/environments/app/prod   # or dev
     ```
 
+    > **Note:** Environment directories are thin wrappers — all IAP resource
+    > logic lives in `infra/stacks/app/`. To change IAP configuration, edit
+    > `infra/stacks/app/iap.tf` (or equivalent); the environment wrapper only
+    > supplies variable values via `terraform.tfvars`.
+
 2.  Open (or create) `local-overrides.tfvars` and add the `iap_clients` block using the same Client ID and Secret for both `api` and `console`:
 
     ```hcl
