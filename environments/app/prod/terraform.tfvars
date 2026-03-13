@@ -339,6 +339,29 @@ run_jobs = {
     }
   }
 
+  analytics = {
+    enabled             = true
+    name                = "analytics-refresh"
+    image               = "us-central1-docker.pkg.dev/i4g-prod/applications/ingest-job:prod"
+    service_account_key = "ingest"
+    timeout_seconds     = 1800
+    parallelism         = 1
+    max_retries         = 1
+    args                = ["jobs", "analytics"]
+    schedule            = "0 */4 * * *" # Every 4 hours
+    scheduler_paused    = true
+
+    env_vars = {
+      I4G_ENV                            = "prod"
+      I4G_STORAGE__STRUCTURED_BACKEND    = "cloudsql"
+      I4G_APP__CLOUDSQL__INSTANCE        = "i4g-prod:us-central1:i4g-prod-db"
+      I4G_APP__CLOUDSQL__DATABASE        = "i4g_db"
+      I4G_APP__CLOUDSQL__USER            = "sa-ingest@i4g-prod.iam"
+      I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH = "true"
+      I4G_LLM__PROVIDER                  = "gemini"
+    }
+  }
+
   ecx_poller = {
     enabled             = false # SSI disabled in prod; enable when ssi_service_enabled = true
     name                = "ssi-ecx-poller"
@@ -347,6 +370,7 @@ run_jobs = {
     timeout_seconds     = 300
     parallelism         = 1
     max_retries         = 1
+    command             = ["ssi"]
     args                = ["ecx", "poll"]
     schedule            = "*/15 * * * *"
     scheduler_paused    = true
@@ -355,7 +379,7 @@ run_jobs = {
       SSI_ENV                               = "prod"
       SSI_ECX__ENABLED                      = "true"
       SSI_ECX__POLLING_ENABLED              = "true"
-      SSI_ECX__POLLING_MODULES              = "phish"
+      SSI_ECX__POLLING_MODULES              = "[\"phish\"]"
       SSI_ECX__POLLING_CONFIDENCE_THRESHOLD = "50"
       SSI_ECX__POLLING_AUTO_INVESTIGATE     = "false"
       SSI_ECX__BASE_URL                     = "https://api.ecrimex.net/api/v1"

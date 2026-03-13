@@ -322,6 +322,28 @@ run_jobs = {
     }
   }
 
+  analytics = {
+    enabled             = true
+    name                = "analytics-refresh"
+    image               = "us-central1-docker.pkg.dev/i4g-dev/applications/ingest-job:dev" # Reusing ingest image
+    service_account_key = "ingest"
+    timeout_seconds     = 1800
+    parallelism         = 1
+    max_retries         = 1
+    args                = ["jobs", "analytics"]
+    schedule            = "0 */4 * * *" # Every 4 hours
+
+    env_vars = {
+      I4G_ENV                            = "dev"
+      I4G_STORAGE__STRUCTURED_BACKEND    = "cloudsql"
+      I4G_APP__CLOUDSQL__INSTANCE        = "i4g-dev:us-central1:i4g-dev-db"
+      I4G_APP__CLOUDSQL__DATABASE        = "i4g_db"
+      I4G_APP__CLOUDSQL__USER            = "sa-ingest@i4g-dev.iam"
+      I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH = "true"
+      I4G_LLM__PROVIDER                  = "mock"
+    }
+  }
+
   # ssi_investigate Cloud Run Job removed in 3.0.12 — SSI is now service-only.
   # See ssi_service_* variables and module.run_ssi_service for the replacement.
 
@@ -333,6 +355,7 @@ run_jobs = {
     timeout_seconds     = 300
     parallelism         = 1
     max_retries         = 1
+    command             = ["ssi"]
     args                = ["ecx", "poll"]
     schedule            = "*/15 * * * *" # Every 15 minutes
 
@@ -340,7 +363,7 @@ run_jobs = {
       SSI_ENV                               = "dev"
       SSI_ECX__ENABLED                      = "true"
       SSI_ECX__POLLING_ENABLED              = "true"
-      SSI_ECX__POLLING_MODULES              = "phish"
+      SSI_ECX__POLLING_MODULES              = "[\"phish\"]"
       SSI_ECX__POLLING_CONFIDENCE_THRESHOLD = "50"
       SSI_ECX__POLLING_AUTO_INVESTIGATE     = "false"
       SSI_ECX__BASE_URL                     = "https://api.ecrimex.net/api/v1"
