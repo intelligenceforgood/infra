@@ -39,6 +39,9 @@ core_svc_env_vars = {
   I4G_LLM__CHAT_MODEL                = "gemini-2.5-flash"
   I4G_VERTEX_SEARCH_SERVING_CONFIG   = "default_search"
   I4G_FEEDBACK__SHEET_ID             = "1o8iSyLtFbSxdqEtT-L7OQvSqKTealP1H8f0VZzZKTw8"
+  I4G_EMAIL__PROVIDER                = "smtp"
+  I4G_EMAIL__SMTP_HOST               = "smtp-relay.gmail.com"
+  I4G_EMAIL__FROM_ADDRESS            = "report@intelligenceforgood.org"
 }
 
 core_svc_secret_env_vars = {

@@ -488,6 +488,9 @@ module "run_core_svc" {
   invoker_member  = ""
   invoker_members = local.core_svc_invoker_members
 
+  vpc_connector                 = google_vpc_access_connector.serverless.id
+  vpc_connector_egress_settings = "ALL_TRAFFIC"
+
   depends_on = [module.iam_service_account_bindings, google_project_service.gemini_cloud_assist, google_project_service_identity.iap]
 }
 
