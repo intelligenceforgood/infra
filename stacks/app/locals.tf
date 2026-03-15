@@ -143,9 +143,6 @@ locals {
     intake = {
       I4G_INTAKE__API_BASE = format("%s/intakes", trimsuffix(module.run_core_svc.uri, "/"))
     }
-    account_list = {
-      I4G_STORAGE__REPORT_BUCKET = lookup(module.storage_buckets.bucket_names, "reports", "")
-    }
   }
 
   run_job_configs = {
