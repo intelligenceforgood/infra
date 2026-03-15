@@ -518,6 +518,10 @@ module "run_console" {
       I4G_VERTEX_SEARCH_LOCATION   = var.vertex_ai_search.location
       I4G_VERTEX_SEARCH_DATA_STORE = var.vertex_ai_search.data_store_id
     },
+    # SSI service URL — injected only when the service is deployed.
+    var.ssi_service_enabled ? {
+      SSI_API_URL = module.run_ssi_service[0].uri
+    } : {},
     var.console_env_vars
   )
   secret_env_vars = var.console_secret_env_vars
