@@ -164,11 +164,6 @@ moved {
 }
 
 moved {
-  from = module.pii_vault_access
-  to   = module.app.module.pii_vault_access
-}
-
-moved {
   from = google_service_account_iam_binding.infra_wif
   to   = module.app.google_service_account_iam_binding.infra_wif
 }

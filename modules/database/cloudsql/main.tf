@@ -1,7 +1,7 @@
 # modules/database/cloudsql
 #
 # Creates a Cloud SQL PostgreSQL instance and a database.
-# Shared by app/dev–prod (and vault environments when ready).
+# Shared by app/dev and app/prod environments.
 #
 # State migration (from inline resources):
 #   terraform state mv google_sql_database_instance.default module.database.google_sql_database_instance.this

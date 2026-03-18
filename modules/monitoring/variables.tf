@@ -8,8 +8,8 @@ variable "notification_email" {
   type        = string
 }
 
-variable "detokenization_threshold" {
-  description = "Max detokenization alert events per hour before firing."
+variable "victim_contact_access_threshold" {
+  description = "Max victim contact access events per hour before firing."
   type        = number
   default     = 5
 }

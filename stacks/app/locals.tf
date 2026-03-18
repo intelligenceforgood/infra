@@ -29,11 +29,6 @@ locals {
       display_name = "Report Generator"
       description  = "Produces case reports via Cloud Run jobs"
     }
-    vault = {
-      account_id   = "sa-vault"
-      display_name = "PII Vault Service"
-      description  = "Handles tokenization and KMS operations"
-    }
     infra = {
       account_id   = "sa-infra"
       display_name = "Terraform Automation"

@@ -4,7 +4,7 @@ This directory provisions the production (`i4g-prod`) stack using the shared Ter
 
 ## Components
 
-- Core service accounts (`sa-app` shared by Core API and the analyst console, `sa-ingest`, `sa-report`, `sa-vault`, `sa-infra`) plus least-privilege IAM bindings.
+- Core service accounts (`sa-app` shared by Core API and the analyst console, `sa-ingest`, `sa-report`, `sa-infra`) plus least-privilege IAM bindings.
 - GitHub Actions Workload Identity Federation mapped to `sa-infra` so CI can plan/apply without JSON keys.
 - Cloud Run services for Core API and the analyst console. Identity-Aware Proxy (IAP) protects each
   surface (brand, OAuth clients, IAM bindings) so analysts must authenticate via Google.

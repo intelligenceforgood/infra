@@ -3,9 +3,9 @@ output "notification_channel_id" {
   value       = google_monitoring_notification_channel.email.id
 }
 
-output "pii_access_alert_policy_id" {
-  description = "Alert policy ID for PII access."
-  value       = google_monitoring_alert_policy.pii_access.id
+output "victim_contact_access_alert_policy_id" {
+  description = "Alert policy ID for victim contact access."
+  value       = google_monitoring_alert_policy.victim_contact_access.id
 }
 
 output "ingestion_failure_alert_policy_id" {

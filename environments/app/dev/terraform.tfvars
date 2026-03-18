@@ -20,7 +20,6 @@ database_config = {
 }
 
 project_id            = "i4g-dev"
-pii_vault_project_id  = "i4g-pii-vault-dev"
 iap_support_email     = "jerry@intelligenceforgood.org"
 iap_application_title = "i4g Analyst Surfaces (Dev)"
 core_svc_image        = "us-central1-docker.pkg.dev/i4g-dev/applications/core-svc:dev"
@@ -40,11 +39,6 @@ core_svc_env_vars = {
   I4G_LLM__PROVIDER                  = "gemini"
   I4G_LLM__CHAT_MODEL                = "gemini-2.5-flash"
   I4G_API__RATE_LIMIT_PER_MINUTE     = "1000"
-  I4G_PII__BACKEND                   = "cloudsql"
-  I4G_PII__CLOUDSQL__INSTANCE        = "i4g-pii-vault-dev:us-central1:i4g-vault-dev-db"
-  I4G_PII__CLOUDSQL__DATABASE        = "vault_db"
-  I4G_PII__CLOUDSQL__USER            = "sa-app@i4g-dev.iam"
-  I4G_PII__CLOUDSQL__ENABLE_IAM_AUTH = "true"
   I4G_FEEDBACK__SHEET_ID             = "1o8iSyLtFbSxdqEtT-L7OQvSqKTealP1H8f0VZzZKTw8"
   I4G_EMAIL__PROVIDER                = "smtp"
   I4G_EMAIL__SMTP_HOST               = "smtp-relay.gmail.com"
@@ -56,12 +50,8 @@ core_svc_secret_env_vars = {
     secret  = "projects/i4g-dev/secrets/api-key"
     version = "latest"
   }
-  I4G_PII__PEPPER = {
-    secret  = "projects/i4g-pii-vault-dev/secrets/tokenization-pepper"
-    version = "latest"
-  }
   I4G_CRYPTO__PII_KEY = {
-    secret  = "projects/i4g-pii-vault-dev/secrets/pii-tokenization-key"
+    secret  = "projects/i4g-dev/secrets/pii-encryption-key"
     version = "latest"
   }
 }
@@ -184,19 +174,10 @@ run_jobs = {
       I4G_APP__CLOUDSQL__USER            = "sa-ingest@i4g-dev.iam"
       I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH = "true"
       I4G_VECTOR__BACKEND                = "vertex_ai"
-      I4G_PII__BACKEND                   = "cloudsql"
-      I4G_PII__CLOUDSQL__INSTANCE        = "i4g-pii-vault-dev:us-central1:i4g-vault-dev-db"
-      I4G_PII__CLOUDSQL__DATABASE        = "vault_db"
-      I4G_PII__CLOUDSQL__USER            = "sa-ingest@i4g-dev.iam"
-      I4G_PII__CLOUDSQL__ENABLE_IAM_AUTH = "true"
     }
     secret_env_vars = {
-      I4G_PII__PEPPER = {
-        secret  = "projects/i4g-pii-vault-dev/secrets/tokenization-pepper"
-        version = "latest"
-      }
       I4G_CRYPTO__PII_KEY = {
-        secret  = "projects/i4g-pii-vault-dev/secrets/pii-tokenization-key"
+        secret  = "projects/i4g-dev/secrets/pii-encryption-key"
         version = "latest"
       }
     }
@@ -239,12 +220,8 @@ run_jobs = {
       I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH = "true"
     }
     secret_env_vars = {
-      I4G_PII__PEPPER = {
-        secret  = "projects/i4g-pii-vault-dev/secrets/tokenization-pepper"
-        version = "latest"
-      }
       I4G_CRYPTO__PII_KEY = {
-        secret  = "projects/i4g-pii-vault-dev/secrets/pii-tokenization-key"
+        secret  = "projects/i4g-dev/secrets/pii-encryption-key"
         version = "latest"
       }
     }

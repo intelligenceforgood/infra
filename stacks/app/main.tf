@@ -358,13 +358,6 @@ module "iam_service_account_bindings" {
       ]
     }
 
-    vault = {
-      member = "serviceAccount:${module.iam_service_accounts.emails["vault"]}"
-      roles = [
-        "roles/cloudkms.cryptoKeyEncrypterDecrypter"
-      ]
-    }
-
     infra = {
       member = "serviceAccount:${module.iam_service_accounts.emails["infra"]}"
       roles = [

@@ -164,11 +164,6 @@ moved {
 }
 
 moved {
-  from = module.pii_vault_access
-  to   = module.app.module.pii_vault_access
-}
-
-moved {
   from = google_service_account_iam_binding.infra_wif
   to   = module.app.google_service_account_iam_binding.infra_wif
 }
@@ -250,20 +245,5 @@ moved {
 moved {
   from = google_iap_web_backend_service_iam_binding.api
   to   = module.app.google_iap_web_backend_service_iam_binding.api[0]
-}
-
-moved {
-  from = data.google_project.pii_vault
-  to   = module.app.data.google_project.pii_vault[0]
-}
-
-moved {
-  from = google_artifact_registry_repository_iam_member.vault_reader
-  to   = module.app.google_artifact_registry_repository_iam_member.vault_reader[0]
-}
-
-moved {
-  from = google_artifact_registry_repository_iam_member.vault_service_agent_reader
-  to   = module.app.google_artifact_registry_repository_iam_member.vault_service_agent_reader[0]
 }
 

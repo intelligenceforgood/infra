@@ -4,7 +4,7 @@
  * Creates:
  *  - Notification channel (email)
  *  - Log-based metrics for alert events
- *  - Alert policies for PII access, ingestion failures, and dossier jobs
+ *  - Alert policies for victim contact access, ingestion failures, and dossier jobs
  */
 
 # ---------------------------------------------------------------------------
@@ -25,11 +25,11 @@ resource "google_monitoring_notification_channel" "email" {
 # Log-based metrics
 # ---------------------------------------------------------------------------
 
-resource "google_logging_metric" "pii_access_alert" {
+resource "google_logging_metric" "victim_contact_access_alert" {
   project     = var.project_id
-  name        = "i4g/pii_access_alert"
-  description = "Counts PII detokenization threshold-exceeded events."
-  filter      = "jsonPayload.alert=true AND jsonPayload.alert_type=\"pii_access\""
+  name        = "i4g/victim_contact_access_alert"
+  description = "Counts victim contact access threshold-exceeded events."
+  filter      = "jsonPayload.alert=true AND jsonPayload.alert_type=\"victim_contact_access\""
 
   metric_descriptor {
     metric_kind = "DELTA"
@@ -68,18 +68,18 @@ resource "google_logging_metric" "dossier_alert" {
 # Alert policies
 # ---------------------------------------------------------------------------
 
-resource "google_monitoring_alert_policy" "pii_access" {
+resource "google_monitoring_alert_policy" "victim_contact_access" {
   project      = var.project_id
-  display_name = "PII Detokenization Access Alert"
+  display_name = "Victim Contact Access Alert"
   combiner     = "OR"
 
   conditions {
-    display_name = "PII access threshold exceeded"
+    display_name = "Victim contact access threshold exceeded"
 
     condition_threshold {
-      filter          = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.pii_access_alert.name}\" AND resource.type=one_of(\"cloud_run_revision\",\"cloud_run_job\")"
+      filter          = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.victim_contact_access_alert.name}\" AND resource.type=one_of(\"cloud_run_revision\",\"cloud_run_job\")"
       comparison      = "COMPARISON_GT"
-      threshold_value = var.detokenization_threshold
+      threshold_value = var.victim_contact_access_threshold
       duration        = "0s"
 
       aggregations {
@@ -92,7 +92,7 @@ resource "google_monitoring_alert_policy" "pii_access" {
   notification_channels = [google_monitoring_notification_channel.email.id]
 
   documentation {
-    content   = "A user exceeded the PII detokenization rate threshold. Investigate in Cloud Logging with filter: `jsonPayload.alert_type=\"pii_access\"`."
+    content   = "A user exceeded the victim contact access rate threshold. Investigate in Cloud Logging with filter: `jsonPayload.alert_type=\"victim_contact_access\"`."
     mime_type = "text/markdown"
   }
 }

@@ -16,16 +16,11 @@ stacks/
   app/            – Unified app stack: Cloud Run services, WIF, IAM, storage,
                     Cloud SQL, jobs, monitoring, and load balancer. All logic
                     for dev and prod lives here, parameterised by var.environment.
-  pii-vault/      – Unified PII vault stack: Cloud SQL, Cloud KMS, Secret Manager,
-                    and optional vault Cloud Run service. Logic shared across envs.
 environments/
   app/
     dev/          – Thin wrapper: backend.tf, providers.tf, variables.tf,
                     main.tf (calls stacks/app), outputs.tf, terraform.tfvars
     prod/         – Same thin-wrapper layout as dev.
-  pii-vault/
-    dev/          – Thin wrapper for the vault stack (dev).
-    prod/         – Thin wrapper for the vault stack (prod).
 modules/          – Reusable building blocks (Cloud Run services/jobs, Cloud SQL,
                     IAM, KMS, LB, scheduler, secret_manager, etc.).
 .github/
@@ -34,14 +29,14 @@ modules/          – Reusable building blocks (Cloud Run services/jobs, Cloud S
 
 **Key principle:** All infrastructure logic lives in `stacks/`. The `environments/` directories are
 thin wrappers that supply only a GCS backend configuration, provider pins, environment-specific
-`terraform.tfvars` values, and a single `module "app"` (or `module "pii_vault"`) call. Do not add
+`terraform.tfvars` values, and a single `module "app"` call. Do not add
 resource blocks or `locals` to the environment wrappers — add them to the relevant stack instead.
 
 ### Naming conventions
 
-- Stack/project naming: `i4g-app-dev`, `i4g-app-prod`, `i4g-pii-vault-dev`, `i4g-pii-vault-prod`.
+- Stack/project naming: `i4g-dev`, `i4g-prod`.
 - The bootstrap helper uses the `ENVIRONMENT` parameter to generate a state bucket name:
-  `tfstate-i4g-<ENVIRONMENT>` (e.g., `tfstate-i4g-dev`, `tfstate-i4g-pii-vault-dev`).
+  `tfstate-i4g-<ENVIRONMENT>` (e.g., `tfstate-i4g-dev`).
 - `modules/` – reusable building blocks (Cloud Run services/jobs, IAM, buckets, scheduler, etc.).
 - `.github/workflows/` – Terraform plan/apply automation that authenticates via Workload Identity Federation.
 
@@ -188,7 +183,6 @@ The dev workflow lives at `.github/workflows/terraform-dev.yml`.
 Set the following repository variables under `Settings → Variables → Actions`:
 
 - `TF_GCP_PROJECT_ID` – e.g., `i4g-dev`.
-- `TF_GCP_PII_VAULT_PROJECT_ID` – e.g., `i4g-pii-vault-dev`.
 - `TF_GCP_WORKLOAD_IDENTITY_PROVIDER` – resource path like `projects/123456789/locations/global/workloadIdentityPools/github-actions/providers/core`.
 - `TF_GCP_SERVICE_ACCOUNT` – `sa-infra@i4g-dev.iam.gserviceaccount.com`.
 

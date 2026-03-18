@@ -15,9 +15,8 @@ module "app" {
   }
 
   # -- Core ---------------------------------------------------------------
-  project_id           = var.project_id
-  pii_vault_project_id = var.pii_vault_project_id
-  region               = var.region
+  project_id = var.project_id
+  region     = var.region
 
   # -- People -------------------------------------------------------------
   i4g_analyst_members = var.i4g_analyst_members
@@ -78,7 +77,4 @@ module "app" {
 
   # -- Vertex AI -----------------------------------------------------------
   vertex_ai_search = var.vertex_ai_search
-
-  # -- Vault Registry Access -----------------------------------------------
-  enable_vault_registry_access = true
 }

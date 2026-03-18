@@ -5,7 +5,7 @@ This folder composes reusable modules to stand up the core stack in the
 
 - Core service accounts plus scoped IAM bindings for the shared application
   runtime service account (`sa-app` powering Core API and the analyst console), ingestion jobs, report generation,
-  vault, and automation.
+  and automation.
 - Workload Identity Federation pool/provider granting GitHub Actions access to
   the `sa-infra` automation account.
 - Cloud Run service module (`run_core_svc`) deploying the API
