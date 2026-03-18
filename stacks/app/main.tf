@@ -518,9 +518,13 @@ module "run_console" {
       I4G_VERTEX_SEARCH_LOCATION   = var.vertex_ai_search.location
       I4G_VERTEX_SEARCH_DATA_STORE = var.vertex_ai_search.data_store_id
     },
-    # SSI_API_URL is intentionally NOT set here. In cloud, the console
-    # proxies SSI trigger/poll requests through core's API (via LB + IAP),
-    # not directly to ssi-svc.  SSI_API_URL is local-dev-only.
+    # SSI_API_URL — required for the eCX proxy routes (feed, search,
+    # submissions, polling-status, stats) which forward directly to ssi-svc.
+    # The investigate/poll routes still proxy through core's API, but eCX
+    # routes have no core-side fallback.
+    var.ssi_service_enabled ? {
+      SSI_API_URL = module.run_ssi_service[0].uri
+    } : {},
     var.console_env_vars
   )
   secret_env_vars = var.console_secret_env_vars
