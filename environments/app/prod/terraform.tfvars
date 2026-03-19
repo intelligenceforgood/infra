@@ -214,6 +214,10 @@ run_jobs = {
         secret  = "projects/i4g-prod/secrets/api-key"
         version = "latest"
       }
+      I4G_CRYPTO__PII_KEY = {
+        secret  = "projects/i4g-prod/secrets/pii-encryption-key"
+        version = "latest"
+      }
     }
   }
 
