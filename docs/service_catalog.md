@@ -78,6 +78,27 @@ Managed via `modules/vertex_search`. Local environments use Chroma instead.
 
 ---
 
+## Planned ML Platform Resources (i4g-ml project)
+
+**Status:** Phase 0 (PRD + TDD approved, implementation pending)
+
+The ML Platform is a **standalone GCP project** (`i4g-ml`). Resources below are provisioned via `infra/stacks/ml/`. See [ML Platform TDD](../../core/docs/design/ml_infrastructure_tdd.md) for full specifications.
+
+| Resource type       | Resource name       | Purpose                                                 | GCP project  |
+| ------------------- | ------------------- | ------------------------------------------------------- | ------------ |
+| GCS bucket          | `i4g-ml-data`       | Model artifacts, versioned datasets, pipeline artifacts | i4g-ml       |
+| BigQuery dataset    | `i4g_ml`            | Data warehouse, feature store, prediction/outcome logs  | i4g-ml       |
+| Service account     | `sa-ml`             | Training, pipelines, serving, ETL                       | i4g-ml       |
+| Artifact Registry   | `ml-containers`     | Training and serving container images                   | i4g-ml       |
+| Vertex AI Endpoint  | `serving-dev`       | Dev model serving (scale-to-zero)                       | i4g-ml       |
+| Vertex AI Endpoint  | `serving-prod`      | Prod model serving (scale-to-zero)                      | i4g-ml       |
+| Cloud Run Job       | `ml-etl-ingest`     | Daily ETL: i4g Cloud SQL → BigQuery                     | i4g-ml       |
+| Cloud Scheduler     | `ml-etl-daily`      | Trigger ETL job daily at 2 AM UTC                       | i4g-ml       |
+| Vertex AI Workbench | (on-demand)         | Managed Jupyter notebooks for experimentation           | i4g-ml       |
+| Cross-project IAM   | `sa-ml` → Cloud SQL | Read access to i4g-dev/prod Cloud SQL for ETL           | i4g-dev/prod |
+
+---
+
 ## Related Documents
 
 - [scheduler_inventory.md](scheduler_inventory.md) — Detailed scheduler job specifications
