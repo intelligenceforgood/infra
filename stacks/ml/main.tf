@@ -115,6 +115,18 @@ module "ml_bigquery" {
   access = [
     {
       role          = "OWNER"
+      special_group = "projectOwners"
+    },
+    {
+      role          = "WRITER"
+      special_group = "projectWriters"
+    },
+    {
+      role          = "READER"
+      special_group = "projectReaders"
+    },
+    {
+      role          = "OWNER"
       user_by_email = google_service_account.sa_ml.email
     },
   ]

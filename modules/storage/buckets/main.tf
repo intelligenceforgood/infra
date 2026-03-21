@@ -26,8 +26,8 @@ resource "google_storage_bucket" "buckets" {
   labels        = try(each.value.labels, {})
   force_destroy = try(each.value.force_destroy, false)
 
-  uniform_bucket_level_access = try(each.value.uniform_bucket_level_access, local.default_uniform_bucket_level_access)
-  public_access_prevention    = try(each.value.public_access_prevention, local.default_public_access_prevention)
+  uniform_bucket_level_access = coalesce(try(each.value.uniform_bucket_level_access, null), local.default_uniform_bucket_level_access)
+  public_access_prevention    = coalesce(try(each.value.public_access_prevention, null), local.default_public_access_prevention)
 
   dynamic "versioning" {
     for_each = [true]
