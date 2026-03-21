@@ -34,7 +34,7 @@ resource "google_project_service" "apis" {
 
 resource "google_service_account" "sa_ml" {
   project      = var.project_id
-  account_id   = "sa-ml"
+  account_id   = "sa-ml-platform"
   display_name = "ML Platform Service Account"
 }
 

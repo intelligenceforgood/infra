@@ -49,10 +49,5 @@ resource "google_bigquery_table" "tables" {
     }
   }
 
-  dynamic "clustering" {
-    for_each = try(each.value.clustering, null) != null ? [each.value.clustering] : []
-    content {
-      fields = clustering.value
-    }
-  }
+  clustering = try(each.value.clustering, null)
 }
