@@ -10,6 +10,7 @@ terraform {
 }
 
 resource "google_vertex_ai_endpoint" "this" {
+  name         = var.display_name
   display_name = var.display_name
   project      = var.project_id
   location     = var.region
