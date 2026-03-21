@@ -97,6 +97,24 @@ Run these steps once per GCP project before Terraform `init`.
 
    Initialization uses your local ADC credentials but impersonates `sa-infra` for all state operations and plans.
 
+### ML Platform (`i4g-ml`)
+
+The ML platform lives in a dedicated GCP project. Bootstrap it with:
+
+```bash
+./bootstrap/create_ml_project.sh i4g-ml
+```
+
+The script enables ML-specific APIs (Vertex AI, BigQuery, Artifact Registry, etc.), creates the state bucket (`tfstate-i4g-ml`), provisions `sa-infra@i4g-ml.iam.gserviceaccount.com`, and grants your user impersonation rights.
+
+Then initialize Terraform from `environments/ml/`:
+
+```bash
+cd environments/ml/
+terraform init
+terraform plan
+```
+
 ---
 
 ## Day-to-Day Workflow
