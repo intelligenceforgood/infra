@@ -77,4 +77,8 @@ module "app" {
 
   # -- Vertex AI -----------------------------------------------------------
   vertex_ai_search = var.vertex_ai_search
+
+  # -- ML Platform ---------------------------------------------------------
+  ml_project_id            = var.ml_project_id
+  ml_service_account_email = var.ml_service_account_email
 }
