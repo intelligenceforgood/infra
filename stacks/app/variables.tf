@@ -361,3 +361,17 @@ variable "notification_email" {
   default     = "jerry@intelligenceforgood.org"
 }
 
+# ── ML Platform Cross-Project ───────────────────────────────────────────────
+
+variable "ml_project_id" {
+  type        = string
+  description = "GCP project ID for the ML platform (i4g-ml). Used for cross-project IAM grants."
+  default     = "i4g-ml"
+}
+
+variable "ml_service_account_email" {
+  type        = string
+  description = "Service account email for the ML platform ETL job that reads from this project's Cloud SQL."
+  default     = ""
+}
+

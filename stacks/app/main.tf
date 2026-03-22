@@ -758,6 +758,10 @@ resource "google_cloud_run_v2_job_iam_member" "scheduled_invokers" {
 
 # ── Org Policy ───────────────────────────────────────────────────────────────
 
+# ── ML Platform Cross-Project IAM ────────────────────────────────────────────
+# ML SA (sa-ml-platform@i4g-ml) IAM roles are now managed in database_users.tf
+# via the database_users module, consistent with all other service accounts.
+
 resource "google_project_organization_policy" "allow_public_invokers" {
   project    = var.project_id
   constraint = "constraints/iam.allowedPolicyMemberDomains"

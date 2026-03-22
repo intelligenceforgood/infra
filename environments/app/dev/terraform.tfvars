@@ -437,5 +437,6 @@ ssi_service_secret_env_vars = {
   }
 }
 
-
-
+# ── ML Platform Cross-Project ───────────────────────────────────────────────
+ml_project_id            = "i4g-ml"
+ml_service_account_email = "sa-ml-platform@i4g-ml.iam.gserviceaccount.com"

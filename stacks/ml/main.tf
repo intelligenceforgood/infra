@@ -20,6 +20,7 @@ locals {
     "logging.googleapis.com",
     "monitoring.googleapis.com",
     "iam.googleapis.com",
+    "sqladmin.googleapis.com",
   ])
 }
 
@@ -92,7 +93,7 @@ module "ml_storage" {
 resource "google_artifact_registry_repository" "ml_containers" {
   project       = var.project_id
   location      = var.region
-  repository_id = "ml-containers"
+  repository_id = "containers"
   format        = "DOCKER"
 
   labels = { component = "ml", managed_by = "terraform" }
@@ -136,44 +137,26 @@ module "ml_bigquery" {
     raw_cases = {
       schema = jsonencode([
         { name = "case_id", type = "STRING", mode = "REQUIRED" },
-        { name = "narrative", type = "STRING", mode = "NULLABLE" },
-        { name = "case_type", type = "STRING", mode = "NULLABLE" },
+        { name = "classification_result", type = "STRING", mode = "NULLABLE" },
         { name = "status", type = "STRING", mode = "NULLABLE" },
+        { name = "risk_score", type = "FLOAT64", mode = "NULLABLE" },
+        { name = "taxonomy_version", type = "STRING", mode = "NULLABLE" },
         { name = "created_at", type = "TIMESTAMP", mode = "NULLABLE" },
         { name = "updated_at", type = "TIMESTAMP", mode = "NULLABLE" },
-        { name = "tags", type = "STRING", mode = "REPEATED" },
         { name = "_ingested_at", type = "TIMESTAMP", mode = "REQUIRED" },
-        { name = "_source_updated", type = "TIMESTAMP", mode = "NULLABLE" },
       ])
       time_partitioning   = { type = "DAY", field = "_ingested_at" }
       clustering          = ["case_id"]
       deletion_protection = false
     }
 
-    raw_classification_results = {
-      schema = jsonencode([
-        { name = "case_id", type = "STRING", mode = "REQUIRED" },
-        { name = "axis", type = "STRING", mode = "REQUIRED" },
-        { name = "label_code", type = "STRING", mode = "REQUIRED" },
-        { name = "confidence", type = "FLOAT64", mode = "NULLABLE" },
-        { name = "model_used", type = "STRING", mode = "NULLABLE" },
-        { name = "prompt_version", type = "STRING", mode = "NULLABLE" },
-        { name = "created_at", type = "TIMESTAMP", mode = "NULLABLE" },
-        { name = "_ingested_at", type = "TIMESTAMP", mode = "REQUIRED" },
-      ])
-      time_partitioning   = { type = "DAY", field = "_ingested_at" }
-      clustering          = ["case_id", "axis"]
-      deletion_protection = false
-    }
-
     raw_entities = {
       schema = jsonencode([
-        { name = "case_id", type = "STRING", mode = "REQUIRED" },
         { name = "entity_id", type = "STRING", mode = "REQUIRED" },
+        { name = "case_id", type = "STRING", mode = "REQUIRED" },
         { name = "entity_type", type = "STRING", mode = "REQUIRED" },
-        { name = "entity_value", type = "STRING", mode = "NULLABLE" },
+        { name = "canonical_value", type = "STRING", mode = "NULLABLE" },
         { name = "confidence", type = "FLOAT64", mode = "NULLABLE" },
-        { name = "source", type = "STRING", mode = "NULLABLE" },
         { name = "created_at", type = "TIMESTAMP", mode = "NULLABLE" },
         { name = "_ingested_at", type = "TIMESTAMP", mode = "REQUIRED" },
       ])
@@ -184,10 +167,11 @@ module "ml_bigquery" {
 
     raw_analyst_labels = {
       schema = jsonencode([
-        { name = "label_id", type = "STRING", mode = "REQUIRED" },
+        { name = "id", type = "STRING", mode = "REQUIRED" },
         { name = "case_id", type = "STRING", mode = "REQUIRED" },
         { name = "axis", type = "STRING", mode = "REQUIRED" },
         { name = "label_code", type = "STRING", mode = "REQUIRED" },
+        { name = "analyst_id", type = "STRING", mode = "NULLABLE" },
         { name = "confidence", type = "FLOAT64", mode = "NULLABLE" },
         { name = "notes", type = "STRING", mode = "NULLABLE" },
         { name = "created_at", type = "TIMESTAMP", mode = "NULLABLE" },

@@ -19,7 +19,7 @@ module "database_users" {
     }
   }
 
-  service_accounts = {
+  service_accounts = merge({
     app = {
       email = module.iam_service_accounts.emails["app"]
       roles = ["roles/cloudsql.client", "roles/cloudsql.instanceUser"]
@@ -40,7 +40,12 @@ module "database_users" {
       email = module.iam_service_accounts.emails["ssi"]
       roles = ["roles/cloudsql.client", "roles/cloudsql.instanceUser"]
     }
-  }
+    }, var.ml_service_account_email != "" ? {
+    ml_platform = {
+      email = var.ml_service_account_email
+      roles = ["roles/cloudsql.client", "roles/cloudsql.instanceUser"]
+    }
+  } : {})
 }
 
 # report SA needs serviceUsageConsumer for billing-project queries.
