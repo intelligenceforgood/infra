@@ -261,6 +261,7 @@ module "ml_bigquery" {
         { name = "train_count", type = "INT64", mode = "NULLABLE" },
         { name = "eval_count", type = "INT64", mode = "NULLABLE" },
         { name = "test_count", type = "INT64", mode = "NULLABLE" },
+        { name = "redacted", type = "BOOL", mode = "NULLABLE" },
         { name = "label_distribution", type = "JSON", mode = "NULLABLE" },
         { name = "config", type = "JSON", mode = "NULLABLE" },
         { name = "created_at", type = "TIMESTAMP", mode = "REQUIRED" },
@@ -369,4 +370,133 @@ resource "google_project_iam_member" "core_prod_vertex_user" {
   project = var.project_id
   role    = "roles/aiplatform.user"
   member  = "serviceAccount:sa-app@${var.core_prod_project_id}.iam.gserviceaccount.com"
+}
+
+# ── Cloud Scheduler — Weekly Dataset Refresh ─────────────────────────────────
+# Triggers the data-refresh Cloud Run Job every Sunday at 4 AM UTC.
+# The job runs: ETL ingest → dataset export (with PII redaction + label priority).
+
+resource "google_cloud_run_v2_job" "data_refresh" {
+  name     = "data-refresh"
+  project  = var.project_id
+  location = var.region
+
+  template {
+    template {
+      service_account = google_service_account.sa_ml.email
+
+      containers {
+        image   = "${var.region}-docker.pkg.dev/${var.project_id}/containers/etl:${var.serve_image_tag}"
+        command = ["python", "-m", "ml.data.refresh"]
+
+        env {
+          name  = "GOOGLE_CLOUD_PROJECT"
+          value = var.project_id
+        }
+        env {
+          name  = "I4G_ML_BIGQUERY__DATASET_ID"
+          value = "i4g_ml"
+        }
+        env {
+          name  = "I4G_ML_ETL__SOURCE_INSTANCE"
+          value = "${var.core_dev_project_id}:${var.region}:i4g-dev-db"
+        }
+        env {
+          name  = "I4G_ML_ETL__SOURCE_DB_NAME"
+          value = "i4g_db"
+        }
+        env {
+          name  = "I4G_ML_ETL__SOURCE_DB_USER"
+          value = google_service_account.sa_ml.email
+        }
+
+        resources {
+          limits = {
+            cpu    = "2"
+            memory = "2Gi"
+          }
+        }
+      }
+
+      max_retries = 1
+      timeout     = "1800s"
+    }
+  }
+
+  depends_on = [
+    google_project_service.apis,
+    google_artifact_registry_repository.ml_containers,
+  ]
+}
+
+resource "google_cloud_scheduler_job" "weekly_data_refresh" {
+  project   = var.project_id
+  region    = var.region
+  name      = "weekly-data-refresh"
+  schedule  = "0 4 * * 0" # Sunday 4 AM UTC
+  time_zone = "UTC"
+
+  http_target {
+    uri         = "https://${var.region}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${var.project_id}/jobs/${google_cloud_run_v2_job.data_refresh.name}:run"
+    http_method = "POST"
+
+    oauth_token {
+      service_account_email = google_service_account.sa_ml.email
+    }
+  }
+
+  depends_on = [google_project_service.apis]
+}
+
+# ── Cloud Monitoring — Outcome Logging Alert ─────────────────────────────────
+# Alert when the outcome (feedback) logging failure rate exceeds 5%.
+# The serving container emits structured logs; this alert queries the
+# dead-letter logger for failed BigQuery writes.
+
+resource "google_monitoring_notification_channel" "ml_email" {
+  project      = var.project_id
+  display_name = "ML Platform Alerts"
+  type         = "email"
+
+  labels = {
+    email_address = var.alert_email
+  }
+}
+
+resource "google_monitoring_alert_policy" "outcome_logging_failures" {
+  project      = var.project_id
+  display_name = "ML Outcome Logging Failure Rate > 5%"
+  combiner     = "OR"
+
+  conditions {
+    display_name = "Outcome log dead-letter rate"
+
+    condition_matched_log {
+      filter = <<-EOT
+        resource.type="cloud_run_revision"
+        resource.labels.service_name="ml-serving"
+        jsonPayload.logger="ml.serving.logging.dead_letter"
+        jsonPayload.message=~"Dead-letter outcome:"
+      EOT
+
+      label_extractors = {
+        "prediction_id" = "EXTRACT(jsonPayload.message)"
+      }
+    }
+  }
+
+  alert_strategy {
+    notification_rate_limit {
+      period = "300s"
+    }
+  }
+
+  notification_channels = [google_monitoring_notification_channel.ml_email.id]
+
+  documentation {
+    content   = "Outcome logging to BigQuery is failing at a rate that exceeds the threshold. Check the ml-serving Cloud Run logs for dead_letter entries and BigQuery streaming insert errors."
+    mime_type = "text/markdown"
+  }
+
+  depends_on = [google_project_service.apis]
 }

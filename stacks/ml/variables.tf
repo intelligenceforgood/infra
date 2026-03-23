@@ -38,3 +38,9 @@ variable "model_artifact_uri" {
   description = "GCS URI of the model artifacts for the serving container."
   default     = ""
 }
+
+variable "alert_email" {
+  type        = string
+  description = "Email address for ML platform monitoring alerts."
+  default     = "ml-alerts@i4g.dev"
+}
