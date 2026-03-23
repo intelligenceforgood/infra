@@ -313,6 +313,48 @@ module "serving_prod" {
   depends_on = [google_project_service.apis]
 }
 
+# ── Cloud Run — ML Serving Service ────────────────────────────────────────────
+# Exposes /predict/classify, /feedback, /health directly via HTTP.
+# Vertex AI Endpoints only proxy /predict; the Cloud Run service provides
+# full API access to all serving routes.
+
+module "ml_serving" {
+  source = "../../modules/run/service"
+
+  name            = "ml-serving"
+  project_id      = var.project_id
+  location        = var.region
+  service_account = google_service_account.sa_ml.email
+  image           = "${var.region}-docker.pkg.dev/${var.project_id}/containers/serve:${var.serve_image_tag}"
+
+  env_vars = {
+    MODEL_ARTIFACT_URI                    = var.model_artifact_uri
+    GOOGLE_CLOUD_PROJECT                  = var.project_id
+    I4G_ML_BIGQUERY__DATASET_ID           = "i4g_ml"
+    I4G_ML_BIGQUERY__PREDICTION_LOG_TABLE = "predictions_prediction_log"
+    I4G_ML_BIGQUERY__OUTCOME_LOG_TABLE    = "predictions_outcome_log"
+  }
+
+  resource_limits = {
+    cpu    = "2"
+    memory = "2Gi"
+  }
+  min_instances = 0
+  max_instances = 2
+
+  invoker_members = [
+    "serviceAccount:sa-app@${var.core_dev_project_id}.iam.gserviceaccount.com",
+    "serviceAccount:sa-app@${var.core_prod_project_id}.iam.gserviceaccount.com",
+  ]
+
+  labels = { component = "serving", managed_by = "terraform" }
+
+  depends_on = [
+    google_project_service.apis,
+    google_artifact_registry_repository.ml_containers,
+  ]
+}
+
 # ── Cross-Project IAM ────────────────────────────────────────────────────────
 # Allow Core service accounts (dev + prod) to invoke Vertex AI endpoints in
 # this project, so they can call the ML serving layer.

@@ -32,3 +32,13 @@ output "serving_prod_endpoint_id" {
   description = "Vertex AI serving-prod endpoint ID."
   value       = module.serving_prod.endpoint_id
 }
+
+output "ml_serving_url" {
+  description = "URL of the Cloud Run ML serving service."
+  value       = module.ml_serving.uri
+}
+
+output "ml_serving_name" {
+  description = "Name of the Cloud Run ML serving service."
+  value       = module.ml_serving.name
+}

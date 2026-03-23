@@ -26,3 +26,15 @@ variable "core_prod_project_id" {
   description = "GCP project ID for i4g-prod (core platform) — used for cross-project IAM."
   default     = "i4g-prod"
 }
+
+variable "serve_image_tag" {
+  type        = string
+  description = "Tag for the ML serving container image."
+  default     = "dev"
+}
+
+variable "model_artifact_uri" {
+  type        = string
+  description = "GCS URI of the model artifacts for the serving container."
+  default     = ""
+}
