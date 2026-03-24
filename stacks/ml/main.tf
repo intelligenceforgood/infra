@@ -287,6 +287,55 @@ module "ml_bigquery" {
       ])
       deletion_protection = false
     }
+
+    analytics_drift_metrics = {
+      schema = jsonencode([
+        { name = "report_id", type = "STRING", mode = "REQUIRED" },
+        { name = "model_id", type = "STRING", mode = "REQUIRED" },
+        { name = "report_type", type = "STRING", mode = "REQUIRED" },
+        { name = "axis_or_feature", type = "STRING", mode = "REQUIRED" },
+        { name = "baseline_rate", type = "FLOAT64", mode = "NULLABLE" },
+        { name = "current_rate", type = "FLOAT64", mode = "NULLABLE" },
+        { name = "psi", type = "FLOAT64", mode = "REQUIRED" },
+        { name = "is_drifted", type = "BOOL", mode = "REQUIRED" },
+        { name = "window_start", type = "TIMESTAMP", mode = "REQUIRED" },
+        { name = "window_end", type = "TIMESTAMP", mode = "REQUIRED" },
+        { name = "computed_at", type = "TIMESTAMP", mode = "REQUIRED" },
+      ])
+      deletion_protection = false
+    }
+
+    analytics_trigger_log = {
+      schema = jsonencode([
+        { name = "event_id", type = "STRING", mode = "REQUIRED" },
+        { name = "capability", type = "STRING", mode = "REQUIRED" },
+        { name = "should_retrain", type = "BOOL", mode = "REQUIRED" },
+        { name = "reasons", type = "STRING", mode = "NULLABLE" },
+        { name = "new_label_count", type = "INT64", mode = "NULLABLE" },
+        { name = "max_drift_psi", type = "FLOAT64", mode = "NULLABLE" },
+        { name = "pipeline_job_name", type = "STRING", mode = "NULLABLE" },
+        { name = "triggered_at", type = "TIMESTAMP", mode = "REQUIRED" },
+      ])
+      deletion_protection = false
+    }
+
+    analytics_cost_summary = {
+      schema = jsonencode([
+        { name = "summary_id", type = "STRING", mode = "REQUIRED" },
+        { name = "model_id", type = "STRING", mode = "NULLABLE" },
+        { name = "capability", type = "STRING", mode = "REQUIRED" },
+        { name = "prediction_count", type = "INT64", mode = "REQUIRED" },
+        { name = "ml_cost_per_prediction", type = "FLOAT64", mode = "REQUIRED" },
+        { name = "llm_cost_per_prediction", type = "FLOAT64", mode = "REQUIRED" },
+        { name = "ml_total", type = "FLOAT64", mode = "REQUIRED" },
+        { name = "llm_total", type = "FLOAT64", mode = "REQUIRED" },
+        { name = "savings_pct", type = "FLOAT64", mode = "REQUIRED" },
+        { name = "period_start", type = "TIMESTAMP", mode = "REQUIRED" },
+        { name = "period_end", type = "TIMESTAMP", mode = "REQUIRED" },
+        { name = "computed_at", type = "TIMESTAMP", mode = "REQUIRED" },
+      ])
+      deletion_protection = false
+    }
   }
 
   depends_on = [google_project_service.apis]
@@ -332,6 +381,8 @@ module "ml_serving" {
 
   env_vars = {
     MODEL_ARTIFACT_URI                    = var.model_artifact_uri
+    SHADOW_MODEL_ARTIFACT_URI             = var.shadow_model_artifact_uri
+    NER_MODEL_ARTIFACT_URI                = var.ner_model_artifact_uri
     GOOGLE_CLOUD_PROJECT                  = var.project_id
     I4G_ML_BIGQUERY__DATASET_ID           = "i4g_ml"
     I4G_ML_BIGQUERY__PREDICTION_LOG_TABLE = "predictions_prediction_log"
@@ -567,6 +618,256 @@ resource "google_cloud_scheduler_job" "daily_accuracy" {
   depends_on = [google_project_service.apis]
 }
 
+# ── Cloud Run Job — Daily Drift Materialization ──────────────────────────────
+# Runs the drift monitoring module daily at 6 AM UTC to compute PSI-based
+# prediction and feature drift metrics.
+
+resource "google_cloud_run_v2_job" "drift_materialization" {
+  name     = "drift-materialization"
+  project  = var.project_id
+  location = var.region
+
+  template {
+    template {
+      service_account = google_service_account.sa_ml.email
+
+      containers {
+        image   = "${var.region}-docker.pkg.dev/${var.project_id}/containers/serve:${var.serve_image_tag}"
+        command = ["python", "-m", "ml.monitoring.drift"]
+        args    = ["--model-id", var.drift_model_id, "--window-days", "7"]
+
+        env {
+          name  = "GOOGLE_CLOUD_PROJECT"
+          value = var.project_id
+        }
+        env {
+          name  = "I4G_ML_BIGQUERY__DATASET_ID"
+          value = "i4g_ml"
+        }
+
+        resources {
+          limits = {
+            cpu    = "1"
+            memory = "1Gi"
+          }
+        }
+      }
+
+      max_retries = 1
+      timeout     = "600s"
+    }
+  }
+
+  depends_on = [
+    google_project_service.apis,
+    google_artifact_registry_repository.ml_containers,
+  ]
+}
+
+resource "google_cloud_scheduler_job" "daily_drift" {
+  project   = var.project_id
+  region    = var.region
+  name      = "daily-drift-materialization"
+  schedule  = "0 6 * * *" # Every day at 6 AM UTC
+  time_zone = "UTC"
+
+  http_target {
+    uri         = "https://${var.region}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${var.project_id}/jobs/${google_cloud_run_v2_job.drift_materialization.name}:run"
+    http_method = "POST"
+
+    oauth_token {
+      service_account_email = google_service_account.sa_ml.email
+    }
+  }
+
+  depends_on = [google_project_service.apis]
+}
+
+# ── Cloud Run Job — Daily Cost Materialization ───────────────────────────────
+# Runs cost monitoring at 5:30 AM UTC to compute ML vs LLM cost comparison.
+
+resource "google_cloud_run_v2_job" "cost_materialization" {
+  name     = "cost-materialization"
+  project  = var.project_id
+  location = var.region
+
+  template {
+    template {
+      service_account = google_service_account.sa_ml.email
+
+      containers {
+        image   = "${var.region}-docker.pkg.dev/${var.project_id}/containers/serve:${var.serve_image_tag}"
+        command = ["python", "-m", "ml.monitoring.cost"]
+
+        env {
+          name  = "GOOGLE_CLOUD_PROJECT"
+          value = var.project_id
+        }
+        env {
+          name  = "I4G_ML_BIGQUERY__DATASET_ID"
+          value = "i4g_ml"
+        }
+
+        resources {
+          limits = {
+            cpu    = "1"
+            memory = "1Gi"
+          }
+        }
+      }
+
+      max_retries = 1
+      timeout     = "600s"
+    }
+  }
+
+  depends_on = [
+    google_project_service.apis,
+    google_artifact_registry_repository.ml_containers,
+  ]
+}
+
+resource "google_cloud_scheduler_job" "daily_cost" {
+  project   = var.project_id
+  region    = var.region
+  name      = "daily-cost-materialization"
+  schedule  = "30 5 * * *" # Every day at 5:30 AM UTC
+  time_zone = "UTC"
+
+  http_target {
+    uri         = "https://${var.region}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${var.project_id}/jobs/${google_cloud_run_v2_job.cost_materialization.name}:run"
+    http_method = "POST"
+
+    oauth_token {
+      service_account_email = google_service_account.sa_ml.email
+    }
+  }
+
+  depends_on = [google_project_service.apis]
+}
+
+# ── Cloud Run Job — Retrain Trigger ──────────────────────────────────────────
+# Evaluates retraining conditions (data volume, drift, time) and submits
+# the training pipeline if warranted. Always exits 0; uses structured
+# logging for alerting.
+
+resource "google_cloud_run_v2_job" "retrain_trigger" {
+  name     = "retrain-trigger"
+  project  = var.project_id
+  location = var.region
+
+  template {
+    template {
+      service_account = google_service_account.sa_ml.email
+
+      containers {
+        image   = "${var.region}-docker.pkg.dev/${var.project_id}/containers/serve:${var.serve_image_tag}"
+        command = ["python", "scripts/trigger_retraining.py"]
+        args    = ["--capability", "classification"]
+
+        env {
+          name  = "GOOGLE_CLOUD_PROJECT"
+          value = var.project_id
+        }
+        env {
+          name  = "I4G_ML_BIGQUERY__DATASET_ID"
+          value = "i4g_ml"
+        }
+
+        resources {
+          limits = {
+            cpu    = "1"
+            memory = "1Gi"
+          }
+        }
+      }
+
+      max_retries = 1
+      timeout     = "900s"
+    }
+  }
+
+  depends_on = [
+    google_project_service.apis,
+    google_artifact_registry_repository.ml_containers,
+  ]
+}
+
+resource "google_cloud_scheduler_job" "daily_retrain_trigger" {
+  project   = var.project_id
+  region    = var.region
+  name      = "daily-retrain-trigger"
+  schedule  = "0 6 * * *" # Every day at 6 AM UTC
+  time_zone = "UTC"
+
+  http_target {
+    uri         = "https://${var.region}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${var.project_id}/jobs/${google_cloud_run_v2_job.retrain_trigger.name}:run"
+    http_method = "POST"
+
+    oauth_token {
+      service_account_email = google_service_account.sa_ml.email
+    }
+  }
+
+  depends_on = [google_project_service.apis]
+}
+
+resource "google_cloud_scheduler_job" "monthly_force_retrain" {
+  project   = var.project_id
+  region    = var.region
+  name      = "monthly-force-retrain"
+  schedule  = "0 7 1 * *" # 1st of month at 7 AM UTC
+  time_zone = "UTC"
+
+  http_target {
+    uri         = "https://${var.region}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${var.project_id}/jobs/${google_cloud_run_v2_job.retrain_trigger.name}:run"
+    http_method = "POST"
+    body        = base64encode("{\"overrides\":{\"containerOverrides\":[{\"args\":[\"--capability\",\"classification\",\"--force\"]}]}}")
+
+    oauth_token {
+      service_account_email = google_service_account.sa_ml.email
+    }
+  }
+
+  depends_on = [google_project_service.apis]
+}
+
+# ── Cloud Monitoring — Retrain Submitted Alert ───────────────────────────────
+# Notify when a retraining pipeline is automatically submitted.
+
+resource "google_monitoring_alert_policy" "retrain_submitted" {
+  project      = var.project_id
+  display_name = "ML Retraining Pipeline Submitted"
+  combiner     = "OR"
+
+  conditions {
+    display_name = "Retrain submitted"
+
+    condition_matched_log {
+      filter = <<-EOT
+        resource.type="cloud_run_job"
+        resource.labels.job_name="retrain-trigger"
+        jsonPayload.action="retrain_submitted"
+      EOT
+    }
+  }
+
+  alert_strategy {
+    notification_rate_limit {
+      period = "86400s" # Once per day
+    }
+  }
+
+  notification_channels = [google_monitoring_notification_channel.ml_email.id]
+
+  documentation {
+    content   = "The automated retraining trigger evaluated conditions and submitted a Vertex AI training pipeline. Check the Vertex AI Pipelines console for the new run. Review analytics_trigger_log in BigQuery for trigger reasons."
+    mime_type = "text/markdown"
+  }
+
+  depends_on = [google_project_service.apis]
+}
+
 # ── Cloud Monitoring — Override Rate Alerts ──────────────────────────────────
 # Alert when the analyst override rate exceeds thresholds, computed from
 # the analytics_model_performance table via log-based metric.
@@ -652,6 +953,8 @@ module "ml_serving_prod" {
 
   env_vars = {
     MODEL_ARTIFACT_URI                    = var.prod_model_artifact_uri
+    SHADOW_MODEL_ARTIFACT_URI             = var.prod_shadow_model_artifact_uri
+    NER_MODEL_ARTIFACT_URI                = var.prod_ner_model_artifact_uri
     GOOGLE_CLOUD_PROJECT                  = var.project_id
     I4G_ML_BIGQUERY__DATASET_ID           = "i4g_ml"
     I4G_ML_BIGQUERY__PREDICTION_LOG_TABLE = "predictions_prediction_log"
@@ -695,22 +998,20 @@ resource "google_monitoring_alert_policy" "prod_latency" {
 
       aggregations {
         alignment_period     = "300s"
-        per_series_aligner   = "ALIGN_PERCENTILE_90"
+        per_series_aligner   = "ALIGN_PERCENTILE_95"
         cross_series_reducer = "REDUCE_MAX"
       }
     }
   }
 
   alert_strategy {
-    notification_rate_limit {
-      period = "3600s"
-    }
+    auto_close = "1800s"
   }
 
   notification_channels = [google_monitoring_notification_channel.ml_email.id]
 
   documentation {
-    content   = "Production ML serving latency (p90) has exceeded 2 seconds. Check Cloud Run scaling, model size, and consider increasing min_instances."
+    content   = "Production ML serving latency (p95) has exceeded 2 seconds. Check Cloud Run scaling, model size, and consider increasing min_instances."
     mime_type = "text/markdown"
   }
 
@@ -740,9 +1041,7 @@ resource "google_monitoring_alert_policy" "prod_error_rate" {
   }
 
   alert_strategy {
-    notification_rate_limit {
-      period = "3600s"
-    }
+    auto_close = "1800s"
   }
 
   notification_channels = [google_monitoring_notification_channel.ml_email.id]

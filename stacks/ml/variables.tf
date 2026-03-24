@@ -39,6 +39,18 @@ variable "model_artifact_uri" {
   default     = ""
 }
 
+variable "shadow_model_artifact_uri" {
+  type        = string
+  description = "GCS URI of the shadow (candidate) model artifacts for A/B comparison on dev."
+  default     = ""
+}
+
+variable "ner_model_artifact_uri" {
+  type        = string
+  description = "GCS URI of the NER model artifacts for named-entity extraction on dev."
+  default     = ""
+}
+
 variable "alert_email" {
   type        = string
   description = "Email address for ML platform monitoring alerts."
@@ -55,4 +67,22 @@ variable "prod_model_artifact_uri" {
   type        = string
   description = "GCS URI of the model artifacts for the production serving container."
   default     = ""
+}
+
+variable "prod_shadow_model_artifact_uri" {
+  type        = string
+  description = "GCS URI of the shadow (candidate) model artifacts for A/B comparison on prod."
+  default     = ""
+}
+
+variable "prod_ner_model_artifact_uri" {
+  type        = string
+  description = "GCS URI of the NER model artifacts for named-entity extraction on prod."
+  default     = ""
+}
+
+variable "drift_model_id" {
+  type        = string
+  description = "Model ID to monitor for drift (used by daily drift Cloud Run Job)."
+  default     = "classification-xgboost-v1"
 }
