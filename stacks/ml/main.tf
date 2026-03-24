@@ -21,6 +21,7 @@ locals {
     "monitoring.googleapis.com",
     "iam.googleapis.com",
     "sqladmin.googleapis.com",
+    "dataflow.googleapis.com",
   ])
 }
 
@@ -499,6 +500,115 @@ resource "google_cloud_scheduler_job" "weekly_data_refresh" {
   }
 
   depends_on = [google_project_service.apis]
+}
+
+# ── Dataflow IAM ─────────────────────────────────────────────────────────────
+# Allow sa-ml-platform to run Dataflow jobs for graph feature computation.
+
+resource "google_project_iam_member" "sa_ml_dataflow_worker" {
+  project = var.project_id
+  role    = "roles/dataflow.worker"
+  member  = "serviceAccount:${google_service_account.sa_ml.email}"
+}
+
+resource "google_project_iam_member" "sa_ml_dataflow_developer" {
+  project = var.project_id
+  role    = "roles/dataflow.developer"
+  member  = "serviceAccount:${google_service_account.sa_ml.email}"
+}
+
+# ── Cloud Run Job — Graph Features ───────────────────────────────────────────
+# Submits the Dataflow/Beam pipeline for entity co-occurrence graph features.
+# Writes to features_graph_features BigQuery table (WRITE_TRUNCATE).
+
+resource "google_cloud_run_v2_job" "graph_features" {
+  name                = "graph-features"
+  project             = var.project_id
+  location            = var.region
+  deletion_protection = false
+
+  template {
+    template {
+      service_account = google_service_account.sa_ml.email
+
+      containers {
+        image   = "${var.region}-docker.pkg.dev/${var.project_id}/containers/graph-features:${var.serve_image_tag}"
+        command = ["python", "-m", "ml.data.graph_features"]
+        args = [
+          "--project", var.project_id,
+          "--dataset", "i4g_ml",
+          "--runner", "DataflowRunner",
+          "--temp-location", "gs://${var.data_bucket_name}/dataflow/temp",
+          "--staging-location", "gs://${var.data_bucket_name}/dataflow/staging",
+          "--region", var.region,
+        ]
+
+        env {
+          name  = "GOOGLE_CLOUD_PROJECT"
+          value = var.project_id
+        }
+
+        resources {
+          limits = {
+            cpu    = "1"
+            memory = "1Gi"
+          }
+        }
+      }
+
+      max_retries = 1
+      timeout     = "3600s"
+    }
+  }
+
+  depends_on = [
+    google_project_service.apis,
+    google_artifact_registry_repository.ml_containers,
+  ]
+}
+
+resource "google_cloud_scheduler_job" "weekly_graph_features" {
+  project   = var.project_id
+  region    = var.region
+  name      = "weekly-graph-features"
+  schedule  = "0 4 * * 0" # Sunday 4 AM UTC
+  time_zone = "UTC"
+
+  http_target {
+    uri         = "https://${var.region}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${var.project_id}/jobs/${google_cloud_run_v2_job.graph_features.name}:run"
+    http_method = "POST"
+
+    oauth_token {
+      service_account_email = google_service_account.sa_ml.email
+    }
+  }
+
+  depends_on = [google_project_service.apis]
+}
+
+# ── BigQuery — Graph Features Table ──────────────────────────────────────────
+
+resource "google_bigquery_table" "features_graph_features" {
+  project    = var.project_id
+  dataset_id = module.ml_bigquery.dataset_id
+  table_id   = "features_graph_features"
+
+  deletion_protection = false
+
+  schema = jsonencode([
+    { name = "case_id", type = "STRING", mode = "REQUIRED" },
+    { name = "shared_entity_count", type = "INT64", mode = "REQUIRED" },
+    { name = "entity_reuse_frequency", type = "FLOAT64", mode = "REQUIRED" },
+    { name = "cluster_size", type = "INT64", mode = "REQUIRED" },
+    { name = "_computed_at", type = "TIMESTAMP", mode = "REQUIRED" },
+  ])
+
+  labels = {
+    component  = "ml"
+    managed_by = "terraform"
+  }
+
+  depends_on = [module.ml_bigquery]
 }
 
 # ── Cloud Monitoring — Outcome Logging Alert ─────────────────────────────────
