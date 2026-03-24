@@ -42,3 +42,13 @@ output "ml_serving_name" {
   description = "Name of the Cloud Run ML serving service."
   value       = module.ml_serving.name
 }
+
+output "ml_serving_prod_url" {
+  description = "URL of the production Cloud Run ML serving service."
+  value       = module.ml_serving_prod.uri
+}
+
+output "ml_serving_prod_name" {
+  description = "Name of the production Cloud Run ML serving service."
+  value       = module.ml_serving_prod.name
+}

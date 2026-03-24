@@ -282,6 +282,8 @@ module "ml_bigquery" {
         { name = "correct_predictions", type = "INT64", mode = "NULLABLE" },
         { name = "accuracy", type = "FLOAT64", mode = "NULLABLE" },
         { name = "correction_rate", type = "FLOAT64", mode = "NULLABLE" },
+        { name = "per_axis_metrics", type = "JSON", mode = "NULLABLE" },
+        { name = "f1", type = "FLOAT64", mode = "NULLABLE" },
       ])
       deletion_protection = false
     }
@@ -495,6 +497,258 @@ resource "google_monitoring_alert_policy" "outcome_logging_failures" {
 
   documentation {
     content   = "Outcome logging to BigQuery is failing at a rate that exceeds the threshold. Check the ml-serving Cloud Run logs for dead_letter entries and BigQuery streaming insert errors."
+    mime_type = "text/markdown"
+  }
+
+  depends_on = [google_project_service.apis]
+}
+
+# ── Cloud Run Job — Daily Accuracy Materialization ───────────────────────────
+# Runs the accuracy monitoring module daily at 5 AM UTC to compute
+# per-model per-axis accuracy and materialize to analytics_model_performance.
+
+resource "google_cloud_run_v2_job" "accuracy_materialization" {
+  name     = "accuracy-materialization"
+  project  = var.project_id
+  location = var.region
+
+  template {
+    template {
+      service_account = google_service_account.sa_ml.email
+
+      containers {
+        image   = "${var.region}-docker.pkg.dev/${var.project_id}/containers/serve:${var.serve_image_tag}"
+        command = ["python", "-m", "ml.monitoring.accuracy"]
+
+        env {
+          name  = "GOOGLE_CLOUD_PROJECT"
+          value = var.project_id
+        }
+        env {
+          name  = "I4G_ML_BIGQUERY__DATASET_ID"
+          value = "i4g_ml"
+        }
+
+        resources {
+          limits = {
+            cpu    = "1"
+            memory = "1Gi"
+          }
+        }
+      }
+
+      max_retries = 1
+      timeout     = "600s"
+    }
+  }
+
+  depends_on = [
+    google_project_service.apis,
+    google_artifact_registry_repository.ml_containers,
+  ]
+}
+
+resource "google_cloud_scheduler_job" "daily_accuracy" {
+  project   = var.project_id
+  region    = var.region
+  name      = "daily-accuracy-materialization"
+  schedule  = "0 5 * * *" # Every day at 5 AM UTC
+  time_zone = "UTC"
+
+  http_target {
+    uri         = "https://${var.region}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${var.project_id}/jobs/${google_cloud_run_v2_job.accuracy_materialization.name}:run"
+    http_method = "POST"
+
+    oauth_token {
+      service_account_email = google_service_account.sa_ml.email
+    }
+  }
+
+  depends_on = [google_project_service.apis]
+}
+
+# ── Cloud Monitoring — Override Rate Alerts ──────────────────────────────────
+# Alert when the analyst override rate exceeds thresholds, computed from
+# the analytics_model_performance table via log-based metric.
+
+resource "google_monitoring_alert_policy" "override_rate_warning" {
+  project      = var.project_id
+  display_name = "ML Override Rate > 20% (Warning)"
+  combiner     = "OR"
+
+  conditions {
+    display_name = "Override rate warning"
+
+    condition_matched_log {
+      filter = <<-EOT
+        resource.type="cloud_run_job"
+        resource.labels.job_name="accuracy-materialization"
+        textPayload=~"override_rate.*0\\.[2-9]|override_rate.*1\\.0"
+      EOT
+    }
+  }
+
+  alert_strategy {
+    notification_rate_limit {
+      period = "86400s" # Once per day
+    }
+  }
+
+  notification_channels = [google_monitoring_notification_channel.ml_email.id]
+
+  documentation {
+    content   = "The analyst override rate has exceeded 20% over the last 7 days. This may indicate model accuracy degradation or data drift. Investigate recent prediction quality and consider retraining."
+    mime_type = "text/markdown"
+  }
+
+  depends_on = [google_project_service.apis]
+}
+
+resource "google_monitoring_alert_policy" "override_rate_critical" {
+  project      = var.project_id
+  display_name = "ML Override Rate > 30% (Critical)"
+  combiner     = "OR"
+
+  conditions {
+    display_name = "Override rate critical"
+
+    condition_matched_log {
+      filter = <<-EOT
+        resource.type="cloud_run_job"
+        resource.labels.job_name="accuracy-materialization"
+        textPayload=~"override_rate.*0\\.[3-9]|override_rate.*1\\.0"
+      EOT
+    }
+  }
+
+  alert_strategy {
+    notification_rate_limit {
+      period = "3600s" # Once per hour
+    }
+  }
+
+  notification_channels = [google_monitoring_notification_channel.ml_email.id]
+
+  documentation {
+    content   = "CRITICAL: The analyst override rate has exceeded 30% over the last 7 days. Model accuracy is significantly degraded. Immediate action required: check for data drift, input distribution shift, or labeling changes. Trigger retraining pipeline."
+    mime_type = "text/markdown"
+  }
+
+  depends_on = [google_project_service.apis]
+}
+
+# ── Cloud Run — ML Serving (Production) ──────────────────────────────────────
+# Separate Cloud Run service for prod serving. Uses the prod image tag,
+# prod model artifact URI, and min_instances=1 to avoid cold starts.
+
+module "ml_serving_prod" {
+  source = "../../modules/run/service"
+
+  name            = "ml-serving-prod"
+  project_id      = var.project_id
+  location        = var.region
+  service_account = google_service_account.sa_ml.email
+  image           = "${var.region}-docker.pkg.dev/${var.project_id}/containers/serve:${var.prod_serve_image_tag}"
+
+  env_vars = {
+    MODEL_ARTIFACT_URI                    = var.prod_model_artifact_uri
+    GOOGLE_CLOUD_PROJECT                  = var.project_id
+    I4G_ML_BIGQUERY__DATASET_ID           = "i4g_ml"
+    I4G_ML_BIGQUERY__PREDICTION_LOG_TABLE = "predictions_prediction_log"
+    I4G_ML_BIGQUERY__OUTCOME_LOG_TABLE    = "predictions_outcome_log"
+  }
+
+  resource_limits = {
+    cpu    = "2"
+    memory = "2Gi"
+  }
+  min_instances = 1 # Avoid cold starts in production
+  max_instances = 4
+
+  invoker_members = [
+    "serviceAccount:sa-app@${var.core_prod_project_id}.iam.gserviceaccount.com",
+  ]
+
+  labels = { component = "serving", env = "prod", managed_by = "terraform" }
+
+  depends_on = [
+    google_project_service.apis,
+    google_artifact_registry_repository.ml_containers,
+  ]
+}
+
+# ── Cloud Monitoring — Prod Endpoint Alerts ──────────────────────────────────
+
+resource "google_monitoring_alert_policy" "prod_latency" {
+  project      = var.project_id
+  display_name = "ML Prod Serving Latency p90 > 2s"
+  combiner     = "OR"
+
+  conditions {
+    display_name = "Prod serving latency"
+
+    condition_threshold {
+      filter          = "resource.type = \"cloud_run_revision\" AND resource.labels.service_name = \"ml-serving-prod\" AND metric.type = \"run.googleapis.com/request_latencies\""
+      comparison      = "COMPARISON_GT"
+      threshold_value = 2000 # ms
+      duration        = "300s"
+
+      aggregations {
+        alignment_period     = "300s"
+        per_series_aligner   = "ALIGN_PERCENTILE_90"
+        cross_series_reducer = "REDUCE_MAX"
+      }
+    }
+  }
+
+  alert_strategy {
+    notification_rate_limit {
+      period = "3600s"
+    }
+  }
+
+  notification_channels = [google_monitoring_notification_channel.ml_email.id]
+
+  documentation {
+    content   = "Production ML serving latency (p90) has exceeded 2 seconds. Check Cloud Run scaling, model size, and consider increasing min_instances."
+    mime_type = "text/markdown"
+  }
+
+  depends_on = [google_project_service.apis]
+}
+
+resource "google_monitoring_alert_policy" "prod_error_rate" {
+  project      = var.project_id
+  display_name = "ML Prod Serving Error Rate > 5%"
+  combiner     = "OR"
+
+  conditions {
+    display_name = "Prod serving error rate"
+
+    condition_threshold {
+      filter          = "resource.type = \"cloud_run_revision\" AND resource.labels.service_name = \"ml-serving-prod\" AND metric.type = \"run.googleapis.com/request_count\" AND metric.labels.response_code_class != \"2xx\""
+      comparison      = "COMPARISON_GT"
+      threshold_value = 0.05
+      duration        = "300s"
+
+      aggregations {
+        alignment_period     = "300s"
+        per_series_aligner   = "ALIGN_RATE"
+        cross_series_reducer = "REDUCE_SUM"
+      }
+    }
+  }
+
+  alert_strategy {
+    notification_rate_limit {
+      period = "3600s"
+    }
+  }
+
+  notification_channels = [google_monitoring_notification_channel.ml_email.id]
+
+  documentation {
+    content   = "Production ML serving error rate has exceeded 5%. Check model load status, container logs, and Cloud Run service health."
     mime_type = "text/markdown"
   }
 

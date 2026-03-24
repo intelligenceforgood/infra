@@ -44,3 +44,15 @@ variable "alert_email" {
   description = "Email address for ML platform monitoring alerts."
   default     = "ml-alerts@i4g.dev"
 }
+
+variable "prod_serve_image_tag" {
+  type        = string
+  description = "Tag for the production ML serving container image."
+  default     = "prod"
+}
+
+variable "prod_model_artifact_uri" {
+  type        = string
+  description = "GCS URI of the model artifacts for the production serving container."
+  default     = ""
+}
