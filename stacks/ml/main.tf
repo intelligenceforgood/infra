@@ -231,6 +231,8 @@ module "ml_bigquery" {
         { name = "request_payload", type = "JSON", mode = "NULLABLE" },
         { name = "prediction", type = "JSON", mode = "NULLABLE" },
         { name = "latency_ms", type = "INT64", mode = "NULLABLE" },
+        { name = "is_shadow", type = "BOOLEAN", mode = "NULLABLE" },
+        { name = "capability", type = "STRING", mode = "NULLABLE" },
         { name = "timestamp", type = "TIMESTAMP", mode = "REQUIRED" },
       ])
       time_partitioning   = { type = "DAY", field = "timestamp" }
@@ -277,7 +279,7 @@ module "ml_bigquery" {
         { name = "model_id", type = "STRING", mode = "REQUIRED" },
         { name = "model_version", type = "INT64", mode = "REQUIRED" },
         { name = "capability", type = "STRING", mode = "REQUIRED" },
-        { name = "week", type = "DATE", mode = "REQUIRED" },
+        { name = "computed_at", type = "DATE", mode = "REQUIRED" },
         { name = "total_predictions", type = "INT64", mode = "NULLABLE" },
         { name = "outcomes_received", type = "INT64", mode = "NULLABLE" },
         { name = "correct_predictions", type = "INT64", mode = "NULLABLE" },
