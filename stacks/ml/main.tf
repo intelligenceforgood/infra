@@ -233,6 +233,8 @@ module "ml_bigquery" {
         { name = "latency_ms", type = "INT64", mode = "NULLABLE" },
         { name = "is_shadow", type = "BOOLEAN", mode = "NULLABLE" },
         { name = "capability", type = "STRING", mode = "NULLABLE" },
+        { name = "variant", type = "STRING", mode = "NULLABLE" },
+        { name = "routing_reason", type = "STRING", mode = "NULLABLE" },
         { name = "timestamp", type = "TIMESTAMP", mode = "REQUIRED" },
       ])
       time_partitioning   = { type = "DAY", field = "timestamp" }
@@ -386,6 +388,12 @@ module "ml_serving" {
     MODEL_ARTIFACT_URI                    = var.model_artifact_uri
     SHADOW_MODEL_ARTIFACT_URI             = var.shadow_model_artifact_uri
     NER_MODEL_ARTIFACT_URI                = var.ner_model_artifact_uri
+    CHALLENGER_MODEL_ARTIFACT_URI         = var.challenger_model_artifact_uri
+    CHALLENGER_TRAFFIC_WEIGHT             = var.challenger_traffic_weight
+    RISK_MODEL_ARTIFACT_URI               = var.risk_model_artifact_uri
+    EMBEDDING_MODEL_NAME                  = var.embedding_model_name
+    FEATURE_STORE_ID                      = var.feature_store_id
+    COST_AWARE_ROUTING                    = var.cost_aware_routing
     GOOGLE_CLOUD_PROJECT                  = var.project_id
     I4G_ML_BIGQUERY__DATASET_ID           = "i4g_ml"
     I4G_ML_BIGQUERY__PREDICTION_LOG_TABLE = "predictions_prediction_log"
@@ -394,7 +402,7 @@ module "ml_serving" {
 
   resource_limits = {
     cpu    = "2"
-    memory = "2Gi"
+    memory = "4Gi"
   }
   min_instances = 0
   max_instances = 2
@@ -611,6 +619,336 @@ resource "google_bigquery_table" "features_graph_features" {
   }
 
   depends_on = [module.ml_bigquery]
+}
+
+# ── BigQuery — Batch Predictions Table ───────────────────────────────────────
+# Stores results from batch prediction Cloud Run Jobs — historical re-classification,
+# NER extraction, risk scoring, and embedding generation backfills.
+
+resource "google_bigquery_table" "batch_predictions" {
+  project    = var.project_id
+  dataset_id = module.ml_bigquery.dataset_id
+  table_id   = "batch_predictions"
+
+  deletion_protection = false
+
+  time_partitioning {
+    type  = "DAY"
+    field = "predicted_at"
+  }
+
+  clustering = ["capability"]
+
+  schema = jsonencode([
+    { name = "case_id", type = "STRING", mode = "REQUIRED" },
+    { name = "prediction_id", type = "STRING", mode = "REQUIRED" },
+    { name = "capability", type = "STRING", mode = "REQUIRED" },
+    { name = "prediction", type = "JSON", mode = "NULLABLE" },
+    { name = "confidence", type = "FLOAT64", mode = "NULLABLE" },
+    { name = "model_artifact_uri", type = "STRING", mode = "NULLABLE" },
+    { name = "predicted_at", type = "TIMESTAMP", mode = "REQUIRED" },
+  ])
+
+  labels = {
+    component  = "ml"
+    managed_by = "terraform"
+  }
+
+  depends_on = [module.ml_bigquery]
+}
+
+# ── BigQuery — Case Embeddings Table ─────────────────────────────────────────
+# Stores sentence-transformer embeddings for document similarity search.
+
+resource "google_bigquery_table" "features_case_embeddings" {
+  project    = var.project_id
+  dataset_id = module.ml_bigquery.dataset_id
+  table_id   = "features_case_embeddings"
+
+  deletion_protection = false
+
+  time_partitioning {
+    type  = "DAY"
+    field = "_computed_at"
+  }
+
+  clustering = ["case_id"]
+
+  schema = jsonencode([
+    { name = "case_id", type = "STRING", mode = "REQUIRED" },
+    { name = "embedding", type = "FLOAT64", mode = "REPEATED" },
+    { name = "_computed_at", type = "TIMESTAMP", mode = "REQUIRED" },
+  ])
+
+  labels = {
+    component  = "ml"
+    managed_by = "terraform"
+  }
+
+  depends_on = [module.ml_bigquery]
+}
+
+# ── BigQuery — Variant Comparison Table ──────────────────────────────────────
+# Stores champion vs. challenger A/B comparison metrics.
+
+resource "google_bigquery_table" "analytics_variant_comparison" {
+  project    = var.project_id
+  dataset_id = module.ml_bigquery.dataset_id
+  table_id   = "analytics_variant_comparison"
+
+  deletion_protection = false
+
+  schema = jsonencode([
+    { name = "variant", type = "STRING", mode = "REQUIRED" },
+    { name = "capability", type = "STRING", mode = "REQUIRED" },
+    { name = "total_predictions", type = "INT64", mode = "NULLABLE" },
+    { name = "outcomes_received", type = "INT64", mode = "NULLABLE" },
+    { name = "correct_predictions", type = "INT64", mode = "NULLABLE" },
+    { name = "override_rate", type = "FLOAT64", mode = "NULLABLE" },
+    { name = "f1", type = "FLOAT64", mode = "NULLABLE" },
+    { name = "per_axis_metrics", type = "JSON", mode = "NULLABLE" },
+    { name = "computed_at", type = "DATE", mode = "REQUIRED" },
+  ])
+
+  labels = {
+    component  = "ml"
+    managed_by = "terraform"
+  }
+
+  depends_on = [module.ml_bigquery]
+}
+
+# ── Cloud Run Job — Batch Prediction ─────────────────────────────────────────
+# On-demand batch prediction for historical re-classification and backfill.
+# Invoked manually or via Makefile — no scheduled trigger.
+
+resource "google_cloud_run_v2_job" "batch_prediction" {
+  name                = "batch-prediction"
+  project             = var.project_id
+  location            = var.region
+  deletion_protection = false
+
+  template {
+    template {
+      service_account = google_service_account.sa_ml.email
+
+      containers {
+        image   = "${var.region}-docker.pkg.dev/${var.project_id}/containers/serve:${var.serve_image_tag}"
+        command = ["python", "scripts/run_batch_prediction.py"]
+        args    = ["--capability", "classification"]
+
+        env {
+          name  = "GOOGLE_CLOUD_PROJECT"
+          value = var.project_id
+        }
+        env {
+          name  = "I4G_ML_BIGQUERY__DATASET_ID"
+          value = "i4g_ml"
+        }
+
+        resources {
+          limits = {
+            cpu    = "2"
+            memory = "2Gi"
+          }
+        }
+      }
+
+      max_retries = 1
+      timeout     = "3600s"
+    }
+  }
+
+  depends_on = [
+    google_project_service.apis,
+    google_artifact_registry_repository.ml_containers,
+  ]
+}
+
+# ── Cloud Run Job — Feature Store Sync ───────────────────────────────────────
+# Syncs features from BigQuery to Vertex AI Feature Store for online serving.
+# Scheduled after data refresh and graph features (Sunday 5 AM UTC).
+
+resource "google_cloud_run_v2_job" "feature_store_sync" {
+  name                = "feature-store-sync"
+  project             = var.project_id
+  location            = var.region
+  deletion_protection = false
+
+  template {
+    template {
+      service_account = google_service_account.sa_ml.email
+
+      containers {
+        image   = "${var.region}-docker.pkg.dev/${var.project_id}/containers/serve:${var.serve_image_tag}"
+        command = ["python", "-m", "ml.data.feature_store"]
+        args = [
+          "--project", var.project_id,
+          "--feature-store-id", "i4g_ml_features",
+          "--entity-type-id", "case",
+        ]
+
+        env {
+          name  = "GOOGLE_CLOUD_PROJECT"
+          value = var.project_id
+        }
+        env {
+          name  = "I4G_ML_BIGQUERY__DATASET_ID"
+          value = "i4g_ml"
+        }
+
+        resources {
+          limits = {
+            cpu    = "1"
+            memory = "1Gi"
+          }
+        }
+      }
+
+      max_retries = 1
+      timeout     = "1800s"
+    }
+  }
+
+  depends_on = [
+    google_project_service.apis,
+    google_artifact_registry_repository.ml_containers,
+  ]
+}
+
+resource "google_cloud_scheduler_job" "weekly_feature_store_sync" {
+  project   = var.project_id
+  region    = var.region
+  name      = "weekly-feature-store-sync"
+  schedule  = "0 5 * * 0" # Sunday 5 AM UTC (after graph features complete)
+  time_zone = "UTC"
+
+  http_target {
+    uri         = "https://${var.region}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${var.project_id}/jobs/${google_cloud_run_v2_job.feature_store_sync.name}:run"
+    http_method = "POST"
+
+    oauth_token {
+      service_account_email = google_service_account.sa_ml.email
+    }
+  }
+
+  depends_on = [google_project_service.apis]
+}
+
+# ── Cloud Run Job — Embedding Refresh ────────────────────────────────────────
+# Generates embeddings for all cases and writes to BQ. On startup, the serving
+# container rebuilds the FAISS index from this table.
+
+resource "google_cloud_run_v2_job" "embedding_refresh" {
+  name                = "embedding-refresh"
+  project             = var.project_id
+  location            = var.region
+  deletion_protection = false
+
+  template {
+    template {
+      service_account = google_service_account.sa_ml.email
+
+      containers {
+        image   = "${var.region}-docker.pkg.dev/${var.project_id}/containers/serve:${var.serve_image_tag}"
+        command = ["python", "scripts/run_batch_prediction.py"]
+        args    = ["--capability", "embedding"]
+
+        env {
+          name  = "GOOGLE_CLOUD_PROJECT"
+          value = var.project_id
+        }
+        env {
+          name  = "I4G_ML_BIGQUERY__DATASET_ID"
+          value = "i4g_ml"
+        }
+        env {
+          name  = "EMBEDDING_MODEL_NAME"
+          value = var.embedding_model_name
+        }
+
+        resources {
+          limits = {
+            cpu    = "2"
+            memory = "4Gi"
+          }
+        }
+      }
+
+      max_retries = 1
+      timeout     = "3600s"
+    }
+  }
+
+  depends_on = [
+    google_project_service.apis,
+    google_artifact_registry_repository.ml_containers,
+  ]
+}
+
+resource "google_cloud_scheduler_job" "weekly_embedding_refresh" {
+  project   = var.project_id
+  region    = var.region
+  name      = "weekly-embedding-refresh"
+  schedule  = "0 6 * * 0" # Sunday 6 AM UTC (after feature store sync)
+  time_zone = "UTC"
+
+  http_target {
+    uri         = "https://${var.region}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${var.project_id}/jobs/${google_cloud_run_v2_job.embedding_refresh.name}:run"
+    http_method = "POST"
+
+    oauth_token {
+      service_account_email = google_service_account.sa_ml.email
+    }
+  }
+
+  depends_on = [google_project_service.apis]
+}
+
+# ── Vertex AI Feature Store ──────────────────────────────────────────────────
+# Online feature serving for sub-100ms feature retrieval during prediction.
+
+resource "google_vertex_ai_featurestore" "ml_features" {
+  project = var.project_id
+  region  = var.region
+  name    = "i4g_ml_features"
+
+  online_serving_config {
+    fixed_node_count = 1
+  }
+
+  labels = {
+    component  = "ml"
+    managed_by = "terraform"
+  }
+
+  depends_on = [google_project_service.apis]
+}
+
+resource "google_vertex_ai_featurestore_entitytype" "case" {
+  featurestore = google_vertex_ai_featurestore.ml_features.id
+  name         = "case"
+
+  monitoring_config {
+    snapshot_analysis {
+      disabled = false
+    }
+  }
+}
+
+# ── Feature Store IAM ────────────────────────────────────────────────────────
+# Allow sa-ml-platform to read/write Feature Store resources.
+
+resource "google_project_iam_member" "sa_ml_featurestore_user" {
+  project = var.project_id
+  role    = "roles/aiplatform.featurestoreUser"
+  member  = "serviceAccount:${google_service_account.sa_ml.email}"
+}
+
+resource "google_project_iam_member" "sa_ml_featurestore_admin" {
+  project = var.project_id
+  role    = "roles/aiplatform.featurestoreAdmin"
+  member  = "serviceAccount:${google_service_account.sa_ml.email}"
 }
 
 # ── Cloud Monitoring — Outcome Logging Alert ─────────────────────────────────
@@ -1067,6 +1405,12 @@ module "ml_serving_prod" {
     MODEL_ARTIFACT_URI                    = var.prod_model_artifact_uri
     SHADOW_MODEL_ARTIFACT_URI             = var.prod_shadow_model_artifact_uri
     NER_MODEL_ARTIFACT_URI                = var.prod_ner_model_artifact_uri
+    CHALLENGER_MODEL_ARTIFACT_URI         = var.prod_challenger_model_artifact_uri
+    CHALLENGER_TRAFFIC_WEIGHT             = var.prod_challenger_traffic_weight
+    RISK_MODEL_ARTIFACT_URI               = var.prod_risk_model_artifact_uri
+    EMBEDDING_MODEL_NAME                  = var.embedding_model_name
+    FEATURE_STORE_ID                      = var.feature_store_id
+    COST_AWARE_ROUTING                    = var.cost_aware_routing
     GOOGLE_CLOUD_PROJECT                  = var.project_id
     I4G_ML_BIGQUERY__DATASET_ID           = "i4g_ml"
     I4G_ML_BIGQUERY__PREDICTION_LOG_TABLE = "predictions_prediction_log"
@@ -1075,7 +1419,7 @@ module "ml_serving_prod" {
 
   resource_limits = {
     cpu    = "2"
-    memory = "2Gi"
+    memory = "4Gi"
   }
   min_instances = 1 # Avoid cold starts in production
   max_instances = 4

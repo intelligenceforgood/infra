@@ -86,3 +86,67 @@ variable "drift_model_id" {
   description = "Model ID to monitor for drift (used by daily drift Cloud Run Job)."
   default     = "classification-xgboost-v1"
 }
+
+# ── Phase 3: Champion/Challenger ─────────────────────────────────────────────
+
+variable "challenger_model_artifact_uri" {
+  type        = string
+  description = "GCS URI of the challenger model artifacts for A/B routing on dev."
+  default     = ""
+}
+
+variable "challenger_traffic_weight" {
+  type        = string
+  description = "Traffic weight for the challenger model (0.0–1.0)."
+  default     = "0.0"
+}
+
+variable "prod_challenger_model_artifact_uri" {
+  type        = string
+  description = "GCS URI of the challenger model artifacts for A/B routing on prod."
+  default     = ""
+}
+
+variable "prod_challenger_traffic_weight" {
+  type        = string
+  description = "Traffic weight for the challenger model on prod (0.0–1.0)."
+  default     = "0.0"
+}
+
+# ── Phase 3: Risk Scoring ────────────────────────────────────────────────────
+
+variable "risk_model_artifact_uri" {
+  type        = string
+  description = "GCS URI of the risk scoring XGBoost model artifacts on dev."
+  default     = ""
+}
+
+variable "prod_risk_model_artifact_uri" {
+  type        = string
+  description = "GCS URI of the risk scoring XGBoost model artifacts on prod."
+  default     = ""
+}
+
+# ── Phase 3: Feature Store ───────────────────────────────────────────────────
+
+variable "feature_store_id" {
+  type        = string
+  description = "Vertex AI Feature Store ID for online feature serving."
+  default     = ""
+}
+
+# ── Phase 3: Embeddings / Similarity ─────────────────────────────────────────
+
+variable "embedding_model_name" {
+  type        = string
+  description = "Name of the sentence-transformer model for document similarity."
+  default     = "all-MiniLM-L6-v2"
+}
+
+# ── Phase 3: Cost-Aware Routing ──────────────────────────────────────────────
+
+variable "cost_aware_routing" {
+  type        = string
+  description = "Enable cost-aware model routing ('true' or 'false')."
+  default     = "false"
+}
