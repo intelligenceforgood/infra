@@ -143,6 +143,12 @@ variable "embedding_model_name" {
   default     = "all-MiniLM-L6-v2"
 }
 
+variable "similarity_enabled" {
+  type        = string
+  description = "Enable FAISS similarity index at startup ('true' or 'false')."
+  default     = "false"
+}
+
 # ── Phase 3: Cost-Aware Routing ──────────────────────────────────────────────
 
 variable "cost_aware_routing" {

@@ -392,6 +392,7 @@ module "ml_serving" {
     CHALLENGER_TRAFFIC_WEIGHT             = var.challenger_traffic_weight
     RISK_MODEL_ARTIFACT_URI               = var.risk_model_artifact_uri
     EMBEDDING_MODEL_NAME                  = var.embedding_model_name
+    SIMILARITY_ENABLED                    = var.similarity_enabled
     FEATURE_STORE_ID                      = var.feature_store_id
     COST_AWARE_ROUTING                    = var.cost_aware_routing
     GOOGLE_CLOUD_PROJECT                  = var.project_id
