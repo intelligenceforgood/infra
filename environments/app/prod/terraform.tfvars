@@ -324,7 +324,7 @@ run_jobs = {
   }
 
   ecx_poller = {
-    enabled             = false # SSI disabled in prod; enable when ssi_service_enabled = true
+    enabled             = true # SSI enabled in prod
     name                = "ssi-ecx-poller"
     image               = "us-central1-docker.pkg.dev/i4g-prod/applications/ssi-svc:prod"
     service_account_key = "ssi"
@@ -365,7 +365,7 @@ run_jobs = {
 }
 
 # ── SSI Cloud Run Service ───────────────────────────────────────────────────────
-ssi_service_enabled = false
+ssi_service_enabled = true
 ssi_service_image   = "us-central1-docker.pkg.dev/i4g-prod/applications/ssi-svc:prod"
 
 ssi_service_env_vars = {
