@@ -360,6 +360,28 @@ run_jobs = {
     }
   }
 
+  backup_db = {
+    enabled             = true
+    name                = "backup-db"
+    image               = "us-central1-docker.pkg.dev/i4g-prod/applications/backup-job:prod"
+    service_account_key = "ingest"
+    timeout_seconds     = 1800
+    parallelism         = 1
+    max_retries         = 0
+    schedule            = "0 2 * * 0" # Weekly: Sunday at 02:00 UTC
+    scheduler_paused    = true
+
+    env_vars = {
+      I4G_ENV                            = "prod"
+      I4G_STORAGE__STRUCTURED_BACKEND    = "cloudsql"
+      I4G_APP__CLOUDSQL__INSTANCE        = "i4g-prod:us-central1:i4g-prod-db"
+      I4G_APP__CLOUDSQL__DATABASE        = "i4g_db"
+      I4G_APP__CLOUDSQL__USER            = "sa-ingest@i4g-prod.iam"
+      I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH = "true"
+      I4G_LLM__PROVIDER                  = "gemini"
+    }
+  }
+
   # ssi_investigate Cloud Run Job removed in 3.0.12 — SSI is now service-only.
   # See ssi_service_* variables and module.run_ssi_service for the replacement.
 }
