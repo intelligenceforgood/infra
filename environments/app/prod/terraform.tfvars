@@ -35,7 +35,7 @@ core_svc_env_vars = {
   I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH = "true"
   I4G_VECTOR__BACKEND                = "vertex_ai"
   I4G_LLM__PROVIDER                  = "gemini"
-  I4G_LLM__CHAT_MODEL                = "gemini-2.5-flash"
+  I4G_LLM__CHAT_MODEL                = "gemini-3-flash-preview"
   I4G_VERTEX_SEARCH_SERVING_CONFIG   = "default_search"
   I4G_FEEDBACK__SHEET_ID             = "1o8iSyLtFbSxdqEtT-L7OQvSqKTealP1H8f0VZzZKTw8"
   I4G_EMAIL__PROVIDER                = "smtp"
@@ -261,7 +261,7 @@ run_jobs = {
       I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH = "true"
       I4G_VECTOR__BACKEND                = "vertex_ai"
       I4G_LLM__PROVIDER                  = "gemini"
-      I4G_LLM__CHAT_MODEL                = "gemini-2.5-flash"
+      I4G_LLM__CHAT_MODEL                = "gemini-3-flash-preview"
     }
   }
 
@@ -393,7 +393,7 @@ ssi_service_image   = "us-central1-docker.pkg.dev/i4g-prod/applications/ssi-svc:
 ssi_service_env_vars = {
   SSI_ENV                                = "prod"
   SSI_LLM__PROVIDER                      = "gemini"
-  SSI_LLM__MODEL                         = "gemini-2.5-flash"
+  SSI_LLM__MODEL                         = "gemini-3-flash-preview"
   SSI_LLM__GCP_PROJECT                   = "i4g-prod"
   SSI_LLM__GCP_LOCATION                  = "us-central1"
   SSI_EVIDENCE__STORAGE_BACKEND          = "gcs"
