@@ -15,6 +15,12 @@ resource "google_project_service" "gemini_cloud_assist" {
   disable_on_destroy = false
 }
 
+resource "google_project_service" "gemini_api" {
+  project            = var.project_id
+  service            = "generativelanguage.googleapis.com"
+  disable_on_destroy = false
+}
+
 resource "google_project_service" "vertex_ai_search" {
   project            = var.project_id
   service            = "discoveryengine.googleapis.com"
@@ -61,6 +67,29 @@ resource "google_project_service" "sheets" {
   project            = var.project_id
   service            = "sheets.googleapis.com"
   disable_on_destroy = false
+}
+
+# ── Gemini API Key Secret ────────────────────────────────────────────────────
+# Shared by core services and SSI.  The API key is created in the GCP project
+# under the Gemini API (generativelanguage.googleapis.com) so that billing
+# flows through the project's billing account — NOT through AI Studio.
+# Populate the secret value via Console or:
+#   gcloud secrets versions add gemini-api-key --data-file=- --project=<project>
+
+resource "google_secret_manager_secret" "gemini_api_key" {
+  project   = var.project_id
+  secret_id = "gemini-api-key"
+
+  labels = {
+    service = "gemini"
+    env     = var.environment
+  }
+
+  replication {
+    auto {}
+  }
+
+  depends_on = [google_project_service.secret_manager]
 }
 
 # ── SSI Secret Manager Secrets ───────────────────────────────────────────────

@@ -52,6 +52,10 @@ core_svc_secret_env_vars = {
     secret  = "projects/i4g-prod/secrets/pii-encryption-key"
     version = "latest"
   }
+  I4G_LLM__GEMINI_API_KEY = {
+    secret  = "projects/i4g-prod/secrets/gemini-api-key"
+    version = "latest"
+  }
 }
 
 # Console image — set when the image is pushed to the prod registry.
@@ -263,6 +267,12 @@ run_jobs = {
       I4G_LLM__PROVIDER                  = "gemini"
       I4G_LLM__CHAT_MODEL                = "gemini-3-flash-preview"
     }
+    secret_env_vars = {
+      I4G_LLM__GEMINI_API_KEY = {
+        secret  = "projects/i4g-prod/secrets/gemini-api-key"
+        version = "latest"
+      }
+    }
   }
 
   dossier_queue = {
@@ -434,6 +444,10 @@ ssi_service_secret_env_vars = {
   }
   SSI_ECX__API_KEY = {
     secret  = "projects/i4g-prod/secrets/ssi-ecx-api-key"
+    version = "latest"
+  }
+  SSI_LLM__GEMINI_API_KEY = {
+    secret  = "projects/i4g-prod/secrets/gemini-api-key"
     version = "latest"
   }
 }

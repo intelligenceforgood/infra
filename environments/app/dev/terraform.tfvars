@@ -54,6 +54,10 @@ core_svc_secret_env_vars = {
     secret  = "projects/i4g-dev/secrets/pii-encryption-key"
     version = "latest"
   }
+  I4G_LLM__GEMINI_API_KEY = {
+    secret  = "projects/i4g-dev/secrets/gemini-api-key"
+    version = "latest"
+  }
 }
 
 console_image = "us-central1-docker.pkg.dev/i4g-dev/applications/i4g-console:dev"
@@ -253,6 +257,12 @@ run_jobs = {
       I4G_VECTOR__BACKEND = "vertex_ai"
       I4G_LLM__PROVIDER   = "gemini"
       I4G_LLM__CHAT_MODEL = "gemini-3-flash-preview"
+    }
+    secret_env_vars = {
+      I4G_LLM__GEMINI_API_KEY = {
+        secret  = "projects/i4g-dev/secrets/gemini-api-key"
+        version = "latest"
+      }
     }
   }
 
@@ -454,6 +464,10 @@ ssi_service_secret_env_vars = {
   }
   SSI_ECX__API_KEY = {
     secret  = "projects/i4g-dev/secrets/ssi-ecx-api-key"
+    version = "latest"
+  }
+  SSI_LLM__GEMINI_API_KEY = {
+    secret  = "projects/i4g-dev/secrets/gemini-api-key"
     version = "latest"
   }
 }
