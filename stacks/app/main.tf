@@ -92,6 +92,27 @@ resource "google_secret_manager_secret" "gemini_api_key" {
   depends_on = [google_project_service.secret_manager]
 }
 
+# ── PhishDestroy Merklemap Secret ────────────────────────────────────────────
+# Secret value is operator-populated in Phase D2:
+#   gcloud secrets versions add merklemap-api-key --data-file=- --project=<project>
+# Consumed by the core worker `i4g jobs merklemap-tail` running as a Cloud Run job.
+
+resource "google_secret_manager_secret" "merklemap_api_key" {
+  project   = var.project_id
+  secret_id = "merklemap-api-key"
+
+  labels = {
+    service = "phishdestroy"
+    env     = var.environment
+  }
+
+  replication {
+    auto {}
+  }
+
+  depends_on = [google_project_service.secret_manager]
+}
+
 # ── SSI Secret Manager Secrets ───────────────────────────────────────────────
 # Secrets are created here; values must be populated manually via Console or
 # `gcloud secrets versions add`.
@@ -628,9 +649,12 @@ module "run_ssi_service" {
   # rejects any request without a valid sa-app OIDC token.
   ingress = "all"
 
-  # sa-app is the sole invoker (core triggers SSI via HTTP POST).
+  # sa-app is the primary invoker (core-svc triggers SSI via HTTP POST).
+  # sa-ingest added 2026-04-25 (Phase D1): merklemap-tail Cloud Run job posts
+  # to /trigger/investigate from the core image, running as sa-ingest.
   invoker_members = [
-    format("serviceAccount:%s", module.iam_service_accounts.emails["app"])
+    format("serviceAccount:%s", module.iam_service_accounts.emails["app"]),
+    format("serviceAccount:%s", module.iam_service_accounts.emails["ingest"]),
   ]
 
   vpc_connector                 = google_vpc_access_connector.serverless.id

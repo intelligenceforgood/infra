@@ -370,6 +370,44 @@ run_jobs = {
     }
   }
 
+  merklemap_tail = {
+    enabled = false
+    name    = "merklemap-tail"
+    # Reuses the ingest-job image — the core CLI `i4g jobs merklemap-tail`
+    # is registered there (Phase C). Sprint 4 will enable this in prod after SLO sign-off.
+    image               = "us-central1-docker.pkg.dev/i4g-prod/applications/ingest-job:prod"
+    service_account_key = "ingest"
+    timeout_seconds     = 2100 # 35 min — buffer over --max-runtime-seconds=1800
+    parallelism         = 1
+    max_retries         = 0
+    args                = ["jobs", "merklemap-tail", "--max-runtime-seconds=1800"]
+
+    env_vars = {
+      I4G_ENV                               = "prod"
+      I4G_STORAGE__STRUCTURED_BACKEND       = "cloudsql"
+      I4G_APP__CLOUDSQL__INSTANCE           = "i4g-prod:us-central1:i4g-prod-db"
+      I4G_APP__CLOUDSQL__DATABASE           = "i4g_db"
+      I4G_APP__CLOUDSQL__USER               = "sa-ingest@i4g-prod.iam"
+      I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH    = "true"
+      I4G_LLM__PROVIDER                     = "mock"
+      PHISHDESTROY__MERKLEMAP_TAIL__ENABLED = "true"
+      # Placeholder — enabled=false keeps this inert until Sprint 4.
+      # Phase D2 / Sprint 4 will substitute the live prod URL before apply.
+      I4G_SSI__SERVICE_URL = "https://ssi-svc-PROD-PLACEHOLDER-uc.a.run.app"
+    }
+
+    secret_env_vars = {
+      PHISHDESTROY__MERKLEMAP_TAIL__API_KEY = {
+        secret  = "projects/i4g-prod/secrets/merklemap-api-key"
+        version = "latest"
+      }
+      I4G_CRYPTO__PII_KEY = {
+        secret  = "projects/i4g-prod/secrets/pii-encryption-key"
+        version = "latest"
+      }
+    }
+  }
+
   backup_db = {
     enabled             = true
     name                = "backup-db"

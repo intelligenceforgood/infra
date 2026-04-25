@@ -361,6 +361,49 @@ run_jobs = {
     }
   }
 
+  merklemap_tail = {
+    enabled = true
+    name    = "merklemap-tail"
+    # Reuses the ingest-job image — the core CLI `i4g jobs merklemap-tail`
+    # is registered there (Phase C). Phase D2 must confirm the image was
+    # rebuilt AFTER the Phase C merge to origin/main.
+    image               = "us-central1-docker.pkg.dev/i4g-dev/applications/ingest-job:dev"
+    service_account_key = "ingest"
+    # 30-minute bounded runs for Phase D2 smoke. Sprint 4 will replace this
+    # with longer caps + Cloud Scheduler periodic re-launch.
+    timeout_seconds = 2100 # 35 min — buffer over --max-runtime-seconds=1800
+    parallelism     = 1
+    max_retries     = 0
+    args            = ["jobs", "merklemap-tail", "--max-runtime-seconds=1800"]
+
+    env_vars = {
+      I4G_ENV                               = "dev"
+      I4G_STORAGE__STRUCTURED_BACKEND       = "cloudsql"
+      I4G_APP__CLOUDSQL__INSTANCE           = "i4g-dev:us-central1:i4g-dev-db"
+      I4G_APP__CLOUDSQL__DATABASE           = "i4g_db"
+      I4G_APP__CLOUDSQL__USER               = "sa-ingest@i4g-dev.iam"
+      I4G_APP__CLOUDSQL__ENABLE_IAM_AUTH    = "true"
+      I4G_LLM__PROVIDER                     = "mock"
+      PHISHDESTROY__MERKLEMAP_TAIL__ENABLED = "true"
+      # SSI service URL for /trigger/investigate (passive scan enqueue).
+      # NOTE: Phase D1 ships the placeholder below; Phase D2 must replace
+      # with the live URL from `gcloud run services describe ssi-svc ...`
+      # before `terraform apply` (else the worker will POST to a 404).
+      I4G_SSI__SERVICE_URL = "https://ssi-svc-PLACEHOLDER-uc.a.run.app"
+    }
+
+    secret_env_vars = {
+      PHISHDESTROY__MERKLEMAP_TAIL__API_KEY = {
+        secret  = "projects/i4g-dev/secrets/merklemap-api-key"
+        version = "latest"
+      }
+      I4G_CRYPTO__PII_KEY = {
+        secret  = "projects/i4g-dev/secrets/pii-encryption-key"
+        version = "latest"
+      }
+    }
+  }
+
   backup_db = {
     enabled             = true
     name                = "backup-db"
