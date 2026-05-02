@@ -138,6 +138,14 @@ module "ssi_secrets" {
       secret_id = "ssi-ipinfo-token"
       labels    = { service = "ssi", env = var.environment }
     }
+    whoxy_api_key = {
+      secret_id = "ssi-whoxy-api-key"
+      labels    = { service = "ssi", env = var.environment }
+    }
+    ghunt_cookie_blob = {
+      secret_id = "ssi-ghunt-cookie-blob"
+      labels    = { service = "ssi", env = var.environment }
+    }
     ecx_api_key = {
       secret_id = "ssi-ecx-api-key"
       labels    = { service = "ssi", env = var.environment }
