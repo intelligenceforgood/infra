@@ -1,0 +1,40 @@
+# Terraform Core
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+.terraform.lock.hcl
+
+# Terraform Logs
+crash.log
+crash.*.log
+*.log
+
+# Variable overrides & Secrets
+# (Exclude tfvars if they contain sensitive info, otherwise you can comment this out)
+*secret*.tfvars
+*sensitive*.tfvars
+*override*.tfvars
+*local*.tfvars
+credentials/
+secrets/
+
+# Credentials and Keys (Very common in GCP infra)
+*.json
+*.pem
+*.key
+*.crt
+.env
+.env.local
+.env.*.local
+
+# OS, IDE, and Version Control
+.DS_Store
+.vscode/
+.idea/
+.git/
+
+# Large Media / Documentation Assets
+*.png
+*.jpg
+*.pdf
